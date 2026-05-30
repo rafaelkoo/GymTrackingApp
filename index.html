@@ -589,13 +589,54 @@ function mkCardioRow(entry,plan,dayColor){
   var ci=plan.indexOf(entry);
   var day=S.activeDay;
   var lbl=t(ex.zh,ex.en);
-  var rps=entry.reps+' '+t('分鐘','min');
-  // Cardio has 1 "set" — the whole session
   var cdKey='__cardio__'+entry.id;
   var cd=!!(S.logs[day]&&S.logs[day][cdKey]);
-  var bdrColor=cd?dayColor:'var(--border2)';
-  var html='<div class="card" style="border-left:3px solid '+dayColor+';margin-bottom:9px">'    +'<div style="padding:10px 12px 8px;display:flex;align-items:flex-start;gap:6px">'    +'<div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-top:2px">'    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="-1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">&#8593;</button>'    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">&#8595;</button>'    +'</div>'    +'<div style="flex:1;min-width:0">'    +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'    +'<div style="font-size:13px;font-weight:700">'+lbl+'</div>'    +'<button onclick="removeFromPlan(this)" data-day="'+day+'" data-idx="'+ci+'" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 3px;line-height:1">&#215;</button>'    +'</div>'    +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'    +'<i class="ti ti-run" style="font-size:11px;margin-right:3px"></i>'+rps    +'</div>'    +'</div></div>'    +'<div style="padding:3px 12px 10px">'    +'<div style="display:grid;grid-template-columns:18px 1fr 30px;gap:6px;padding-bottom:5px">'    +'<div style="font-size:9px;color:var(--text4);text-align:center;text-transform:uppercase">#</div>'    +'<div style="font-size:9px;color:var(--text4);text-align:center;text-transform:uppercase">'+t('時長','Duration')+'</div>'    +'<div></div>'    +'</div>'    +'<div style="display:grid;grid-template-columns:18px 1fr 30px;gap:6px;align-items:center;padding:3px 0;opacity:'+(cd?0.7:1)+'">'    +'<div style="font-size:9px;color:'+(cd?dayColor:'var(--text4)')+';text-align:center;font-family:JetBrains Mono,monospace">1</div>'    +'<div style="background:var(--bg2);border:1px solid '+(cd?dayColor:'var(--border2)')+';color:'+(cd?dayColor:'var(--text)')+';border-radius:7px;padding:5px 7px;font-family:JetBrains Mono,monospace;font-size:12px;text-align:center">'+(cd?'<span style="color:'+dayColor+'">'+rps+'</span>':rps)+'</div>'    +'<button class="btn-check'+(cd?' done':'')+'" onclick="togCardio(this)" data-day="'+day+'" data-id="'+entry.id+'" style="'+(cd?'background:'+dayColor+';border-color:'+dayColor+';color:#080c14':'')+'">'    +(cd?'&#10003;':'&#9711;')    +'</button>'    +'</div>'    +'</div>'    +'</div>';
-  return html;
+  var mins=parseInt(entry.reps)||30;
+  var rps=mins+' '+t('分鐘','min');
+
+  // Build with array join to avoid escaping hell
+  var parts=[];
+  parts.push('<div class="card" style="border-left:3px solid '+dayColor+';margin-bottom:9px">');
+  // Header row
+  parts.push('<div style="padding:10px 12px 8px;display:flex;align-items:flex-start;gap:6px">');
+  // Arrow buttons
+  parts.push('<div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-top:2px">');
+  parts.push('<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="-1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">&#8593;</button>');
+  parts.push('<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">&#8595;</button>');
+  parts.push('</div>');
+  // Title + remove btn
+  parts.push('<div style="flex:1;min-width:0">');
+  parts.push('<div style="display:flex;justify-content:space-between;align-items:flex-start">');
+  parts.push('<div style="font-size:13px;font-weight:700">'+lbl+'</div>');
+  parts.push('<button onclick="removeFromPlan(this)" data-day="'+day+'" data-idx="'+ci+'" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 3px;line-height:1">&#215;</button>');
+  parts.push('</div>');
+  parts.push('<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-run" style="font-size:11px;margin-right:3px"></i>'+t('有氧','Cardio')+'</div>');
+  parts.push('</div></div>');
+  // Set row
+  parts.push('<div style="padding:3px 12px 10px">');
+  parts.push('<div style="display:grid;grid-template-columns:18px 1fr 30px;gap:6px;padding-bottom:5px">');
+  parts.push('<div style="font-size:9px;color:var(--text4);text-align:center;text-transform:uppercase">#</div>');
+  parts.push('<div style="font-size:9px;color:var(--text4);text-align:center;text-transform:uppercase">'+t('時長','Duration')+'</div>');
+  parts.push('<div></div></div>');
+  // The actual set row
+  parts.push('<div style="display:grid;grid-template-columns:18px 1fr 30px;gap:6px;align-items:center;padding:3px 0;opacity:'+(cd?0.7:1)+'">');
+  parts.push('<div style="font-size:9px;color:'+(cd?dayColor:'var(--text4)')+';text-align:center;font-family:JetBrains Mono,monospace">1</div>');
+  // Duration cell: editable when not done, static when done
+  if(cd){
+    parts.push('<div style="background:var(--bg2);border:1px solid '+dayColor+';color:'+dayColor+';border-radius:7px;padding:5px 7px;font-family:JetBrains Mono,monospace;font-size:12px;text-align:center">'+rps+'</div>');
+  }else{
+    parts.push('<div style="display:flex;align-items:center;gap:3px">');
+    parts.push('<button onclick="adjCardio(this,-5)" data-day="'+day+'" data-id="'+entry.id+'" style="width:26px;height:26px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8722;</button>');
+    parts.push('<input type="number" value="'+mins+'" min="5" max="180" step="5" onchange="setCardioReps(this)" data-day="'+day+'" data-id="'+entry.id+'" style="flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:5px 4px;font-family:JetBrains Mono,monospace;font-size:12px;text-align:center;min-width:0">');
+    parts.push('<span style="font-size:10px;color:var(--text3);flex-shrink:0">'+t('分','m')+'</span>');
+    parts.push('<button onclick="adjCardio(this,5)" data-day="'+day+'" data-id="'+entry.id+'" style="width:26px;height:26px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#43;</button>');
+    parts.push('</div>');
+  }
+  // Tick button
+  var tickStyle=cd?('background:'+dayColor+';border-color:'+dayColor+';color:#080c14'):'';
+  parts.push('<button class="btn-check'+(cd?' done':'')+'" onclick="togCardio(this)" data-day="'+day+'" data-id="'+entry.id+'" style="'+tickStyle+'">'+(cd?'&#10003;':'&#9711;')+'</button>');
+  parts.push('</div></div></div>');
+  return parts.join('');
 }
 
 function rToday(){
@@ -603,9 +644,10 @@ function rToday(){
 }
 function _rToday(){
   const plan=S.customPlan[S.activeDay]||[];const dayColor=PC[S.activeDay];
-  let h=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:11px">`;
+  let h=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 6px;margin:-2px 0 8px">
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">`;
   WD.forEach(d=>{const{done,total}=dSets(d);const active=S.activeDay===d;h+=`<button class="pill${active?' active':''}" style="${active?'background:'+PC[d]+';border-color:'+PC[d]:''}" onclick="S.activeDay='${d}';rContent()">${d}${done>0?` ·${done}/${total}`:''}</button>`;});
-  h+='</div>';
+  h+='</div></div>';
   if(!plan.length){h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:22px;text-align:center;margin-bottom:9px"><i class="ti ti-moon" style="font-size:28px;color:var(--text3);display:block;margin-bottom:7px"></i><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:5px">${t('休息日 💤','Rest Day 💤')}</div><div style="font-size:11px;color:var(--text3)">${t('好好恢復，明天繼續！','Recover well — back at it tomorrow!')}</div></div>`;return h+'<div style="padding-bottom:14px"></div>';}
   plan.forEach(entry=>{
     const ex=EX[entry.id];if(!ex)return;
@@ -875,7 +917,7 @@ function rLibrary(container){
         <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:9px">${ex.muscle.map(m=>`<span style="font-size:9px;background:var(--bg2);border-radius:5px;padding:2px 6px;color:var(--text3)">${m}</span>`).join('')}</div>
         <!-- Add to day -->
         <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:5px">${t('加入哪天的計劃？','Add to which day?')}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">${WD.map(d=>{const already=(S.customPlan[d]||[]).some(e=>e.id===ex.id);return`<button class="btn-add-day${already?' added':''}" onclick="togExInPlan('${ex.id}','${d}')">${already?`<i class="ti ti-check" style="font-size:10px"></i>`:'+'}${d}</button>`;}).join('')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${WD.map(d=>{const already=(S.customPlan[d]||[]).some(e=>e.id===ex.id);return`<button class="btn-add-day${already?' added':''}" data-ex="${ex.id}" data-day="${d}" onclick="togExInPlan('${ex.id}','${d}')">${already?`<i class="ti ti-check" style="font-size:10px"></i>`:'+'}${d}</button>`;}).join('')}</div>
       </div>`;
     }
     h+='</div>';
@@ -892,9 +934,29 @@ function selLibEx(id){S.libSel=S.libSel===id?null:id;rLibrary(document.getElemen
 function togExInPlan(exId,day){
   if(!S.customPlan[day])S.customPlan[day]=[];
   const idx=S.customPlan[day].findIndex(e=>e.id===exId);
-  if(idx>=0){S.customPlan[day].splice(idx,1);toast(t('已移除','Removed'));}
-  else{S.customPlan[day].push({id:exId,sets:3,reps:12});ensLogs();toast(t('已加入 '+day,'Added to '+day));}
-  sv('customPlan','logs');rLibrary(document.getElementById('app-content'));
+  if(idx>=0){
+    S.customPlan[day].splice(idx,1);
+    toast(t('已從 '+day+' 移除','Removed from '+day));
+  }else{
+    // For cardio exercises, default reps to 30; strength to 12
+    const ex=EX[exId]||LIB.find(e=>e.id===exId);
+    const isCardio=ex&&ex.isCardio;
+    S.customPlan[day].push({id:exId,sets:isCardio?1:3,reps:isCardio?30:12});
+    ensLogs();
+    toast(t('已加入 '+day,'Added to '+day));
+  }
+  sv('customPlan','logs');
+  // Only update the day buttons — don't collapse the card
+  const container=document.getElementById('app-content');
+  if(container){
+    // Update all .btn-add-day buttons for this exercise
+    container.querySelectorAll('.btn-add-day[data-ex="'+exId+'"]').forEach(btn=>{
+      const btnDay=btn.dataset.day;
+      const inPlan=(S.customPlan[btnDay]||[]).some(e=>e.id===exId);
+      btn.className='btn-add-day'+(inPlan?' added':'');
+      btn.innerHTML=(inPlan?'<i class="ti ti-check" style="font-size:10px"></i>':'+')+btnDay;
+    });
+  }
 }
 
 // ─── 3D Viewer (Three.js) ────────────────────────────────────────
@@ -1088,6 +1150,23 @@ function moveEx(el){var day=el.dataset.day,idx=parseInt(el.dataset.idx),dir=pars
   const [item]=plan.splice(idx,1);
   plan.splice(to,0,item);
   sv('customPlan');rContent();
+}
+function adjCardio(el,delta){
+  var day=el.dataset.day,id=el.dataset.id;
+  var plan=S.customPlan[day];
+  var entry=plan.find(function(e){return e.id===id;});
+  if(!entry)return;
+  var cur=parseInt(entry.reps)||30;
+  entry.reps=Math.max(5,Math.min(180,cur+delta));
+  sv('customPlan');rContent();
+}
+function setCardioReps(el){
+  var day=el.dataset.day,id=el.dataset.id;
+  var plan=S.customPlan[day];
+  var entry=plan.find(function(e){return e.id===id;});
+  if(!entry)return;
+  entry.reps=Math.max(5,Math.min(180,parseInt(el.value)||30));
+  sv('customPlan');
 }
 function togCardio(el){
   try{
