@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#080c14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="FitTrack"/>
+<link rel="manifest" href="manifest.json"/>
+<title>FitTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<style>
+:root{--bg:#080c14;--bg1:#0d1520;--bg2:#111b2a;--border:#141e2e;--border2:#1a2840;--text:#e2e8f0;--text2:#8aa0c0;--text3:#4a6080;--text4:#2a4060;--accent:#c8f060;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#1e2a3a;border-radius:2px}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer;width:100%}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--text);cursor:pointer;border:2px solid var(--bg)}
+button{font-family:'Outfit',sans-serif;cursor:pointer}
+#app-header{flex-shrink:0;padding:max(env(safe-area-inset-top),14px) 14px 0}
+#app-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 14px 0}
+#app-nav{flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,8px)}
+.nav-bar{display:flex;background:rgba(8,12,20,.97);border-top:1px solid var(--border);padding:5px 0}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--text3);font-size:9px;font-weight:600;letter-spacing:.04em;padding:4px 2px;transition:color .15s}
+.nav-btn.active{color:var(--text)}
+.nav-btn i{font-size:19px}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:9px}
+.metric{background:var(--bg1);border:1px solid var(--border);border-radius:11px;padding:10px 12px;text-align:center}
+.pill{padding:5px 11px;border-radius:99px;border:1px solid var(--border2);background:var(--bg1);font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.pill.active{color:#fff;border-color:transparent}
+.spill{padding:4px 9px;border-radius:99px;border:1px solid var(--border);background:var(--bg1);font-size:10px;font-weight:600;color:var(--text3);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.spill.active{color:#fff;border-color:transparent}
+.num-in{background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:12px;width:100%;text-align:center;transition:border-color .15s}
+.num-in:focus{outline:none;border-color:var(--accent)}
+.num-in:disabled{opacity:.8}
+.num-in.done{color:var(--accent);border-color:var(--accent);background:#141a0a}
+.btn-check{width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:var(--bg2);color:var(--text4);font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.btn-check.done{background:var(--accent);border-color:var(--accent);color:#080c14}
+.btn-primary{background:var(--accent);color:#080c14;border:none;border-radius:9px;padding:11px 18px;font-size:13px;font-weight:700;width:100%;transition:opacity .15s}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:9px;padding:10px 18px;font-size:13px;width:100%;transition:all .15s}
+.stat-pill{display:inline-flex;align-items:center;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)}
+.prog-track{height:5px;background:var(--border2);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.task-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-top:1px solid var(--border)}
+.task-item:first-child{border-top:none}
+.task-check{width:21px;height:21px;border-radius:6px;border:1px solid var(--border2);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--bg1);transition:all .15s}
+.task-check.done{background:var(--accent);border-color:var(--accent)}
+.grade-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.mb-track{height:6px;background:var(--border2);border-radius:3px;overflow:hidden;margin-top:3px}
+.mb-fill{height:100%;border-radius:3px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+.ring-track{fill:none;stroke:var(--border2);stroke-width:7}
+.ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1)}
+.ex-lib-card{background:var(--bg1);border:1px solid var(--border);border-radius:11px;padding:10px 12px;cursor:pointer;transition:border-color .15s;margin-bottom:7px}
+.ex-lib-card:hover{border-color:var(--border2)}
+.ex-lib-card.active{border-color:var(--accent);border-width:1.5px}
+.btn-add-day{background:transparent;border:1px dashed var(--border2);color:var(--text3);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.btn-add-day.added{background:rgba(200,240,96,.1);border-color:var(--accent);color:var(--accent);border-style:solid}
+#onboard{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;overflow-y:auto}
+#onboard.hidden{display:none}
+.ob-step{display:none;padding:22px 18px;flex-direction:column;min-height:100%}
+.ob-step.active{display:flex}
+.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.goal-card-ob{background:var(--bg1);border:1px solid var(--border);border-radius:13px;padding:13px;cursor:pointer;transition:all .15s}
+.goal-card-ob.sel{border-width:2px}
+.sub-opt{background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all .15s;margin-bottom:7px}
+.sub-opt.sel{border-color:#60a5fa;background:rgba(96,165,250,.08)}
+.profile-inp{background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:9px 13px;font-family:'Outfit',sans-serif;font-size:15px;width:100%}
+#toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:#1a2840;color:var(--text);border-radius:9px;padding:9px 16px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+#toast.show{opacity:1}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .2s ease forwards}
+/* Score animations */
+@keyframes floatUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-34px);opacity:0}}
+.float-pt{position:absolute;font-size:12px;font-weight:700;color:var(--accent);pointer-events:none;animation:floatUp .95s ease forwards;white-space:nowrap;z-index:60}
+/* Level up overlay */
+#lv-overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:600;pointer-events:none;opacity:0;background:transparent;transition:background .3s,opacity .3s;max-width:480px;margin:0 auto}
+#lv-overlay.show{pointer-events:all;opacity:1;background:rgba(0,0,0,.75)}
+#lv-card{background:var(--bg1);border:1px solid var(--border2);border-radius:16px;padding:1.75rem 1.75rem 1.4rem;text-align:center;transform:scale(.5) translateY(80px);opacity:0;transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .35s;min-width:240px;position:relative}
+#lv-card.pop{transform:scale(1) translateY(0);opacity:1}
+.lv-ring-wrap{width:82px;height:82px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto .9rem;position:relative}
+.lv-spinner{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--accent);border-right-color:var(--accent);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lv-xp-wrap{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;margin:.45rem 0 .3rem}
+.lv-xp-fill{height:100%;border-radius:3px;background:var(--accent);width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+@keyframes flame{0%,100%{transform:scaleY(1) rotate(-4deg)}50%{transform:scaleY(1.12) rotate(4deg)}}
+.flame{display:inline-block;animation:flame 1.3s ease infinite;transform-origin:bottom center}
+/* 3D viewer */
+#viewer-wrap{position:relative;width:100%;background:var(--bg);border-radius:12px;overflow:hidden;touch-action:none}
+#viewer-canvas{display:block;width:100%;height:100%}
+#viewer-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:10px}
+.view-btn{background:rgba(13,21,32,.85);border:1px solid var(--border2);border-radius:7px;padding:4px 9px;font-size:10px;font-weight:600;color:var(--text3);cursor:pointer;pointer-events:all;backdrop-filter:blur(4px);transition:all .15s}
+.view-btn:hover{border-color:var(--accent);color:var(--accent)}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:background .2s,transform .2s;flex-shrink:0}
+.phase-dot.active{transform:scale(1.5)}
+canvas#pc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}
+.pts-badge{margin-left:auto;flex-shrink:0;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--bg2);color:var(--text3);transition:background .2s,color .2s}
+.pts-badge.lit{background:rgba(200,240,96,.12);color:var(--accent)}
+.shimmer-line{height:1px;background:var(--border2);margin:.9rem 0;position:relative;overflow:hidden}
+.shimmer-line::after{content:'';position:absolute;inset:0;background:var(--accent);transform:translateX(-100%);animation:sh .8s .3s ease forwards}
+@keyframes sh{to{transform:translateX(0)}}
+
+/* drag sort */
+.drag-item{transition:opacity .15s,transform .15s}
+.drag-item.dragging{opacity:.4;transform:scale(.97)}
+.drag-item.drag-over{border-color:var(--accent)!important;border-style:dashed!important}
+.drag-handle{cursor:grab;color:var(--text4);font-size:16px;padding:0 4px;flex-shrink:0;touch-action:none}
+.drag-handle:active{cursor:grabbing}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ONBOARDING
+════════════════════════════════════════════════════════════════ -->
+<div id="onboard">
+  <div class="ob-step active" id="ob0" style="align-items:center;justify-content:center;text-align:center;gap:22px">
+    <div style="font-size:50px">🏋️</div>
+    <div><div style="font-size:26px;font-weight:800;letter-spacing:-.02em">FitTrack</div><div style="font-size:13px;color:var(--text3);margin-top:5px">Your personal fitness companion</div></div>
+    <div style="display:flex;gap:11px;width:100%;max-width:270px">
+      <button onclick="setLang('zh')" style="flex:1;background:var(--accent);color:#080c14;border:none;border-radius:11px;padding:13px;font-size:15px;font-weight:700">繁體中文</button>
+      <button onclick="setLang('en')" style="flex:1;background:var(--bg1);color:var(--text);border:1px solid var(--border2);border-radius:11px;padding:13px;font-size:15px;font-weight:600">English</button>
+    </div>
+  </div>
+  <div class="ob-step" id="ob1">
+    <div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:5px" id="ob1-sl">Step 1 of 3</div>
+    <div style="font-size:21px;font-weight:800;margin-bottom:3px" id="ob1-t">What's your goal?</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px" id="ob1-s">Choose the goal that fits you best</div>
+    <div class="goal-grid" id="goal-grid"></div>
+    <div style="margin-top:auto;padding-top:14px;display:flex;gap:9px">
+      <button class="btn-ghost" onclick="obBack()" style="flex:0 0 auto;width:auto;padding:10px 16px" id="ob-bk">Back</button>
+      <button class="btn-primary" id="ob1-next" onclick="obGoalNext()" disabled>Next →</button>
+    </div>
+  </div>
+  <div class="ob-step" id="ob2">
+    <div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:5px" id="ob2-sl">Step 2 of 3</div>
+    <div style="font-size:21px;font-weight:800;margin-bottom:16px" id="ob2-q"></div>
+    <div id="ob2-body"></div>
+    <div style="margin-top:auto;padding-top:14px;display:flex;gap:9px">
+      <button class="btn-ghost" onclick="obBack()" style="flex:0 0 auto;width:auto;padding:10px 16px">← Back</button>
+      <button class="btn-primary" id="ob2-next" onclick="obQNext()">Next →</button>
+    </div>
+  </div>
+  <div class="ob-step" id="ob3">
+    <div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:5px" id="ob3-sl">Step 3 of 3</div>
+    <div style="font-size:21px;font-weight:800;margin-bottom:3px" id="ob3-t">Your body stats</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px" id="ob3-s">Used to personalise your plan</div>
+    <div style="display:grid;gap:12px;margin-bottom:16px">
+      <div><div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px" id="lw">Weight (kg)</div><input class="profile-inp" type="number" id="inp-weight" value="75" min="30" max="200" step="0.1"/></div>
+      <div><div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px" id="lh">Height (cm)</div><input class="profile-inp" type="number" id="inp-height" value="170" min="140" max="220" step="1"/></div>
+      <div><div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px" id="la">Age</div><input class="profile-inp" type="number" id="inp-age" value="28" min="15" max="80" step="1"/></div>
+      <div><div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px" id="lg">Goal weight (kg)</div><input class="profile-inp" type="number" id="inp-goalwt" value="70" min="30" max="200" step="0.5"/></div>
+    </div>
+    <div style="margin-top:auto;display:flex;gap:9px">
+      <button class="btn-ghost" onclick="obBack()" style="flex:0 0 auto;width:auto;padding:10px 16px">← Back</button>
+      <button class="btn-primary" onclick="finishOnboard()" id="ob3-btn">Start tracking →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════════════════ -->
+<div id="app" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+  <div id="app-header"></div>
+  <div id="app-content" class="fade-up"></div>
+  <div id="app-nav"><div class="nav-bar" id="nav-bar"></div></div>
+</div>
+
+<!-- Level-up overlay (outside app so it covers everything) -->
+<canvas id="pc"></canvas>
+<div id="lv-overlay">
+  <div id="lv-card">
+    <div class="lv-ring-wrap">
+      <div class="lv-spinner"></div>
+      <div><div style="font-size:1.8rem;font-weight:800;color:var(--accent)" id="lv-num">12</div><div style="font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">Level</div></div>
+    </div>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:.2rem" id="lv-title">Level Up!</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:.5rem" id="lv-sub">You reached a new level</div>
+    <div class="shimmer-line"></div>
+    <div style="font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem">Next level XP</div>
+    <div class="lv-xp-wrap"><div class="lv-xp-fill" id="lv-xp-bar"></div></div>
+    <div style="font-size:9px;color:var(--text3)" id="lv-xp-lbl">0 / 500 XP</div>
+    <button onclick="dismissLvl()" style="margin-top:1rem;width:100%;background:var(--accent);color:#080c14;border:none;border-radius:8px;padding:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Continue →</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════ DB / PERSISTENCE ═══════════════
+const DB={
+  get:(k,d)=>{try{const v=localStorage.getItem('ft_'+k);return v!=null?JSON.parse(v):d;}catch{return d;}},
+  set:(k,v)=>{try{localStorage.setItem('ft_'+k,JSON.stringify(v));}catch{}}
+};
+// ═══════════════ CONSTANTS ═══════════════
+const SCORE_CFG={set_done:5,task_done:10,pr_broken:25,workout_saved:15};
+const LEVEL_XP=500;
+const MUSCLE_MAP={
+  chest:{color:'#ec4899',label:{zh:'胸部',en:'Chest'},target:75},
+  back:{color:'#06b6d4',label:{zh:'背部',en:'Back'},target:75},
+  legs:{color:'#22c55e',label:{zh:'腿部',en:'Legs'},target:75},
+  shoulders:{color:'#a855f7',label:{zh:'肩膀',en:'Shoulders'},target:50},
+  arms:{color:'#f97316',label:{zh:'手臂',en:'Arms'},target:50},
+  core:{color:'#eab308',label:{zh:'核心',en:'Core'},target:25},
+  cardio:{color:'#f87171',label:{zh:'有氧',en:'Cardio'},target:50},
+};
+const PC={Mon:'#f97316',Tue:'#a855f7',Wed:'#ec4899',Thu:'#06b6d4',Fri:'#22c55e',Sat:'#94a3b8',Sun:'#475569'};
+const PL={Mon:{zh:'手臂日',en:'Arms'},Tue:{zh:'肩膀日',en:'Shoulders'},Wed:{zh:'胸部日',en:'Chest'},Thu:{zh:'背部日',en:'Back'},Fri:{zh:'腿部日',en:'Legs'},Sat:{zh:'休息日',en:'Rest'},Sun:{zh:'休息日',en:'Rest'}};
+const WD=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DEFAULT_PLAN={
+  Mon:[{id:'warmup',sets:1,reps:'5'},{id:'bb_curl',sets:5,reps:15},{id:'hammer',sets:5,reps:15},{id:'cable_pd',sets:5,reps:15},{id:'skull',sets:5,reps:15},{id:'cardio30',sets:1,reps:'30'}],
+  Tue:[{id:'warmup',sets:1,reps:'5'},{id:'db_press',sets:5,reps:15},{id:'lat_raise',sets:5,reps:15},{id:'rev_fly',sets:5,reps:15},{id:'cardio30',sets:1,reps:'30'}],
+  Wed:[{id:'warmup',sets:1,reps:'5'},{id:'inc_db',sets:5,reps:15},{id:'inc_mach',sets:5,reps:15},{id:'pec_deck',sets:5,reps:15},{id:'cardio30',sets:1,reps:'30'}],
+  Thu:[{id:'warmup',sets:1,reps:'5'},{id:'lat_pd',sets:5,reps:15},{id:'vbar_pd',sets:5,reps:15},{id:'sit_row',sets:5,reps:15},{id:'db_row',sets:5,reps:15},{id:'cardio30',sets:1,reps:'30'}],
+  Fri:[{id:'warmup',sets:1,reps:'5'},{id:'squat',sets:5,reps:15},{id:'calf',sets:5,reps:15},{id:'leg_press',sets:5,reps:15},{id:'leg_curl',sets:5,reps:15},{id:'adductor',sets:5,reps:15},{id:'cardio30',sets:1,reps:'30'}],
+  Sat:[],Sun:[]
+};
+const EX={
+  warmup:{zh:'熱身有氧',en:'Warm-up Cardio',isCardio:true,muscle:'cardio'},
+  cardio30:{zh:'有氧 (9度5速)',en:'Cardio (Incline 9)',isCardio:true,muscle:'cardio'},
+  bb_curl:{zh:'槓鈴彎舉',en:'Barbell Curl',muscle:'arms',lib:'curl'},
+  hammer:{zh:'啞鈴錘式彎舉',en:'Hammer Curl',muscle:'arms',lib:'ohp'},
+  cable_pd:{zh:'滑輪下壓',en:'Cable Pushdown',muscle:'arms'},
+  skull:{zh:'仰臥三頭肌伸展',en:'Skull Crusher',muscle:'arms',lib:'row'},
+  db_press:{zh:'啞鈴肩推',en:'DB Shoulder Press',muscle:'shoulders',lib:'ohp'},
+  lat_raise:{zh:'啞鈴側平舉',en:'Lateral Raise',muscle:'shoulders'},
+  rev_fly:{zh:'坐姿反向飛鳥',en:'Reverse Fly',muscle:'shoulders'},
+  inc_db:{zh:'啞鈴臥推45度',en:'Incline DB Press',muscle:'chest',lib:'curl'},
+  inc_mach:{zh:'上斜胸推機',en:'Incline Press Machine',muscle:'chest'},
+  pec_deck:{zh:'蝴蝶機夾胸',en:'Pec Deck Fly',muscle:'chest'},
+  lat_pd:{zh:'滑輪下拉',en:'Lat Pulldown',muscle:'back',lib:'curl'},
+  vbar_pd:{zh:'滑輪下拉V-Bar',en:'V-Bar Pulldown',muscle:'back'},
+  sit_row:{zh:'坐姿划船',en:'Seated Cable Row',muscle:'back',lib:'row'},
+  db_row:{zh:'單臂俯馬划船',en:'Single-Arm Row',muscle:'back'},
+  squat:{zh:'槓鈴深蹲',en:'Barbell Squat',muscle:'legs',lib:'squat'},
+  calf:{zh:'小腿提踵',en:'Calf Raise',muscle:'legs'},
+  leg_press:{zh:'腿部推機',en:'Leg Press',muscle:'legs',lib:'lunge'},
+  leg_curl:{zh:'腿部彎舉',en:'Leg Curl',muscle:'legs'},
+  adductor:{zh:'夾腿機',en:'Adductor Machine',muscle:'legs'},
+  plank:{zh:'平板支撐',en:'Plank',muscle:'core'},
+  deadlift:{zh:'硬舉',en:'Deadlift',muscle:'back',lib:'deadlift'},
+  ohp:{zh:'頭頂推舉',en:'Overhead Press',muscle:'shoulders',lib:'ohp'},
+  bench_press:{zh:'槓鈴臥推',en:'Bench Press',muscle:'chest',lib:'curl'},
+  treadmill:{zh:'跑步機',en:'Treadmill',isCardio:true,muscle:'cardio'},
+  facepull:{zh:'面拉',en:'Face Pull',muscle:'shoulders'},
+  pullup:{zh:'引體向上',en:'Pull-up',muscle:'back'},
+  dip:{zh:'雙槓臂屈伸',en:'Dip',muscle:'arms'},
+};
+const STD={squat:[.75,1.25,1.75],bb_curl:[.25,.45,.65],db_press:[.15,.25,.40],inc_db:[.20,.35,.50],lat_pd:[.50,.80,1.10],sit_row:[.50,.80,1.10],leg_press:[1.00,1.80,2.50],leg_curl:[.35,.55,.80],calf:[1.00,1.50,2.20]};
+const GOALS=[
+  {id:'lose_weight',icon:'ti-trending-down',zh:'減重瘦身',en:'Lose Weight',color:'#ef4444',bg:'rgba(239,68,68,.12)'},
+  {id:'build_muscle',icon:'ti-barbell',zh:'增肌健體',en:'Build Muscle',color:'#8b5cf6',bg:'rgba(139,92,246,.12)'},
+  {id:'recomp',icon:'ti-replace',zh:'增肌減脂',en:'Body Recomp',color:'#f97316',bg:'rgba(249,115,22,.12)'},
+  {id:'strength',icon:'ti-bolt',zh:'增強力量',en:'Strength & Power',color:'#06b6d4',bg:'rgba(6,182,212,.12)'},
+  {id:'endurance',icon:'ti-run',zh:'心肺耐力',en:'Cardio & Endurance',color:'#22c55e',bg:'rgba(34,197,94,.12)'},
+  {id:'wellness',icon:'ti-heart',zh:'健康保持',en:'General Wellness',color:'#ec4899',bg:'rgba(236,72,153,.12)'},
+];
+const GQS={
+  lose_weight:[{id:'approach',type:'choice',zh:'你想點樣減重？',en:'How to lose weight?',opts:[{id:'cardio_only',zh:'主要有氧',en:'Cardio-focused'},{id:'weights_cardio',zh:'有氧+力量',en:'Cardio+Weights'},{id:'weights_only',zh:'主要力量訓練',en:'Weights-focused'}]},{id:'target_kg',type:'number',zh:'想減幾多kg？',en:'kg to lose?',min:1,max:60,step:.5,def:10,unit:'kg'}],
+  build_muscle:[{id:'area',type:'choice',zh:'主要增強哪個部位？',en:'Area to focus?',opts:[{id:'full',zh:'全身均衡',en:'Full body'},{id:'upper',zh:'上半身',en:'Upper body'},{id:'lower',zh:'下半身',en:'Lower body'}]},{id:'gym_days',type:'number',zh:'每週幾天gym？',en:'Gym days/week?',min:2,max:6,step:1,def:4,unit:'days'}],
+  recomp:[{id:'priority',type:'choice',zh:'你更注重邊樣？',en:'Priority?',opts:[{id:'fat',zh:'減脂優先',en:'Fat loss first'},{id:'equal',zh:'同等重要',en:'Balanced'},{id:'muscle',zh:'增肌優先',en:'Muscle first'}]}],
+  strength:[{id:'lift',type:'choice',zh:'最想提升哪個動作？',en:'Which lift?',opts:[{id:'all3',zh:'三大項全部',en:'Squat/Bench/Deadlift'},{id:'squat',zh:'深蹲',en:'Squat'},{id:'bench',zh:'臥推',en:'Bench'},{id:'deadlift',zh:'硬舉',en:'Deadlift'}]},{id:'gym_days',type:'number',zh:'每週幾天gym？',en:'Gym days/week?',min:2,max:6,step:1,def:4,unit:'days'}],
+  endurance:[{id:'cardio_type',type:'choice',zh:'主要做咩有氧？',en:'Main cardio?',opts:[{id:'running',zh:'跑步',en:'Running'},{id:'cycling',zh:'單車',en:'Cycling'},{id:'mixed',zh:'混合',en:'Mixed'}]},{id:'weekly_mins',type:'number',zh:'每週有氧目標（分鐘）？',en:'Weekly cardio (min)?',min:60,max:600,step:30,def:150,unit:'min'}],
+  wellness:[{id:'focus',type:'choice',zh:'最想改善哪方面？',en:'What to improve?',opts:[{id:'energy',zh:'日常精力',en:'Daily energy'},{id:'stress',zh:'壓力管理',en:'Stress'},{id:'habits',zh:'建立習慣',en:'Habits'}]}],
+};
+// Library definitions
+const LIB=[
+  {id:'bench_press',name:'Bench Press',zh:'槓鈴臥推',cat:'chest',muscle:['Chest','Triceps','Shoulders'],equip:'Barbell',level:'Intermediate',dEn:'Lie flat, grip bar wider than shoulders, lower to chest and press up.',dZh:'平躺，握桿比肩略寬，下降至胸口再推起。',lib3d:'curl'},
+  {id:'inc_db',name:'Incline DB Press',zh:'啞鈴斜臥推',cat:'chest',muscle:['Upper Chest','Triceps'],equip:'Dumbbell',level:'Beginner',dEn:'Set bench 30–45°. Press dumbbells upward and slightly inward.',dZh:'調斜板至30–45度，向上及略向內推啞鈴。',lib3d:'curl'},
+  {id:'pec_deck',name:'Pec Deck Fly',zh:'蝴蝶機夾胸',cat:'chest',muscle:['Chest','Front Deltoid'],equip:'Machine',level:'Beginner',dEn:'Elbows at 90°. Bring handles together squeezing chest at peak.',dZh:'手肘90度，將把手夾合時用力收縮胸肌。',lib3d:'curl'},
+  {id:'lat_pd',name:'Lat Pulldown',zh:'滑輪下拉',cat:'back',muscle:['Lats','Biceps'],equip:'Cable',level:'Beginner',dEn:'Wide grip, lean back slightly, pull bar to upper chest.',dZh:'寬握，輕微後仰，將桿拉至胸口上方。',lib3d:'curl'},
+  {id:'sit_row',name:'Seated Row',zh:'坐姿划船',cat:'back',muscle:['Lats','Rhomboids','Biceps'],equip:'Cable',level:'Beginner',dEn:'Sit tall, pull handle to lower chest, squeeze back.',dZh:'挺直坐姿，將把手拉至下胸，同時夾緊背肌。',lib3d:'row'},
+  {id:'deadlift',name:'Deadlift',zh:'硬舉',cat:'back',muscle:['Lower Back','Glutes','Hamstrings'],equip:'Barbell',level:'Advanced',dEn:'Hinge at hips, flat back, drive through heels.',dZh:'從臀部開始屈曲，保持背部平直，用腳跟推地。',lib3d:'deadlift'},
+  {id:'pullup',name:'Pull-up',zh:'引體向上',cat:'back',muscle:['Lats','Biceps','Rear Delt'],equip:'Bodyweight',level:'Intermediate',dEn:'Hang from bar, pull chest to bar squeezing lats.',dZh:'懸掛在單槓上，將胸部拉至槓並夾緊背闊肌。',lib3d:'row'},
+  {id:'squat',name:'Barbell Squat',zh:'槓鈴深蹲',cat:'legs',muscle:['Quads','Glutes','Hamstrings'],equip:'Barbell',level:'Intermediate',dEn:'Bar on traps, sit back until thighs parallel, drive up.',dZh:'槓鈴置於斜方肌，坐下直至大腿平行地面，再站起。',lib3d:'squat'},
+  {id:'leg_press',name:'Leg Press',zh:'腿部推機',cat:'legs',muscle:['Quads','Glutes'],equip:'Machine',level:'Beginner',dEn:'Feet shoulder-width, lower until 90° knee, press through heels.',dZh:'雙腳與肩同寬，膝蓋彎至90度再推起。',lib3d:'lunge'},
+  {id:'leg_curl',name:'Leg Curl',zh:'腿部彎舉',cat:'legs',muscle:['Hamstrings'],equip:'Machine',level:'Beginner',dEn:'Lie prone, curl lower legs up squeezing hamstrings.',dZh:'俯臥，向上捲小腿，同時收縮腿後肌。',lib3d:'lunge'},
+  {id:'calf',name:'Calf Raise',zh:'提踵',cat:'legs',muscle:['Calves'],equip:'Machine',level:'Beginner',dEn:'Lower heels fully, rise onto toes squeezing calves.',dZh:'腳跟完全放低，再踮腳尖並收縮小腿。',lib3d:'lunge'},
+  {id:'ohp',name:'Overhead Press',zh:'頭頂推舉',cat:'shoulders',muscle:['Shoulders','Triceps'],equip:'Barbell',level:'Intermediate',dEn:'Press bar from chin height straight overhead, lock out arms.',dZh:'從下巴高度將槓鈴垂直向上推，手臂完全打直。',lib3d:'ohp'},
+  {id:'lat_raise',name:'Lateral Raise',zh:'側平舉',cat:'shoulders',muscle:['Side Deltoid'],equip:'Dumbbell',level:'Beginner',dEn:'Raise dumbbells to shoulder height with slight forward lean.',dZh:'輕微前傾，將啞鈴舉至肩膀高度。',lib3d:'ohp'},
+  {id:'facepull',name:'Face Pull',zh:'面拉',cat:'shoulders',muscle:['Rear Delt','Rotator Cuff'],equip:'Cable',level:'Beginner',dEn:'Pull rope to forehead with elbows high and wide.',dZh:'將繩索拉至額頭高度，保持手肘高而寬。',lib3d:'row'},
+  {id:'bb_curl',name:'Barbell Curl',zh:'槓鈴彎舉',cat:'arms',muscle:['Biceps','Forearms'],equip:'Barbell',level:'Beginner',dEn:'Curl bar to chin keeping elbows tucked at sides.',dZh:'手肘夾緊身旁，將槓鈴捲至下巴。',lib3d:'curl'},
+  {id:'skull',name:'Skull Crusher',zh:'仰臥三頭伸展',cat:'arms',muscle:['Triceps'],equip:'Barbell',level:'Intermediate',dEn:'Lower bar to forehead by bending only elbows, extend back up.',dZh:'只彎手肘將槓鈴降至額頭，再推回原位。',lib3d:'curl'},
+  {id:'hammer',name:'Hammer Curl',zh:'錘式彎舉',cat:'arms',muscle:['Biceps','Brachialis'],equip:'Dumbbell',level:'Beginner',dEn:'Neutral grip (thumbs up), curl alternating.',dZh:'中立握（拇指朝上），交替捲起。',lib3d:'curl'},
+  {id:'dip',name:'Dip',zh:'雙槓臂屈伸',cat:'arms',muscle:['Triceps','Chest'],equip:'Bodyweight',level:'Intermediate',dEn:'Lower until elbows at 90°, press up fully.',dZh:'下沉至手肘90度，完全推起。',lib3d:'ohp'},
+  {id:'plank',name:'Plank',zh:'平板支撐',cat:'core',muscle:['Core','Shoulders'],equip:'Bodyweight',level:'Beginner',dEn:'Forearms on floor, body straight head to heels. Brace abs.',dZh:'前臂撐地，身體從頭至腳保持一直線，收緊腹肌。',lib3d:'lunge'},
+  {id:'treadmill',name:'Treadmill Run',zh:'跑步機',cat:'cardio',muscle:['Full Body'],equip:'Machine',level:'Beginner',dEn:'Build pace gradually, land midfoot, slight forward lean.',dZh:'逐漸加速，以腳掌中部著地，輕微前傾。',lib3d:'lunge'},
+];
+const LIB_CATS=['all','chest','back','legs','shoulders','arms','core','cardio'];
+const LC={chest:'#ec4899',back:'#06b6d4',legs:'#22c55e',shoulders:'#a855f7',arms:'#f97316',core:'#eab308',cardio:'#f87171'};
+
+// ═══════════════ STATE ═══════════════
+let S={
+  lang:DB.get('lang','zh'),
+  tab:'today',
+  activeDay:WD[Math.min(4,Math.max(0,(new Date().getDay()+6)%7))],
+  profile:DB.get('profile',{weight:75,height:170,age:28,goalWeight:70}),
+  goalId:DB.get('goalId',null),
+  goalAnswers:DB.get('goalAnswers',{}),
+  weekTasks:DB.get('weekTasks',null),
+  customPlan:DB.get('customPlan',JSON.parse(JSON.stringify(DEFAULT_PLAN))),
+  logs:DB.get('logs',initLogs()),
+  history:DB.get('history',[]),
+  completedTasks:DB.get('completedTasks',{}),
+  scores:DB.get('scores',{total:0,weekly:0,weekStart:'',breakdown:{},history:[]}),
+  expandedHist:{},
+  histFilter:'ALL',
+  libSearch:'',libCat:'all',libSel:null,
+  lib3dEx:'squat',
+  savedWorkouts:DB.get('savedWorkouts',{}),
+  timerSec:null,timerMax:90,timerOn:false,timerEdit:false,timerInput:90,
+  bmiOpen:false,
+  obStep:0,obGoal:null,obAnswers:{},obQIdx:0,
+};
+let timerInt=null,viewer3d=null;
+
+function t(zh,en){return S.lang==='zh'?zh:en;}
+function sv(...keys){keys.forEach(k=>{if(k in S)DB.set(k,S[k]);else console.warn('sv: unknown key',k);});}
+
+function initLogs(){
+  const l={};
+  WD.forEach(d=>{l[d]={};(DEFAULT_PLAN[d]||[]).forEach(ex=>{if(EX[ex.id]&&!EX[ex.id].isCardio)l[d][ex.id]=Array.from({length:ex.sets},()=>({weight:0,reps:typeof ex.reps==='number'?ex.reps:12,done:false}));});});
+  return l;
+}
+function ensLogs(){
+  WD.forEach(d=>{
+    if(!S.logs[d])S.logs[d]={};
+    (S.customPlan[d]||[]).forEach(ex=>{if(EX[ex.id]&&!EX[ex.id].isCardio&&!S.logs[d][ex.id])S.logs[d][ex.id]=Array.from({length:ex.sets||3},()=>({weight:0,reps:typeof ex.reps==='number'?ex.reps:12,done:false}));});
+  });
+}
+
+// ═══════════════ SCORING ═══════════════
+function chkWeek(){
+  const now=new Date(),mon=new Date(now);
+  mon.setDate(now.getDate()-((now.getDay()+6)%7));mon.setHours(0,0,0,0);
+  const wk=mon.toISOString().slice(0,10);
+  if(S.scores.weekStart!==wk){
+    const h=S.scores.history||[];
+    if(S.scores.weekly>0)h.unshift({week:S.scores.weekStart||wk,score:S.scores.weekly,breakdown:{...S.scores.breakdown}});
+    S.scores={total:S.scores.total||0,weekly:0,weekStart:wk,breakdown:{},history:h.slice(0,12)};
+    sv('scores');
+  }
+}
+function addPts(type,muscle){
+  chkWeek();
+  const pts=SCORE_CFG[type]||0;if(!pts)return pts;
+  S.scores.total=(S.scores.total||0)+pts;
+  S.scores.weekly=(S.scores.weekly||0)+pts;
+  if(muscle){S.scores.breakdown=S.scores.breakdown||{};S.scores.breakdown[muscle]=(S.scores.breakdown[muscle]||0)+pts;}
+  sv('scores');return pts;
+}
+function grade(pct){
+  if(pct>=90)return{g:'S',c:'#fbbf24',bg:'rgba(251,191,36,.15)'};
+  if(pct>=70)return{g:'A',c:'#4ade80',bg:'rgba(74,222,128,.15)'};
+  if(pct>=50)return{g:'B',c:'#60a5fa',bg:'rgba(96,165,250,.15)'};
+  if(pct>=30)return{g:'C',c:'#f97316',bg:'rgba(249,115,22,.15)'};
+  return{g:'D',c:'#f87171',bg:'rgba(248,113,113,.15)'};
+}
+function getLevelXP(){const lvl=Math.floor(S.scores.total/LEVEL_XP);const xpInLevel=S.scores.total%LEVEL_XP;return{level:lvl+1,xp:xpInLevel,pct:Math.round(xpInLevel/LEVEL_XP*100)};}
+
+// ═══════════════ HELPERS ═══════════════
+function calcBMI(w,h){return +((w)/((h/100)**2)).toFixed(1);}
+function bmiLbl(b){if(b<18.5)return{zh:'過輕',en:'Underweight',c:'#60a5fa'};if(b<23)return{zh:'正常',en:'Normal',c:'#4ade80'};if(b<27.5)return{zh:'過重',en:'Overweight',c:'#facc15'};return{zh:'肥胖',en:'Obese',c:'#f87171'};}
+function tdee(w,h,a){return Math.round((10*w+6.25*h-5*a+5)*1.55);}
+function strLvl(id,w,bw){const s=STD[id];if(!s||!w||!bw)return null;const r=w/bw,ls=[t('新手','Beginner'),t('初級','Novice'),t('中級','Intermediate'),t('高級','Advanced')],cs=['#94a3b8','#60a5fa','#a78bfa','#4ade80'];if(r<s[0])return{l:ls[0],next:s[0],c:cs[0],p:Math.round(r/s[0]*100)};if(r<s[1])return{l:ls[1],next:s[1],c:cs[1],p:Math.round((r-s[0])/(s[1]-s[0])*100)};if(r<s[2])return{l:ls[2],next:s[2],c:cs[2],p:Math.round((r-s[1])/(s[2]-s[1])*100)};return{l:ls[3],next:null,c:cs[3],p:100};}
+function dSets(day){let d=0,tot=0;Object.values(S.logs[day]||{}).forEach(sets=>sets.forEach(s=>{tot++;if(s.done)d++;}));return{done:d,total:tot};}
+function getPR(id){const pts=[];S.history.forEach(s=>{const sets=s.sets&&s.sets[id];if(!sets)return;const mw=Math.max(...sets.map(s=>parseFloat(s.weight)||0));if(mw>0)pts.push({date:s.date,weight:mw});});pts.sort((a,b)=>a.date.localeCompare(b.date));let run=0;return pts.map(p=>{const isPR=p.weight>run;if(isPR)run=p.weight;return{...p,isPR};});}
+function genTasks(gId,ans,profile){
+  const w=profile.weight||75,h2=profile.height||170,a=profile.age||28;
+  const td=tdee(w,h2,a);const tasks={};
+  for(let i=0;i<7;i++){const dt=[];
+    if(gId==='lose_weight'){const app=ans.approach||'weights_cardio';if(app==='cardio_only'){if(i<5)dt.push({icon:'ti-run',zh:'有氧45分鐘',en:'Cardio 45 min',type:'cardio',pts:15});else dt.push({icon:'ti-zzz',zh:'休息',en:'Rest',type:'rest',pts:3});}else if(app==='weights_cardio'){if(i===0||i===2||i===4){dt.push({icon:'ti-barbell',zh:'力量訓練45分鐘',en:'Weight training 45 min',type:'strength',pts:15});dt.push({icon:'ti-run',zh:'HIIT有氧20分鐘',en:'HIIT 20 min',type:'cardio',pts:10});}else if(i===1||i===3)dt.push({icon:'ti-run',zh:'穩態有氧40分鐘',en:'Cardio 40 min',type:'cardio',pts:10});else dt.push({icon:'ti-zzz',zh:'休息/拉伸',en:'Rest/stretch',type:'rest',pts:3});}else{if(i<4)dt.push({icon:'ti-barbell',zh:'力量訓練60分鐘',en:'Weight training 60 min',type:'strength',pts:15});else dt.push({icon:'ti-zzz',zh:'休息',en:'Rest',type:'rest',pts:3});}dt.push({icon:'ti-droplet',zh:`飲水${(w*0.033).toFixed(1)}L`,en:`Drink ${(w*0.033).toFixed(1)}L`,type:'habit',pts:5});dt.push({icon:'ti-salad',zh:`蛋白質${Math.round(w*1.8)}g`,en:`Protein ${Math.round(w*1.8)}g`,type:'diet',pts:5});dt.push({icon:'ti-clipboard-list',zh:`卡路里${td-550}kcal`,en:`Calories ${td-550}kcal`,type:'diet',pts:5});if(i===6)dt.push({icon:'ti-scale',zh:'量體重並記錄',en:'Weigh in and log',type:'track',pts:8});}
+    else if(gId==='build_muscle'){const gym=parseInt(ans.gym_days||4);const gi=gym>=5?[0,1,2,3,4]:gym===4?[0,1,3,4]:gym===3?[0,2,4]:[0,3];const sp=[t('胸部','Chest'),t('背部','Back'),t('腿部','Legs'),t('肩膀','Shoulders'),t('手臂','Arms')];const gs=gi.indexOf(i);if(gs>=0){dt.push({icon:'ti-barbell',zh:`力量訓練—${sp[gs%sp.length]}`,en:`Train—${sp[gs%sp.length]}`,type:'strength',pts:15});dt.push({icon:'ti-run',zh:'熱身10分鐘',en:'Warm-up 10 min',type:'cardio',pts:5});}else dt.push({icon:'ti-zzz',zh:'主動恢復',en:'Active recovery',type:'rest',pts:5});dt.push({icon:'ti-salad',zh:`蛋白質${Math.round(w*2.0)}g`,en:`Protein ${Math.round(w*2.0)}g`,type:'diet',pts:5});dt.push({icon:'ti-clipboard-list',zh:`卡路里${td+400}kcal`,en:`Calories ${td+400}kcal`,type:'diet',pts:5});if(i===6)dt.push({icon:'ti-ruler',zh:'量體圍記錄',en:'Measure body',type:'track',pts:8});}
+    else{if(i<5)dt.push({icon:'ti-activity',zh:'運動30分鐘',en:'Exercise 30 min',type:'cardio',pts:10});else dt.push({icon:'ti-zzz',zh:'休息',en:'Rest',type:'rest',pts:3});dt.push({icon:'ti-droplet',zh:`飲水${(w*0.033).toFixed(1)}L`,en:`Drink ${(w*0.033).toFixed(1)}L`,type:'habit',pts:5});dt.push({icon:'ti-salad',zh:'5份蔬菜水果',en:'5 portions fruit & veg',type:'diet',pts:5});if(i===6)dt.push({icon:'ti-scale',zh:'量體重',en:'Weigh in',type:'track',pts:5});}
+    tasks[i]=dt;
+  }
+  return tasks;
+}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
+
+// ═══════════════ TIMER ═══════════════
+function startTimer(sec){clearInterval(timerInt);S.timerSec=sec;S.timerMax=sec;S.timerOn=true;timerInt=setInterval(()=>{if(S.timerSec>0){S.timerSec--;rHdr();}else{clearInterval(timerInt);S.timerOn=false;rHdr();}},1000);}
+function stopTimer(){clearInterval(timerInt);S.timerSec=null;S.timerOn=false;rHdr();}
+
+// ═══════════════ ONBOARDING ═══════════════
+function setLang(l){S.lang=l;DB.set('lang',l);S.obStep=1;S.obGoal=null;S.obAnswers={};S.obQIdx=0;showOb();}
+function showOb(){
+  document.querySelectorAll('.ob-step').forEach(e=>e.classList.remove('active'));
+  document.getElementById('ob'+S.obStep)?.classList.add('active');
+  updObT();if(S.obStep===1)rGoalGrid();if(S.obStep===2)rObQ();
+}
+function updObT(){
+  const zh=S.lang==='zh';
+  const e=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  e('ob1-sl',zh?'第1步，共3步':'Step 1 of 3');e('ob1-t',zh?'你想達成咩目標？':"What's your goal?");e('ob1-s',zh?'選擇最符合你需要嘅目標':'Choose the goal that fits you best');
+  e('ob2-sl',zh?'第2步，共3步':'Step 2 of 3');e('ob3-sl',zh?'第3步，共3步':'Step 3 of 3');
+  e('ob3-t',zh?'你的身體資料':'Your body stats');e('ob3-s',zh?'用於計算你的個性化目標':'Used to calculate your targets');
+  e('lw',zh?'體重 (kg)':'Weight (kg)');e('lh',zh?'身高 (cm)':'Height (cm)');e('la',zh?'年齡':'Age');e('lg',zh?'目標體重 (kg)':'Goal weight (kg)');
+  e('ob3-btn',zh?'開始訓練 →':'Start tracking →');e('ob-bk',zh?'← 返回':'← Back');
+}
+function rGoalGrid(){
+  const g=document.getElementById('goal-grid');g.innerHTML='';
+  GOALS.forEach(gd=>{
+    const c=document.createElement('div');c.className='goal-card-ob'+(S.obGoal===gd.id?' sel':'');
+    if(S.obGoal===gd.id){c.style.borderColor=gd.color;c.style.background=gd.bg;}
+    c.innerHTML=`<div style="width:32px;height:32px;border-radius:8px;background:${gd.bg};display:flex;align-items:center;justify-content:center;margin-bottom:7px"><i class="ti ${gd.icon}" style="font-size:17px;color:${gd.color}"></i></div><div style="font-size:12px;font-weight:700;color:${S.obGoal===gd.id?gd.color:'var(--text)'}">${t(gd.zh,gd.en)}</div>`;
+    c.onclick=()=>{S.obGoal=gd.id;S.obAnswers={};S.obQIdx=0;document.getElementById('ob1-next').disabled=false;rGoalGrid();};
+    g.appendChild(c);
+  });
+}
+function obGoalNext(){if(!S.obGoal)return;const qs=GQS[S.obGoal]||[];S.obQIdx=0;if(qs.length){S.obStep=2;showOb();}else{S.obStep=3;showOb();}}
+function rObQ(){
+  const qs=GQS[S.obGoal]||[];const q=qs[S.obQIdx];const gd=GOALS.find(g=>g.id===S.obGoal);
+  const body=document.getElementById('ob2-body');body.innerHTML='';
+  document.getElementById('ob2-q').textContent=q?t(q.zh,q.en):'';
+  if(!q)return;
+  if(q.type==='choice'){
+    q.opts.forEach(o=>{const c=document.createElement('div');c.className='sub-opt'+(S.obAnswers[q.id]===o.id?' sel':'');c.innerHTML=`<div style="font-size:13px;font-weight:600;color:${S.obAnswers[q.id]===o.id?'var(--text)':'var(--text2)'}">${t(o.zh,o.en)}</div>`;c.onclick=()=>{S.obAnswers[q.id]=o.id;rObQ();};body.appendChild(c);});
+  }else{
+    const cur=S.obAnswers[q.id]||q.def;
+    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:12px';
+    const inp=document.createElement('input');inp.type='number';inp.min=q.min;inp.max=q.max;inp.step=q.step;inp.value=cur;
+    inp.style.cssText='flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:9px 12px;font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;text-align:center';
+    inp.oninput=e=>{S.obAnswers[q.id]=e.target.value;slider.value=e.target.value;};
+    const u=document.createElement('span');u.style.cssText='font-size:14px;color:var(--text3);font-weight:600';u.textContent=q.unit||'';
+    row.append(inp,u);body.appendChild(row);
+    const slider=document.createElement('input');slider.type='range';slider.min=q.min;slider.max=q.max;slider.step=q.step;slider.value=cur;
+    slider.style.cssText=`accent-color:${gd?gd.color:'var(--accent)'}`;
+    slider.oninput=e=>{S.obAnswers[q.id]=e.target.value;inp.value=e.target.value;};
+    body.appendChild(slider);
+    if(!S.obAnswers[q.id])S.obAnswers[q.id]=q.def;
+  }
+  document.getElementById('ob2-next').textContent=S.obQIdx===(GQS[S.obGoal]||[]).length-1?t('繼續 →','Next →'):t('繼續 →','Next →');
+}
+function obQNext(){const qs=GQS[S.obGoal]||[];if(S.obQIdx<qs.length-1){S.obQIdx++;rObQ();}else{S.obStep=3;showOb();}}
+function obBack(){if(S.obStep===2&&S.obQIdx>0){S.obQIdx--;rObQ();}else if(S.obStep>1){S.obStep--;if(S.obStep<1)S.obStep=1;showOb();}}
+function finishOnboard(){
+  S.profile={weight:parseFloat(document.getElementById('inp-weight').value)||75,height:parseFloat(document.getElementById('inp-height').value)||170,age:parseFloat(document.getElementById('inp-age').value)||28,goalWeight:parseFloat(document.getElementById('inp-goalwt').value)||70};
+  S.goalId=S.obGoal;S.goalAnswers=S.obAnswers;
+  S.weekTasks=genTasks(S.obGoal,S.obAnswers,S.profile);
+  chkWeek();sv('profile','goalId','goalAnswers','weekTasks','scores');
+  document.getElementById('onboard').classList.add('hidden');
+  const app=document.getElementById('app');app.style.display='flex';app.style.flexDirection='column';
+  ensLogs();renderApp();
+}
+
+// ═══════════════ LEVEL UP ANIMATIONS ═══════════════
+const cv=document.getElementById('pc');
+const cx2=cv&&cv.getContext('2d');
+let parts=[];
+function resizePc(){if(!cv)return;cv.style.width='100%';cv.style.height='100%';cv.width=window.innerWidth;cv.height=window.innerHeight;}
+function spawnParts(x,y,color,n){if(!cx2)return;
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*6;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2.5,sz:2.5+Math.random()*4,color,life:1,dec:.014+Math.random()*.011});}
+  animParts();
+}
+function animParts(){if(!cx2)return;
+  cx2.clearRect(0,0,cv.width,cv.height);
+  parts=parts.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.life-=p.dec;cx2.globalAlpha=Math.max(0,p.life);cx2.fillStyle=p.color;cx2.beginPath();cx2.arc(p.x,p.y,p.sz,0,Math.PI*2);cx2.fill();return p.life>0;});
+  cx2.globalAlpha=1;if(parts.length)requestAnimationFrame(animParts);
+}
+function burstConfetti(){resizePc();const bx=window.innerWidth/2,by=window.innerHeight*.35;const cols=['#c8f060','#4ade80','#60a5fa','#fbbf24','#f97316','#ec4899','#a78bfa','#fff'];
+  for(let i=0;i<65;i++){const a=Math.random()*Math.PI*2,s=3+Math.random()*9,color=cols[Math.floor(Math.random()*cols.length)];parts.push({x:bx,y:by,vx:Math.cos(a)*s,vy:Math.sin(a)*s-5,sz:3+Math.random()*5,color,life:1,dec:.009+Math.random()*.007});}
+  animParts();
+}
+function showLvlUp(title,sub,isLvl){
+  if(isLvl){const lxi=getLevelXP();document.getElementById('lv-num').textContent=lxi.level;}
+  else document.getElementById('lv-num').textContent=title==='Day'?'✓':'🏆';
+  document.getElementById('lv-title').textContent=title;
+  document.getElementById('lv-sub').textContent=sub;
+  document.getElementById('lv-xp-bar').style.width='0';
+  const lxi=getLevelXP();document.getElementById('lv-xp-lbl').textContent=lxi.xp+' / '+LEVEL_XP+' XP';
+  const overlay=document.getElementById('lv-overlay');const card=document.getElementById('lv-card');
+  card.classList.remove('pop');overlay.classList.add('show');
+  setTimeout(()=>{card.classList.add('pop');burstConfetti();setTimeout(()=>{document.getElementById('lv-xp-bar').style.width=lxi.pct+'%';},450);},60);
+}
+function dismissLvl(){
+  const overlay=document.getElementById('lv-overlay');const card=document.getElementById('lv-card');
+  card.classList.remove('pop');setTimeout(()=>overlay.classList.remove('show'),350);
+  renderApp();
+}
+
+// ═══════════════ RENDER ENGINE ═══════════════
+function renderApp(){chkWeek();rHdr();rNav();rContent();}
+function rHdr(){
+  const hdr=document.getElementById('app-header');if(!hdr)return;
+  const bmi=calcBMI(S.profile.weight,S.profile.height);const bi=bmiLbl(bmi);
+  const lxi=getLevelXP();
+  let h=`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:7px">
+    <div style="min-width:0;flex:1">
+      <div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600">${new Date().toLocaleDateString(S.lang==='zh'?'zh-HK':'en-GB',{weekday:'long',month:'short',day:'numeric'})}</div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.02em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${getTabTitle()}</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:flex-start;flex-shrink:0;margin-left:8px">
+      <button onclick="toggleLang()" style="background:var(--bg1);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#60a5fa">${S.lang==='zh'?'EN':'中'}</button>
+      <div onclick="toggleBMI()" style="background:var(--bg1);border:1px solid ${S.bmiOpen?'#2a3d55':'var(--border)'};border-radius:9px;padding:5px 10px;text-align:center;cursor:pointer">
+        <div style="font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600">BMI</div>
+        <div style="font-size:14px;font-weight:800;color:${bi.c};font-family:'JetBrains Mono',monospace">${bmi}</div>
+        <div style="font-size:8px;color:${bi.c};font-weight:600">${t(bi.zh,bi.en)}</div>
+      </div>
+      <div onclick="switchTab('score')" style="background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:5px 10px;text-align:center;cursor:pointer;min-width:50px">
+        <div style="font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600">Lv ${lxi.level}</div>
+        <div style="font-size:14px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace">${S.scores.weekly}</div>
+        <div style="font-size:8px;color:var(--text3)">pts</div>
+      </div>
+    </div>
+  </div>`;
+  if(S.bmiOpen){
+    const hw=Math.round(18.5*(S.profile.height/100)**2),hh=Math.round(22.9*(S.profile.height/100)**2);
+    const pct=Math.min(97,Math.max(2,((bmi-15)/25)*100));
+    h+=`<div style="background:var(--bg1);border:1px solid var(--border2);border-radius:11px;padding:11px;margin-bottom:7px">
+      <div style="display:flex;gap:7px;margin-bottom:9px">
+        <div style="flex:1"><div style="font-size:9px;color:var(--text3);font-weight:600;margin-bottom:4px">${t('體重','Weight')} (kg)</div><input type="number" step=".1" value="${S.profile.weight}" onchange="upProfile('weight',this.value)" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:12px;width:100%;text-align:center"/></div>
+        <div style="flex:1"><div style="font-size:9px;color:var(--text3);font-weight:600;margin-bottom:4px">${t('身高','Height')} (cm)</div><input type="number" step="1" value="${S.profile.height}" onchange="upProfile('height',this.value)" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:12px;width:100%;text-align:center"/></div>
+      </div>
+      <div style="position:relative;margin-bottom:5px"><div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#60a5fa 0%,#4ade80 30%,#facc15 60%,#f87171 100%);margin-bottom:6px"></div><div style="position:absolute;top:-2px;left:${pct}%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid ${bi.c}"></div><div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3)"><span>15</span><span>18.5</span><span>23</span><span>27.5</span><span>40</span></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px">
+        <div style="background:var(--bg2);border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${t('健康範圍','Healthy range')}</div><div style="font-size:11px;font-weight:700;color:#4ade80;font-family:'JetBrains Mono',monospace">${hw}–${hh}kg</div></div>
+        <div style="background:var(--bg2);border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${t('仍需減','To lose')}</div><div style="font-size:11px;font-weight:700;color:#f87171;font-family:'JetBrains Mono',monospace">${Math.max(0,+(S.profile.weight-S.profile.goalWeight).toFixed(1))}kg</div></div>
+      </div>
+    </div>`;
+  }
+  if(S.timerSec!==null){
+    const pct2=Math.round((S.timerSec/S.timerMax)*100);const tc=S.timerSec>30?'#4ade80':S.timerSec>10?'#facc15':'#f87171';
+    const mm=String(Math.floor(S.timerSec/60)).padStart(2,'0'),ss=String(S.timerSec%60).padStart(2,'0');
+    if(S.timerEdit){
+      h+=`<div style="background:var(--bg1);border:1px solid var(--border2);border-radius:10px;padding:9px 11px;margin-bottom:7px;display:flex;align-items:center;gap:9px">
+        <div style="flex:1"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:5px">${t('設定休息時間','Set rest time')}</div>
+        <input type="range" min="15" max="300" step="15" value="${S.timerInput}" oninput="S.timerInput=parseInt(this.value);rHdr()" style="width:100%;margin-bottom:5px"/>
+        <div style="display:flex;justify-content:space-between;gap:3px">${[30,60,90,120,180,300].map(v=>`<button onclick="S.timerInput=${v};rHdr()" style="flex:1;background:${S.timerInput===v?'var(--text)':'var(--bg2)'};border:1px solid var(--border2);border-radius:5px;padding:2px 0;font-size:9px;color:${S.timerInput===v?'var(--bg)':'var(--text3)'};cursor:pointer;font-family:'JetBrains Mono',monospace">${v<60?v+'s':v/60+'m'}</button>`).join('')}</div></div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          <button onclick="startTimer(S.timerInput)" style="background:#22c55e;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;color:#fff;cursor:pointer">${t('確定','OK')}</button>
+          <button onclick="S.timerEdit=false;rHdr()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text3);cursor:pointer">${t('取消','Cancel')}</button>
+        </div>
+      </div>`;
+    }else{
+      h+=`<div style="background:var(--bg1);border:1px solid var(--border2);border-radius:10px;padding:8px 11px;margin-bottom:7px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:4px">${S.timerSec>0?t('休息計時','Rest timer'):t('⚡ 開始！','⚡ Go!')}</div><div class="prog-track"><div class="prog-fill" style="width:${pct2}%;background:${tc};transition:width 1s linear,background .5s"></div></div></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${S.timerSec>0?'var(--text)':tc};min-width:48px;text-align:right">${mm}:${ss}</div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <button onclick="S.timerEdit=true;rHdr()" style="background:transparent;border:1px solid var(--border2);border-radius:5px;padding:3px 6px;font-size:11px;color:var(--text3);cursor:pointer">⚙</button>
+          <button onclick="stopTimer()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 5px">×</button>
+        </div>
+      </div>`;
+    }
+  }
+  hdr.innerHTML=h;
+}
+function getTabTitle(){
+  const plan=S.customPlan[S.activeDay]||[];
+  if(S.tab==='today'){const lbl=PL[S.activeDay];return plan.length?`${S.activeDay} · ${t(lbl.zh,lbl.en)}`:S.activeDay;}
+  if(S.tab==='tasks')return t('每週任務','Weekly Tasks');
+  if(S.tab==='score')return t('計分板','Score Board');
+  if(S.tab==='library')return t('動作庫','Exercise Library');
+  if(S.tab==='profile')return t('個人資料','Profile');
+  return '';
+}
+function rNav(){
+  const nav=document.getElementById('nav-bar');if(!nav)return;
+  const tabs=[{id:'today',icon:'ti-bolt',zh:'今日',en:'Today'},{id:'tasks',icon:'ti-checklist',zh:'任務',en:'Tasks'},{id:'score',icon:'ti-trophy',zh:'計分',en:'Score'},{id:'library',icon:'ti-3d-cube-sphere',zh:'動作庫',en:'Library'},{id:'profile',icon:'ti-user',zh:'資料',en:'Me'}];
+  nav.innerHTML=tabs.map(tb=>`<button class="nav-btn${S.tab===tb.id?' active':''}" onclick="switchTab('${tb.id}')"><i class="ti ${tb.icon}"></i>${t(tb.zh,tb.en)}</button>`).join('');
+}
+function switchTab(id){
+  if(S.tab==='library'&&id!=='library'&&v3.renderer){
+    if(v3.animFrame)cancelAnimationFrame(v3.animFrame);v3.animFrame=null;
+    v3.renderer.dispose();v3.renderer=null;
+  }
+  S.tab=id;rHdr();rNav();rContent();
+}
+function rContent(){
+  const c=document.getElementById('app-content');if(!c)return;
+  c.innerHTML='';c.className='fade-up';
+  if(S.tab==='today')c.innerHTML=rToday();
+  else if(S.tab==='tasks')c.innerHTML=rTasks();
+  else if(S.tab==='score')c.innerHTML=rScore();
+  else if(S.tab==='library'){rLibrary(c);return;}
+  else c.innerHTML=rProfile();
+  if(S.tab==='score')setTimeout(animMBars,80);
+}
+
+// ═══════════════ TODAY TAB ═══════════════
+function rToday(){
+  const plan=S.customPlan[S.activeDay]||[];const dayColor=PC[S.activeDay];
+  let h=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:11px">`;
+  WD.forEach(d=>{const{done,total}=dSets(d);const active=S.activeDay===d;h+=`<button class="pill${active?' active':''}" style="${active?'background:'+PC[d]+';border-color:'+PC[d]:''}" onclick="S.activeDay='${d}';rContent()">${d}${done>0?` ·${done}/${total}`:''}</button>`;});
+  h+='</div>';
+  if(!plan.length){h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:22px;text-align:center;margin-bottom:9px"><i class="ti ti-moon" style="font-size:28px;color:var(--text3);display:block;margin-bottom:7px"></i><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:5px">${t('休息日 💤','Rest Day 💤')}</div><div style="font-size:11px;color:var(--text3)">${t('好好恢復，明天繼續！','Recover well — back at it tomorrow!')}</div></div>`;return h+'<div style="padding-bottom:14px"></div>';}
+  plan.forEach(entry=>{
+    const ex=EX[entry.id];if(!ex)return;
+    if(ex.isCardio){
+      const ci=plan.indexOf(entry);const cd=!!S.logs[S.activeDay]['__cardio__'+entry.id];
+      h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:8px;margin-bottom:7px;opacity:${cd?.7:1}">
+        <button class="btn-check${cd?' done':''}" onclick="togCardio('${S.activeDay}','${entry.id}')" style="${cd?'background:var(--accent);border-color:var(--accent);color:#080c14':''}">${cd?'✓':'○'}</button>
+        <i class="ti ti-run" style="font-size:16px;color:var(--text3)"></i>
+        <div style="flex:1"><div style="font-size:12px;font-weight:600;color:${cd?'var(--text3)':'var(--text3)'}">${t(ex.zh,ex.en)}</div><div style="font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace">${entry.reps} ${t('分鐘','min')}</div></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <button onclick="moveEx('${S.activeDay}',${ci},-1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1" title="Move up">↑</button>
+          <button onclick="moveEx('${S.activeDay}',${ci},1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1" title="Move down">↓</button>
+        </div>
+        <button onclick="removeFromPlan('${S.activeDay}',${ci})" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 2px;line-height:1">×</button>
+      </div>`;return;}
+    const sets=S.logs[S.activeDay]?.[entry.id]||[];
+    const done=sets.filter(s=>s.done).length;const vol=sets.reduce((a,s)=>a+(s.done?(parseFloat(s.weight)||0)*(parseFloat(s.reps)||0):0),0);
+    const maxW=Math.max(...sets.map(s=>parseFloat(s.weight)||0),0);const sl=strLvl(entry.id,maxW,S.profile.weight);
+    const prH=getPR(entry.id);const allPR=prH.length?Math.max(...prH.map(p=>p.weight)):0;
+    const si=plan.indexOf(entry);
+    h+=`<div class="card"><div style="padding:10px 12px 7px;border-left:3px solid ${dayColor};display:flex;align-items:flex-start;gap:6px"><div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-top:2px"><button onclick="moveEx('${S.activeDay}',${si},-1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">↑</button><button onclick="moveEx('${S.activeDay}',${si},1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">↓</button></div><div style="flex:1">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:13px;font-weight:700">${t(ex.zh,ex.en)}</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          ${maxW>0&&maxW>allPR?`<span style="font-size:9px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fef08a;border-radius:5px;padding:2px 6px;font-weight:700">🏆 PR!</span>`:''}
+          <button onclick="event.stopPropagation();removeFromPlan('${S.activeDay}',${plan.indexOf(entry)})" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 3px;line-height:1">×</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+        <span class="stat-pill">✓ ${done}/${entry.sets||5}</span>
+        ${vol>0?`<span class="stat-pill">⚡ ${Math.round(vol).toLocaleString()}kg</span>`:''}
+        ${maxW>0?`<span class="stat-pill">↑ ${maxW}kg</span>`:''}
+        ${allPR>0?`<span class="stat-pill" style="color:#fbbf24">PR ${allPR}kg</span>`:''}
+      </div>
+      ${sl?`<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${t('力量等級','Strength')}</span><span style="font-size:10px;color:${sl.c};font-weight:700">${sl.l}</span></div><div style="height:3px;background:var(--border2);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;width:${sl.p}%;background:${sl.c}"></div></div>${sl.next?`<div style="font-size:9px;color:var(--text3);margin-top:2px">→ ${t('下一級需','Next level')} ${Math.round(sl.next*S.profile.weight)}kg</div>`:''}</div>`:''}
+    </div></div><div style="padding:3px 12px 10px">
+      <div style="display:grid;grid-template-columns:18px 1fr 1fr 30px;gap:5px;padding-bottom:4px">${['#',t('KG','KG'),t('次','Reps'),''].map(l=>`<div style="font-size:8px;color:var(--text4);text-align:center;letter-spacing:.1em;text-transform:uppercase">${l}</div>`).join('')}</div>`;
+    sets.forEach((s,i)=>{h+=`<div style="display:grid;grid-template-columns:18px 1fr 1fr 30px;gap:5px;align-items:center;padding:3px 0;opacity:${s.done?.7:1}">
+      <div style="font-size:9px;color:${s.done?dayColor:'var(--text4)'};text-align:center;font-family:'JetBrains Mono',monospace">${i+1}</div>
+      <input type="number" class="num-in${s.done?' done':''}" value="${s.weight}" ${s.done?'disabled':''} onchange="upSet('${S.activeDay}','${entry.id}',${i},'weight',this.value)" style="border-color:${s.done?dayColor:'var(--border2)'};color:${s.done?dayColor:'var(--text)'}"/>
+      <input type="number" class="num-in${s.done?' done':''}" value="${s.reps}" ${s.done?'disabled':''} onchange="upSet('${S.activeDay}','${entry.id}',${i},'reps',this.value)" style="border-color:${s.done?dayColor:'var(--border2)'};color:${s.done?dayColor:'var(--text)'}"/>
+      <button class="btn-check${s.done?' done':''}" onclick="togSet('${S.activeDay}','${entry.id}',${i})" style="${s.done?'background:'+dayColor+';border-color:'+dayColor+';color:#080c14':''}">${s.done?'✓':'○'}</button>
+    </div>`;});
+    h+='</div></div>';
+  });
+  const{done}=dSets(S.activeDay);
+  if(done>0){
+    const today2=new Date().toISOString().slice(0,10);
+    const lockKey2='saved_'+today2+'_'+S.activeDay;
+    const alreadySaved=S.savedWorkouts&&S.savedWorkouts[lockKey2];
+    h+=`<button class="btn-ghost" onclick="saveWorkout()" style="margin-bottom:4px;${alreadySaved?'color:var(--accent);border-color:var(--accent);opacity:.7;cursor:default':''}" ${alreadySaved?'disabled':''}>
+      ${alreadySaved?'✓ '+t('已儲存','Saved today'):t('完成訓練並儲存 ✓','Finish & save ✓')}
+    </button>`;
+  }
+  h+=`<button class="btn-ghost" onclick="switchTab('library')" style="margin-bottom:14px;margin-top:5px"><i class="ti ti-plus" style="vertical-align:-2px;font-size:14px;margin-right:4px"></i>${t('管理動作','Manage exercises')}</button>`;
+  return h;
+}
+function togSet(day,id,idx){
+  S.logs[day][id][idx].done=!S.logs[day][id][idx].done;
+  if(S.logs[day][id][idx].done){
+    const ex=EX[id];const muscle=ex?ex.muscle:null;
+    const pts=addPts('set_done',muscle);
+    const w=parseFloat(S.logs[day][id][idx].weight)||0;
+    const prH=getPR(id);const allPR=prH.length?Math.max(...prH.map(p=>p.weight)):0;
+    if(w>0&&w>allPR){addPts('pr_broken',muscle);toast('🏆 '+t('新PR！+25分','New PR! +25pts'));}
+    else toast(`+${pts} pts`);
+    startTimer(S.timerMax);
+    // Check level up
+    const prevLvl=Math.floor((S.scores.total-pts)/LEVEL_XP);const newLvl=Math.floor(S.scores.total/LEVEL_XP);
+    if(newLvl>prevLvl)setTimeout(()=>showLvlUp(t('升級！','Level Up!'),t('你越來越強！繼續保持！','You\'re getting stronger!'),true),700);
+  }
+  sv('logs');rContent();rHdr();
+}
+function upSet(day,id,idx,field,val){S.logs[day][id][idx][field]=parseFloat(val)||val;sv('logs');}
+function saveWorkout(){
+  const today=new Date().toISOString().slice(0,10);
+  const lockKey='saved_'+today+'_'+S.activeDay;
+  if(S.savedWorkouts&&S.savedWorkouts[lockKey]){toast(t('今日已儲存過喇！','Already saved today!'));return;}
+  const{done}=dSets(S.activeDay);if(!done){toast(t('未有完成任何組數','No sets completed yet'));return;}
+  const sess={date:today,day:S.activeDay,sets:{}};
+  Object.entries(S.logs[S.activeDay]).forEach(([n,sets])=>{if(sets.some(s=>s.done))sess.sets[n]=sets;});
+  S.history=S.history.filter(h=>!(h.date===today&&h.day===S.activeDay));S.history.push(sess);
+  if(!S.savedWorkouts)S.savedWorkouts={};
+  S.savedWorkouts[lockKey]=true;
+  addPts('workout_saved',null);sv('history','savedWorkouts');
+  // Also auto-tick today's strength tasks
+  const todayIdx=new Date().getDay()===0?6:new Date().getDay()-1;
+  if(S.weekTasks&&S.weekTasks[todayIdx]){
+    S.weekTasks[todayIdx].forEach((task,ti)=>{
+      const key=todayIdx+'-'+ti;
+      if(!S.completedTasks[key]&&(task.type==='strength'||task.type==='cardio')){
+        S.completedTasks[key]=true;addPts('task_done',null);
+      }
+    });sv('completedTasks');
+  }
+  toast(t('訓練已儲存！+15分','Workout saved! +15pts'));rContent();rHdr();
+}
+
+// ═══════════════ TASKS TAB ═══════════════
+function rTasks(){
+  const gd=S.goalId?GOALS.find(g=>g.id===S.goalId):null;
+  const todayIdx=new Date().getDay()===0?6:new Date().getDay()-1;
+  const dayKey=WD[todayIdx];
+  const lxi=getLevelXP();
+  const tc2={habit:'#06b6d4',diet:'#f97316',track:'#60a5fa',rest:'#94a3b8'};
+
+  // Build today's habit tasks from profile + goal
+  const habitTasks=[
+    {id:'water',icon:'ti-droplet',zh:`飲水 ${(S.profile.weight*0.033).toFixed(1)}L`,en:`Drink ${(S.profile.weight*0.033).toFixed(1)}L water`,type:'habit',pts:5},
+    {id:'protein',icon:'ti-salad',zh:`蛋白質攝取 ${Math.round(S.profile.weight*1.8)}g`,en:`Hit ${Math.round(S.profile.weight*1.8)}g protein`,type:'diet',pts:5},
+    {id:'sleep',icon:'ti-moon',zh:'10:30前入睡 (7-9小時)',en:'In bed by 10:30pm (7-9h sleep)',type:'habit',pts:5},
+    {id:'steps',icon:'ti-walk',zh:'每日步行 8,000 步',en:'Walk 8,000 steps today',type:'habit',pts:5},
+  ];
+  if(todayIdx===6)habitTasks.push({id:'weigh',icon:'ti-scale',zh:'量體重並記錄（早上空腹）',en:'Weigh in and log (morning, fasted)',type:'track',pts:8});
+
+  const doneHabits=habitTasks.filter((_,i)=>S.completedTasks['h-today-'+habitTasks[i].id+'-'+todayIdx]).length;
+  const pct=Math.round(doneHabits/habitTasks.length*100);
+
+  // Training summary for today
+  const planExes=(S.customPlan[dayKey]||[]).filter(e=>EX[e.id]&&!EX[e.id].isCardio);
+  const planCardio=(S.customPlan[dayKey]||[]).filter(e=>EX[e.id]&&EX[e.id].isCardio);
+  const todaySets=Object.values(S.logs[dayKey]||{}).reduce((a,sets)=>a+(Array.isArray(sets)?sets.filter(s=>s.done).length:0),0);
+  const todayCardio=planCardio.filter(e=>S.logs[dayKey]&&S.logs[dayKey]['__cardio__'+e.id]).length;
+
+  let h=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <div style="font-size:16px;font-weight:800">${new Date().toLocaleDateString(S.lang==='zh'?'zh-HK':'en-GB',{weekday:'long'})}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${t('今日任務','Today's tasks')}</div>
+      </div>
+      ${gd?`<div style="display:inline-flex;align-items:center;gap:5px;background:${gd.bg};border-radius:99px;padding:3px 10px"><i class="ti ${gd.icon}" style="color:${gd.color};font-size:12px"></i><span style="font-size:10px;font-weight:700;color:${gd.color}">${t(gd.zh,gd.en)}</span></div>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">
+      <div style="background:var(--bg2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${t('習慣完成','Habits')}</div><div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent)">${pct}%</div><div style="font-size:9px;color:var(--text3)">${doneHabits}/${habitTasks.length}</div></div>
+      <div style="background:var(--bg2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${t('訓練組數','Sets done')}</div><div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#8b5cf6">${todaySets}</div></div>
+      <div style="background:var(--bg2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${t('等級','Level')}</div><div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent)">${lxi.level}</div></div>
+    </div>
+    <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${gd?gd.color:'var(--accent)'}"></div></div>
+  </div>`;
+
+  // Habit tasks
+  h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:8px">${t('每日習慣任務','Daily Habit Tasks')}</div>`;
+  habitTasks.forEach(task=>{
+    const key='h-today-'+task.id+'-'+todayIdx;
+    const dn=!!S.completedTasks[key];
+    h+=`<div class="task-item">
+      <div class="task-check${dn?' done':''}" onclick="togHabitTask('${key}',${task.pts})"><i class="ti ${dn?'ti-check':'ti-circle'}" style="font-size:${dn?10:12}px;color:${dn?'#080c14':'var(--text4)'}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:${dn?'var(--text3)':'var(--text)'};${dn?'text-decoration:line-through':''};line-height:1.35;display:flex;align-items:center;gap:6px"><i class="ti ${task.icon}" style="font-size:14px;color:${tc2[task.type]||'var(--text3)'}"></i>${t(task.zh,task.en)}</div>
+        <div style="display:flex;gap:5px;margin-top:2px"><span style="font-size:8px;font-weight:700;padding:1px 6px;border-radius:99px;background:${tc2[task.type]||'var(--text3)'}20;color:${tc2[task.type]||'var(--text3)'}">${task.type.toUpperCase()}</span><span style="font-size:8px;color:${dn?'var(--accent)':'var(--text4)'}">+${task.pts}pts</span></div>
+      </div>
+    </div>`;
+  });
+  h+='</div>';
+
+  // Training summary card (link to today tab)
+  if(planExes.length||planCardio.length){
+    h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:8px">${t('今日訓練','Today's Training')}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${planExes.map(e=>t(EX[e.id]?.zh||e.id,EX[e.id]?.en||e.id)).join(' · ')}</div>
+      <button onclick="switchTab('today')" style="background:var(--accent);color:#080c14;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%">${t('去今日訓練頁 →','Go to Today's Workout →')}</button>
+    </div>`;
+  }
+
+  return h+'<div style="padding-bottom:14px"></div>';
+}
+function togHabitTask(key,pts){
+  const wasDone=!!S.completedTasks[key];S.completedTasks[key]=!wasDone;
+  if(!wasDone){addPts('task_done',null);toast('+'+pts+' pts');}
+  sv('completedTasks');rContent();rHdr();
+}
+
+// ═══════════════ SCORE TAB ═══════════════
+function rScore(){
+  const lxi=getLevelXP();const weekly=S.scores.weekly||0;const total=S.scores.total||0;
+  const weekGrade=grade(Math.min(100,Math.round(weekly/3)));
+  const dayScores=WD.map(d=>({day:d,pts:S.scores.breakdown?.[d]||0,color:PC[d]}));
+  const maxDayPts=Math.max(...dayScores.map(d=>d.pts),1);
+  const ms=Object.entries(MUSCLE_MAP).map(([id,cfg])=>{const raw=S.scores.breakdown?.[id]||0;const pct=Math.min(100,Math.round(raw/Math.max(cfg.target,1)*100));return{id,label:t(cfg.label.zh,cfg.label.en),color:cfg.color,pct,raw,gr:grade(pct)};});
+
+  let h=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:13px;padding:13px;margin-bottom:9px;display:flex;align-items:center;gap:12px">
+    <div style="width:64px;height:64px;border-radius:50%;background:${weekGrade.bg};border:2px solid ${weekGrade.c};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="font-size:22px;font-weight:800;color:${weekGrade.c}">${weekGrade.g}</div>
+      <div style="font-size:7px;color:${weekGrade.c};font-weight:600;letter-spacing:.08em">${t('本週','WEEK')}</div>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:3px">${t('本週積分','Weekly Score')}</div>
+      <div style="font-size:26px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent)">${weekly}<span style="font-size:11px;color:var(--text3);margin-left:3px">pts</span></div>
+      <div style="font-size:10px;color:var(--text3)">Lv ${lxi.level} · ${lxi.xp}/${LEVEL_XP} XP · Total: ${total.toLocaleString()}</div>
+      <div class="prog-track" style="margin-top:5px"><div class="prog-fill" style="width:${lxi.pct}%;background:var(--accent)"></div></div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:9px">${t('積分規則','How to earn points')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${[{icon:'ti-check',l:t('完成每組','Complete a set'),pts:SCORE_CFG.set_done},{icon:'ti-checklist',l:t('完成任務','Complete task'),pts:SCORE_CFG.task_done},{icon:'ti-trophy',l:t('破個人紀錄','Break a PR'),pts:SCORE_CFG.pr_broken},{icon:'ti-device-floppy',l:t('儲存訓練','Save session'),pts:SCORE_CFG.workout_saved}].map(r=>`<div style="background:var(--bg2);border-radius:8px;padding:8px;display:flex;align-items:center;gap:6px"><i class="ti ${r.icon}" style="font-size:15px;color:var(--accent)"></i><div><div style="font-size:10px;color:var(--text2);line-height:1.3">${r.l}</div><div style="font-size:11px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace">+${r.pts} pts</div></div></div>`).join('')}
+    </div>
+  </div>
+
+  <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:5px">${t('肌肉群訓練覆蓋率','Muscle Group Coverage')}</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:10px">${t('根據本週完成嘅訓練積分計算','Based on sets and tasks completed this week')}</div>
+    ${ms.map(m=>`<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+      <div class="grade-dot" style="background:${m.gr.bg};color:${m.gr.c}">${m.gr.g}</div>
+      <div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text)">${m.label}</span><span style="font-size:10px;color:${m.color};font-weight:600">${m.pct}%</span></div>
+        <div class="mb-track"><div class="mb-fill" id="mb-${m.id}" style="width:0%;background:${m.color}"></div></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">${m.raw} pts earned</div>
+      </div>
+    </div>`).join('')}
+  </div>
+
+  <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px">${t('每日積分','Daily Points')}</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:4px;height:72px">
+      ${dayScores.map(({day,pts,color})=>{const bh=Math.max(4,Math.round((pts/maxDayPts)*62));return`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1"><div style="font-size:8px;font-weight:700;color:${pts>0?color:'var(--text4)'};font-family:'JetBrains Mono',monospace;min-height:12px">${pts>0?pts:''}</div><div style="width:100%;background:${pts>0?color:'var(--border2)'};border-radius:3px 3px 0 0;height:${bh}px;opacity:${pts>0?1:.3}"></div><div style="font-size:8px;color:${pts>0?'var(--text2)':'var(--text4)'};font-weight:600">${day}</div></div>`;}).join('')}
+    </div>
+  </div>`;
+
+  if((S.scores.history||[]).length>0){
+    h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:9px">${t('歷史週數','Past Weeks')}</div>`;
+    S.scores.history.slice(0,5).forEach((wk,i)=>{const g2=grade(Math.min(100,Math.round(wk.score/3)));h+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:${i===0?'none':'1px solid var(--border)'}"><div style="display:flex;align-items:center;gap:7px"><div class="grade-dot" style="background:${g2.bg};color:${g2.c}">${g2.g}</div><div style="font-size:11px;color:var(--text2)">${t('週','Wk ')}${wk.week}</div></div><div style="font-size:12px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace">${wk.score} pts</div></div>`;});
+    h+='</div>';
+  }
+  return h+'<div style="padding-bottom:14px"></div>';
+}
+function animMBars(){
+  Object.entries(MUSCLE_MAP).forEach(([id,cfg])=>{const raw=S.scores.breakdown?.[id]||0;const pct=Math.min(100,Math.round(raw/Math.max(cfg.target,1)*100));const el=document.getElementById('mb-'+id);if(el)setTimeout(()=>el.style.width=pct+'%',40);});
+}
+
+// ═══════════════ LIBRARY + 3D VIEWER ═══════════════
+function rLibrary(container){
+  // Three.js loaded from head
+  const filtered=LIB.filter(ex=>{
+    const mc=S.libCat==='all'||ex.cat===S.libCat;
+    const q=S.libSearch.toLowerCase();
+    const ms=!q||ex.name.toLowerCase().includes(q)||ex.zh.includes(q)||ex.muscle.some(m=>m.toLowerCase().includes(q));
+    return mc&&ms;
+  });
+  let h=`<div style="position:relative;margin-bottom:9px"><i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3)"></i><input type="text" value="${S.libSearch}" oninput="S.libSearch=this.value;S.libSel=null;rLibrary(document.getElementById('app-content'))" placeholder="${t('搜尋動作...','Search exercises...')}" style="width:100%;padding:8px 11px 8px 32px;border-radius:10px;border:1px solid var(--border2);background:var(--bg1);color:var(--text);font-size:12px"/></div>
+  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:3px;margin-bottom:10px">`;
+  LIB_CATS.forEach(c=>{const col=LC[c]||'var(--text)';const active=S.libCat===c;h+=`<button class="spill${active?' active':''}" style="${active?'background:'+col+';border-color:'+col:''}" onclick="S.libCat='${c}';S.libSel=null;rLibrary(document.getElementById('app-content'))">${c==='all'?t('全部','All'):c.charAt(0).toUpperCase()+c.slice(1)}</button>`;});
+  h+='</div>';
+  if(!filtered.length)h+=`<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">${t('找不到動作','No exercises found')}</div>`;
+  else filtered.forEach(ex=>{
+    const col=LC[ex.cat]||'var(--text)';const isA=S.libSel===ex.id;
+    const inPlan=WD.some(d=>(S.customPlan[d]||[]).some(e=>e.id===ex.id));
+    h+=`<div class="ex-lib-card${isA?' active':''}" onclick="selLibEx('${ex.id}')">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:7px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px">${t(ex.zh,ex.name)}</div>
+          <div style="display:flex;gap:3px;flex-wrap:wrap">
+            <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:${col}18;color:${col};font-weight:600">${ex.cat}</span>
+            <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:var(--bg2);color:var(--text3)">${ex.equip}</span>
+            <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:var(--bg2);color:${ex.level==='Beginner'?'#22c55e':ex.level==='Intermediate'?'#f97316':'#ef4444'}">${ex.level}</span>
+            ${inPlan?`<span style="font-size:9px;padding:1px 6px;border-radius:99px;background:rgba(200,240,96,.1);color:var(--accent)">✓ ${t('已加入','In plan')}</span>`:''}
+          </div>
+        </div>
+        <i class="ti ti-chevron-${isA?'up':'down'}" style="font-size:13px;color:var(--text3);flex-shrink:0;margin-top:1px"></i>
+      </div>`;
+    if(isA){
+      h+=`<div style="margin-top:9px;border-top:1px solid var(--border);padding-top:9px">
+        <!-- 3D Viewer -->
+        <div id="viewer-wrap" style="height:240px;border-radius:10px;overflow:hidden;background:#0a0f1a;margin-bottom:9px;position:relative;touch-action:none">
+          <canvas id="viewer-canvas" style="display:block;width:100%;height:100%"></canvas>
+          <div style="position:absolute;top:7px;right:7px;display:flex;gap:4px;pointer-events:all">
+            <button class="view-btn" onclick="setLibView('front')">${t('正面','Front')}</button>
+            <button class="view-btn" onclick="setLibView('side')">${t('側面','Side')}</button>
+            <button class="view-btn" onclick="setLibView('iso')">${t('等距','Iso')}</button>
+          </div>
+          <div style="position:absolute;bottom:7px;left:7px;font-size:9px;color:var(--text3);background:rgba(8,12,20,.7);border-radius:5px;padding:2px 7px">${t('拖動旋轉','Drag to rotate')}</div>
+          <div id="phase-info" style="position:absolute;bottom:7px;right:7px;font-size:9px;color:var(--accent);background:rgba(8,12,20,.7);border-radius:5px;padding:2px 7px"></div>
+        </div>
+        <!-- Info -->
+        <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">${S.lang==='zh'?ex.dZh:ex.dEn}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:9px">${ex.muscle.map(m=>`<span style="font-size:9px;background:var(--bg2);border-radius:5px;padding:2px 6px;color:var(--text3)">${m}</span>`).join('')}</div>
+        <!-- Add to day -->
+        <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:5px">${t('加入哪天的計劃？','Add to which day?')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${WD.map(d=>{const already=(S.customPlan[d]||[]).some(e=>e.id===ex.id);return`<button class="btn-add-day${already?' added':''}" onclick="togExInPlan('${ex.id}','${d}')">${already?`<i class="ti ti-check" style="font-size:10px"></i>`:'+'}${d}</button>`;}).join('')}</div>
+      </div>`;
+    }
+    h+='</div>';
+  });
+  h+=`<div style="padding-bottom:14px"></div>`;
+  container.innerHTML=h;
+  if(S.libSel){
+    const ex=LIB.find(e=>e.id===S.libSel);
+    if(ex)setTimeout(()=>init3DViewer(ex.lib3d||'squat'),200);
+  }
+}
+function selLibEx(id){S.libSel=S.libSel===id?null:id;rLibrary(document.getElementById('app-content'));}
+function togExInPlan(exId,day){
+  if(!S.customPlan[day])S.customPlan[day]=[];
+  const idx=S.customPlan[day].findIndex(e=>e.id===exId);
+  if(idx>=0){S.customPlan[day].splice(idx,1);toast(t('已移除','Removed'));}
+  else{S.customPlan[day].push({id:exId,sets:3,reps:12});ensLogs();toast(t('已加入 '+day,'Added to '+day));}
+  sv('customPlan','logs');rLibrary(document.getElementById('app-content'));
+}
+
+// ─── 3D Viewer (Three.js) ────────────────────────────────────────
+let v3={renderer:null,scene:null,camera:null,figure:null,barbell:null,animFrame:null,animT:0,isDrag:false,prevM:{x:0,y:0},theta:0.8,phi:0.35,tTheta:0.8,tPhi:0.35,R:4.5,speed:1};
+const EX3D={
+  squat:{name:'Squat',phases:['Setup','Descent','Bottom','Drive'],hasBar:true,barbellPos:'back',
+    keys:[{t:0,hip:0,torso:5,arm:10},{t:.3,hip:55,torso:28,arm:14},{t:.5,hip:88,torso:32,arm:18},{t:.8,hip:28,torso:12,arm:12},{t:1,hip:0,torso:5,arm:10}]},
+  deadlift:{name:'Deadlift',phases:['Hinge','Pull','Mid','Lockout'],hasBar:true,barbellPos:'low',
+    keys:[{t:0,hip:80,torso:58,arm:80},{t:.3,hip:52,torso:38,arm:70},{t:.6,hip:22,torso:18,arm:48},{t:.85,hip:0,torso:5,arm:28},{t:1,hip:80,torso:58,arm:80}]},
+  curl:{name:'Curl',phases:['Start','Curl','Peak','Lower'],hasBar:true,barbellPos:'curl',
+    keys:[{t:0,hip:0,torso:2,arm:0},{t:.3,hip:0,torso:2,arm:45},{t:.5,hip:0,torso:2,arm:88},{t:.8,hip:0,torso:2,arm:28},{t:1,hip:0,torso:2,arm:0}]},
+  ohp:{name:'OHP',phases:['Rack','Press','Top','Lower'],hasBar:true,barbellPos:'ohp',
+    keys:[{t:0,hip:0,torso:3,arm:28},{t:.35,hip:0,torso:3,arm:82},{t:.5,hip:0,torso:3,arm:132},{t:.8,hip:0,torso:3,arm:52},{t:1,hip:0,torso:3,arm:28}]},
+  row:{name:'Row',phases:['Hinge','Pull','Squeeze','Lower'],hasBar:true,barbellPos:'row',
+    keys:[{t:0,hip:44,torso:44,arm:80},{t:.35,hip:44,torso:44,arm:42},{t:.5,hip:44,torso:44,arm:18},{t:.8,hip:44,torso:44,arm:58},{t:1,hip:44,torso:44,arm:80}]},
+  lunge:{name:'Lunge',phases:['Stand','Step','Lower','Rise'],hasBar:false,
+    keys:[{t:0,hip:0,torso:3,arm:0},{t:.3,hip:22,torso:5,arm:5},{t:.5,hip:72,torso:7,arm:8},{t:.8,hip:32,torso:4,arm:4},{t:1,hip:0,torso:3,arm:0}]},
+};
+function lerp(a,b,t){return a+(b-a)*t;}
+function easeInOut(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+function getKF(exKey,t){
+  const keys=EX3D[exKey]?.keys||EX3D.squat.keys;
+  for(let i=0;i<keys.length-1;i++){if(t>=keys[i].t&&t<=keys[i+1].t){const local=(t-keys[i].t)/(keys[i+1].t-keys[i].t);const e=easeInOut(local);return{hip:lerp(keys[i].hip,keys[i+1].hip,e),torso:lerp(keys[i].torso,keys[i+1].torso,e),arm:lerp(keys[i].arm,keys[i+1].arm,e),phaseIdx:i};}}
+  return{hip:0,torso:0,arm:0,phaseIdx:0};
+}
+function mk(geo,mat){const m=new THREE.Mesh(geo,mat);m.castShadow=true;return m;}
+function init3DViewer(exKey){
+  // Must query from app-content since these are dynamically injected
+  const content=document.getElementById('app-content');
+  const vc=content?content.querySelector('#viewer-canvas'):document.getElementById('viewer-canvas');
+  const vw=content?content.querySelector('#viewer-wrap'):document.getElementById('viewer-wrap');
+  if(!vc||!vw){console.warn('3D viewer: canvas not found');return;}
+  if(!window.THREE){console.warn('3D viewer: THREE not loaded');return;}
+  if(v3.renderer){v3.renderer.dispose();if(v3.animFrame)cancelAnimationFrame(v3.animFrame);}
+  v3.animT=0;v3.theta=0.8;v3.phi=0.35;v3.tTheta=0.8;v3.tPhi=0.35;
+  const W=Math.max(vw.clientWidth,280),H=240;
+  v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:true});
+  v3.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  v3.renderer.setSize(W,H,false);v3.renderer.shadowMap.enabled=true;
+  v3.renderer.setClearColor(0x080c14,1);
+  v3.scene=new THREE.Scene();v3.scene.fog=new THREE.FogExp2(0x080c14,.07);
+  v3.camera=new THREE.PerspectiveCamera(45,W/H,.1,100);
+  // Lights
+  v3.scene.add(new THREE.AmbientLight(0x8aa0c0,.55));
+  const dl=new THREE.DirectionalLight(0xffffff,1.1);dl.position.set(4,8,4);dl.castShadow=true;v3.scene.add(dl);
+  v3.scene.add(Object.assign(new THREE.DirectionalLight(0xc8f060,.35),{position:new THREE.Vector3(-3,2,-3)}));
+  v3.scene.add(Object.assign(new THREE.PointLight(0x60a5fa,.4,14),{position:new THREE.Vector3(-2,3,2)}));
+  // Grid
+  v3.scene.add(Object.assign(new THREE.GridHelper(5,10,0x1a2840,0x141e2e),{position:new THREE.Vector3(0,-1.5,0)}));
+  // Materials
+  const bMat=new THREE.MeshStandardMaterial({color:0xe2e8f0,roughness:.4,metalness:.1});
+  const jMat=new THREE.MeshStandardMaterial({color:0xc8f060,roughness:.3,metalness:.2,emissive:0x3a5000,emissiveIntensity:.3});
+  const barMat=new THREE.MeshStandardMaterial({color:0x64748b,roughness:.3,metalness:.7});
+  const plateMat=new THREE.MeshStandardMaterial({color:0x334155,roughness:.5,metalness:.4});
+  function cyl(rT,rB,h,mat,segs=10){return mk(new THREE.CylinderGeometry(rT,rB,h,segs),mat);}
+  function sph(r,mat,segs=10){return mk(new THREE.SphereGeometry(r,segs,segs),mat);}
+  // Figure
+  const fig=new THREE.Group();v3.scene.add(fig);v3.figure=fig;
+  // Head
+  const hg=new THREE.Group();const hd=sph(.14,bMat,12);hd.position.y=.14;hg.add(hd);const nk=cyl(.055,.065,.1,bMat);nk.position.y=-.05;hg.add(nk);hg.position.y=1.36;
+  // Torso
+  const tg=new THREE.Group();tg.position.y=.68;const ts=cyl(.17,.21,.65,bMat);ts.position.y=.325;tg.add(ts);const sb=cyl(.055,.055,.48,bMat);sb.rotation.z=Math.PI/2;sb.position.y=.63;tg.add(sb);tg.add(hg);hg.position.y=.65;
+  const hipJ=sph(.09,jMat);tg.add(hipJ);fig.add(tg);v3.torsoGrp=tg;v3.headGrp=hg;
+  // Arms
+  function mkArm(side){const ag=new THREE.Group();ag.position.set(side*.26,.58,0);const ua=cyl(.05,.045,.32,bMat);ua.position.y=-.16;ag.add(ua);const ej=sph(.06,jMat);ej.position.y=-.32;ag.add(ej);const fg2=new THREE.Group();fg2.position.y=-.32;const fa=cyl(.043,.037,.28,bMat);fa.position.y=-.14;fg2.add(fa);const wj=sph(.045,jMat);wj.position.y=-.28;fg2.add(wj);ag.add(fg2);ag.userData.fg=fg2;return ag;}
+  v3.armL=mkArm(-1);v3.armR=mkArm(1);tg.add(v3.armL);tg.add(v3.armR);
+  // Legs
+  function mkLeg(side){const lg=new THREE.Group();lg.position.set(side*.12,0,0);const ul=cyl(.075,.07,.5,bMat);ul.position.y=-.25;lg.add(ul);const kj=sph(.08,jMat);kj.position.y=-.5;lg.add(kj);const llg=new THREE.Group();llg.position.y=-.5;const ll=cyl(.06,.05,.44,bMat);ll.position.y=-.22;llg.add(ll);const aj=sph(.065,jMat);aj.position.y=-.44;llg.add(aj);const ft=cyl(.07,.065,.16,bMat,8);ft.rotation.x=Math.PI/2;ft.position.set(side*.025,-.48,.07);llg.add(ft);lg.add(llg);lg.userData.ll=llg;return lg;}
+  v3.legL=mkLeg(-1);v3.legR=mkLeg(1);fig.add(v3.legL);fig.add(v3.legR);
+  // Barbell
+  const bg=new THREE.Group();const shaft=cyl(.022,.022,1.6,barMat);shaft.rotation.z=Math.PI/2;bg.add(shaft);
+  function addPl(x){const p=cyl(.18,.18,.06,plateMat,14);p.rotation.z=Math.PI/2;p.position.x=x;bg.add(p);}
+  addPl(.64);addPl(-.64);v3.scene.add(bg);v3.barbell=bg;
+  bg.visible=EX3D[exKey]?.hasBar!==false;
+  // Camera update
+  function updCam(){const x=v3.R*Math.sin(v3.theta)*Math.cos(v3.phi);const y=v3.R*Math.sin(v3.phi)+.5;const z=v3.R*Math.cos(v3.theta)*Math.cos(v3.phi);v3.camera.position.set(x,y,z);v3.camera.lookAt(0,.2,0);}
+  // Drag
+  function onDS(e){v3.isDrag=true;const p=e.touches?e.touches[0]:e;v3.prevM={x:p.clientX,y:p.clientY};}
+  function onDM(e){if(!v3.isDrag)return;const p=e.touches?e.touches[0]:e;const dx=p.clientX-v3.prevM.x,dy=p.clientY-v3.prevM.y;v3.tTheta-=dx*.008;v3.tPhi=Math.max(-.1,Math.min(1.2,v3.tPhi-dy*.006));v3.prevM={x:p.clientX,y:p.clientY};}
+  function onDE(){v3.isDrag=false;}
+  vc.addEventListener('mousedown',onDS);window.addEventListener('mousemove',onDM);window.addEventListener('mouseup',onDE);
+  vc.addEventListener('touchstart',onDS,{passive:true});window.addEventListener('touchmove',onDM,{passive:true});window.addEventListener('touchend',onDE);
+  // Animate
+  const clock=new THREE.Clock();let lastPI=-1;
+  function animate(){
+    v3.animFrame=requestAnimationFrame(animate);const dt=clock.getDelta();
+    v3.animT=(v3.animT+dt*.4)%1;
+    const kf=getKF(exKey,v3.animT);const r=v=>v*Math.PI/180;const ex3=EX3D[exKey]||EX3D.squat;
+    // Apply pose
+    tg.rotation.x=r(kf.torso);hg.rotation.x=r(-kf.torso*.45);
+    const bp=ex3.barbellPos;
+    if(bp==='back'||!bp){v3.legL.rotation.x=r(-kf.hip*.8);v3.legR.rotation.x=r(-kf.hip*.8);v3.legL.userData.ll.rotation.x=r(kf.hip*1.4);v3.legR.userData.ll.rotation.x=r(kf.hip*1.4);fig.position.y=-(kf.hip/90)*.5;v3.armL.rotation.x=r(-kf.arm*.25);v3.armR.rotation.x=r(-kf.arm*.25);v3.armL.rotation.z=r(14);v3.armR.rotation.z=r(-14);v3.armL.userData.fg.rotation.x=r(-18);v3.armR.userData.fg.rotation.x=r(-18);bg.position.set(0,.65+fig.position.y,-.1);bg.rotation.x=r(kf.torso*.5);}
+    else if(bp==='low'){v3.legL.rotation.x=r(-kf.hip*.48);v3.legR.rotation.x=r(-kf.hip*.48);v3.legL.userData.ll.rotation.x=r(kf.hip*.65);v3.legR.userData.ll.rotation.x=r(kf.hip*.65);fig.position.y=-(kf.hip/90)*.32;v3.armL.rotation.x=r(kf.torso*.85);v3.armR.rotation.x=r(kf.torso*.85);v3.armL.rotation.z=r(16);v3.armR.rotation.z=r(-16);v3.armL.userData.fg.rotation.x=0;v3.armR.userData.fg.rotation.x=0;const by=-1.4+(kf.hip/90)*.85+fig.position.y;bg.position.set(0,Math.max(-1.2,by),.18);bg.rotation.x=0;}
+    else if(bp==='curl'){v3.legL.rotation.x=0;v3.legR.rotation.x=0;v3.legL.userData.ll.rotation.x=0;v3.legR.userData.ll.rotation.x=0;fig.position.y=0;v3.armL.rotation.x=0;v3.armR.rotation.x=0;v3.armL.rotation.z=r(5);v3.armR.rotation.z=r(-5);v3.armL.userData.fg.rotation.x=r(-kf.arm*1.05);v3.armR.userData.fg.rotation.x=r(-kf.arm*1.05);const wY=.58-.32-.32*Math.cos(r(kf.arm));const wZ=.32*Math.sin(r(kf.arm));bg.position.set(0,wY,.05+wZ);bg.rotation.x=r(-kf.arm);}
+    else if(bp==='ohp'){v3.legL.rotation.x=0;v3.legR.rotation.x=0;v3.legL.userData.ll.rotation.x=0;v3.legR.userData.ll.rotation.x=0;fig.position.y=0;v3.armL.rotation.x=r(-kf.arm*.78);v3.armR.rotation.x=r(-kf.arm*.78);v3.armL.rotation.z=r(18-kf.arm*.1);v3.armR.rotation.z=r(-18+kf.arm*.1);v3.armL.userData.fg.rotation.x=r(kf.arm>82?-18:-kf.arm*.14);v3.armR.userData.fg.rotation.x=r(kf.arm>82?-18:-kf.arm*.14);const bhY=.58+.63+.32*Math.sin(r(kf.arm*.78));bg.position.set(0,bhY,.1-.28*Math.sin(r(kf.arm*.78)));bg.rotation.x=0;}
+    else if(bp==='row'){v3.legL.rotation.x=r(-kf.torso*.28);v3.legR.rotation.x=r(-kf.torso*.28);v3.legL.userData.ll.rotation.x=r(kf.torso*.38);v3.legR.userData.ll.rotation.x=r(kf.torso*.38);fig.position.y=-(kf.torso/90)*.18;v3.armL.rotation.x=r(kf.torso-kf.arm*.38);v3.armR.rotation.x=r(kf.torso-kf.arm*.38);v3.armL.rotation.z=r(11);v3.armR.rotation.z=r(-11);const bYr=fig.position.y-.45+(kf.arm/80)*.5;bg.position.set(0,bYr,.32-(kf.arm/80)*.22);bg.rotation.x=r(kf.torso*.28);}
+    else{v3.legL.rotation.x=r(-kf.hip*.38);v3.legR.rotation.x=r(kf.hip*.82);v3.legL.userData.ll.rotation.x=r(kf.hip*.48);v3.legR.userData.ll.rotation.x=r(kf.hip*1.08);v3.legL.position.z=-(kf.hip/90)*.28;v3.legR.position.z=(kf.hip/90)*.22;fig.position.y=-(kf.hip/90)*.38;}
+    // Phase label
+    if(kf.phaseIdx!==lastPI){lastPI=kf.phaseIdx;const ct=document.getElementById('app-content');const pi=ct?ct.querySelector('#phase-info'):document.getElementById('phase-info');if(pi){const phases=ex3.phases||[];pi.textContent=phases[kf.phaseIdx]||'';}}}
+    // Camera
+    v3.theta+=(v3.tTheta-v3.theta)*.09;v3.phi+=(v3.tPhi-v3.phi)*.09;
+    if(!v3.isDrag)v3.tTheta+=dt*.14;
+    updCam();v3.renderer.render(v3.scene,v3.camera);
+  }
+  animate();
+}
+window.setLibView=function(v){
+  if(v==='front'){v3.tTheta=0;v3.tPhi=.18;}
+  else if(v==='side'){v3.tTheta=Math.PI/2;v3.tPhi=.18;}
+  else if(v==='top'){v3.tTheta=.1;v3.tPhi=1.1;}
+  else{v3.tTheta=.85;v3.tPhi=.42;}
+};
+
+// ═══════════════ PROFILE TAB ═══════════════
+function rProfile(){
+  const bmi=calcBMI(S.profile.weight,S.profile.height);const bi=bmiLbl(bmi);
+  const td=tdee(S.profile.weight,S.profile.height,S.profile.age);
+  const wl=Math.max(0,+(S.profile.weight-S.profile.goalWeight).toFixed(1));
+  const pct=Math.max(0,Math.min(100,Math.round((1-(S.profile.weight-S.profile.goalWeight)/(89.3-S.profile.goalWeight))*100)));
+  const gd=S.goalId?GOALS.find(g=>g.id===S.goalId):null;
+  let h=`<div class="card" style="padding:12px;margin-bottom:9px">
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:11px">${t('個人資料','Personal Info')}</div>`;
+  [{l:t('體重 (kg)','Weight (kg)'),f:'weight',s:.1},{l:t('目標體重 (kg)','Goal weight (kg)'),f:'goalWeight',s:.5},{l:t('身高 (cm)','Height (cm)'),f:'height',s:1},{l:t('年齡','Age'),f:'age',s:1}].forEach(({l,f,s})=>{
+    h+=`<div style="margin-bottom:11px"><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:5px">${l}</div><input type="number" step="${s}" value="${S.profile[f]}" onchange="upProfile('${f}',this.value)" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:8px 12px;font-size:14px;width:100%"/></div>`;
+  });
+  h+='</div>';
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px">
+    <div class="metric"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">BMI</div><div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:${bi.c}">${bmi}</div><div style="font-size:9px;color:${bi.c}">${t(bi.zh,bi.en)}</div></div>
+    <div class="metric"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">TDEE</div><div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#a78bfa">${td.toLocaleString()}</div><div style="font-size:9px;color:var(--text3)">kcal/day</div></div>
+    <div class="metric"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">${t('蛋白質','Protein')}</div><div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#f97316">${Math.round(S.profile.weight*2)}</div><div style="font-size:9px;color:var(--text3)">g/day</div></div>
+    <div class="metric"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">${t('飲水','Water')}</div><div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#60a5fa">${(S.profile.weight*0.033).toFixed(1)}</div><div style="font-size:9px;color:var(--text3)">L/day</div></div>
+  </div>`;
+  h+=`<div class="card" style="padding:12px;margin-bottom:9px">
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:9px">${t('減重進度','Weight Loss Progress')}</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+      <div><div style="font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace">${S.profile.weight}<span style="font-size:10px;color:var(--text3);margin-left:2px">kg</span></div><div style="font-size:9px;color:var(--text3)">${t('現時','Current')}</div></div>
+      <div style="text-align:right"><div style="font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#4ade80">${S.profile.goalWeight}<span style="font-size:10px;color:var(--text3);margin-left:2px">kg</span></div><div style="font-size:9px;color:var(--text3)">${t('目標','Target')}</div></div>
+    </div>
+    <div class="prog-track" style="height:6px;margin-bottom:5px"><div class="prog-fill" style="width:${pct}%;background:linear-gradient(90deg,#3b82f6,#4ade80)"></div></div>
+    <div style="display:flex;justify-content:space-between"><div style="font-size:10px;color:var(--text3)">${t('仍需減','Still to lose')} <span style="color:#f87171;font-weight:700">${wl}kg</span></div><div style="font-size:10px;color:#4ade80;font-weight:700">${pct}% ${t('達標','done')}</div></div>
+  </div>`;
+  if(gd)h+=`<div class="card" style="padding:12px;margin-bottom:9px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:7px">${t('當前目標','Current Goal')}</div><div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:9px"><div style="width:34px;height:34px;border-radius:8px;background:${gd.bg};display:flex;align-items:center;justify-content:center"><i class="ti ${gd.icon}" style="font-size:17px;color:${gd.color}"></i></div><div style="font-size:13px;font-weight:700;color:${gd.color}">${t(gd.zh,gd.en)}</div></div><button onclick="resetGoal()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text3);cursor:pointer">${t('更改','Change')}</button></div></div>`;
+  h+=`<button class="btn-ghost" onclick="exportData()" style="margin-bottom:6px"><i class="ti ti-download" style="font-size:14px;margin-right:4px;vertical-align:-2px"></i>${t('匯出資料 (JSON)','Export data (JSON)')}</button>`;
+  h+=`<button class="btn-ghost" onclick="if(confirm('${t('重置本週積分？','Reset weekly scores?')}'))resetScores()" style="margin-bottom:14px;color:#f87171;border-color:rgba(248,113,113,.25)"><i class="ti ti-refresh" style="font-size:14px;margin-right:4px;vertical-align:-2px"></i>${t('重置本週積分','Reset weekly scores')}</button>`;
+  return h;
+}
+function upProfile(f,v){S.profile[f]=parseFloat(v)||S.profile[f];sv('profile');rHdr();}
+function resetGoal(){if(!confirm(t('確定要重新設定目標？','Reset your goal?')))return;S.goalId=null;S.goalAnswers={};S.weekTasks=null;sv('goalId','goalAnswers','weekTasks');document.getElementById('onboard').classList.remove('hidden');const app=document.getElementById('app');app.style.display='none';S.obStep=1;S.obGoal=null;S.obAnswers={};S.obQIdx=0;showOb();}
+function resetScores(){S.scores.weekly=0;S.scores.breakdown={};sv('scores');renderApp();toast(t('積分已重置','Scores reset'));}
+function exportData(){const d={profile:S.profile,goalId:S.goalId,logs:S.logs,history:S.history,scores:S.scores,weekTasks:S.weekTasks,customPlan:S.customPlan,exportedAt:new Date().toISOString()};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='fittrack-data.json';a.click();toast(t('資料已匯出','Data exported'));}
+function toggleLang(){S.lang=S.lang==='zh'?'en':'zh';DB.set('lang',S.lang);renderApp();}
+function toggleBMI(){S.bmiOpen=!S.bmiOpen;rHdr();}
+
+
+// ═══════════════ DRAG-TO-REORDER ═══════════════
+let dragIdx=null,dragDay=null;
+function dragStart(e){
+  dragIdx=parseInt(e.currentTarget.dataset.idx);
+  dragDay=e.currentTarget.dataset.day;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function dragOver(e){
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.drag-item.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function dragDrop(e){
+  e.preventDefault();
+  const toIdx=parseInt(e.currentTarget.dataset.idx);
+  const toDay=e.currentTarget.dataset.day;
+  document.querySelectorAll('.drag-item').forEach(el=>{el.classList.remove('dragging','drag-over');});
+  if(dragIdx===null||dragIdx===toIdx||dragDay!==toDay)return;
+  const plan=S.customPlan[dragDay];
+  const [moved]=plan.splice(dragIdx,1);
+  plan.splice(toIdx,0,moved);
+  sv('customPlan');rContent();
+}
+function removeFromPlan(day,idx){
+  S.customPlan[day].splice(idx,1);
+  sv('customPlan','logs');rContent();
+  toast(t('已移除','Removed'));
+}
+function moveEx(day,idx,dir){
+  const plan=S.customPlan[day];
+  const to=idx+dir;
+  if(to<0||to>=plan.length)return;
+  const [item]=plan.splice(idx,1);
+  plan.splice(to,0,item);
+  sv('customPlan');rContent();
+}
+function togCardio(day,exId){
+  if(!S.logs[day])S.logs[day]={};
+  const key='__cardio__'+exId;
+  const wasDone=!!S.logs[day][key];
+  if(!wasDone){
+    S.logs[day][key]=true;
+    const pts=addPts('set_done','cardio');
+    toast('+'+pts+' pts');
+    startTimer(S.timerMax);
+    // check level up
+    const prevLvl=Math.floor((S.scores.total-pts)/LEVEL_XP);
+    if(Math.floor(S.scores.total/LEVEL_XP)>prevLvl)
+      setTimeout(()=>showLvlUp(t('升級！','Level Up!'),t('你越來越強！','Getting stronger!'),true),600);
+  }else{
+    S.logs[day][key]=false;
+  }
+  sv('logs');rContent();rHdr();
+}
+
+// ═══════════════ INIT ═══════════════
+ensLogs();chkWeek();
+if(DB.get('goalId',null)&&DB.get('profile',null)){
+  document.getElementById('onboard').classList.add('hidden');
+  const app=document.getElementById('app');app.style.display='flex';app.style.flexDirection='column';
+  renderApp();
+}else{updObT();}
+</script>
+</body>
+</html>
