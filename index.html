@@ -298,7 +298,7 @@ const LC={chest:'#ec4899',back:'#06b6d4',legs:'#22c55e',shoulders:'#a855f7',arms
 let S={
   lang:DB.get('lang','zh'),
   tab:'today',
-  activeDay:WD[Math.min(4,Math.max(0,(new Date().getDay()+6)%7))],
+  activeDay:WD[Math.max(0,(new Date().getDay()+6)%7)],
   profile:DB.get('profile',{weight:75,height:170,age:28,goalWeight:70}),
   goalId:DB.get('goalId',null),
   goalAnswers:DB.get('goalAnswers',{}),
@@ -552,7 +552,7 @@ function rHdr(){
 }
 function getTabTitle(){
   const plan=S.customPlan[S.activeDay]||[];
-  if(S.tab==='today'){const lbl=PL[S.activeDay];return plan.length?`${S.activeDay} · ${t(lbl.zh,lbl.en)}`:S.activeDay;}
+  if(S.tab==='today'){const lbl=PL[S.activeDay];const dayLabel=S.activeDay+' · '+t(lbl.zh,lbl.en);return plan.length?dayLabel:(t(lbl.zh,lbl.en)==='Rest'?S.activeDay+' · '+t('休息日','Rest Day'):dayLabel);}
   if(S.tab==='tasks')return t('每週任務','Weekly Tasks');
   if(S.tab==='score')return t('計分板','Score Board');
   if(S.tab==='library')return t('動作庫','Exercise Library');
@@ -606,6 +606,9 @@ function mkCardioRow(entry,plan,dayColor){
 }
 
 function rToday(){
+  try{return _rToday();}catch(err){console.error('rToday crash:',err);return '<div style="padding:20px;color:#f87171;font-size:13px;font-weight:600">⚠ '+err.message+'</div>';}
+}
+function _rToday(){
   const plan=S.customPlan[S.activeDay]||[];const dayColor=PC[S.activeDay];
   let h=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:11px">`;
   WD.forEach(d=>{const{done,total}=dSets(d);const active=S.activeDay===d;h+=`<button class="pill${active?' active':''}" style="${active?'background:'+PC[d]+';border-color:'+PC[d]:''}" onclick="S.activeDay='${d}';rContent()">${d}${done>0?` ·${done}/${total}`:''}</button>`;});
@@ -648,7 +651,7 @@ function rToday(){
   if(done>0){
     const today2=new Date().toISOString().slice(0,10);
     const lockKey2='saved_'+today2+'_'+S.activeDay;
-    const alreadySaved=S.savedWorkouts&&S.savedWorkouts[lockKey2];
+    const alreadySaved=!!(S.savedWorkouts&&S.savedWorkouts[lockKey2]);
     h+=`<button class="btn-ghost" onclick="saveWorkout()" style="margin-bottom:4px;${alreadySaved?'color:var(--accent);border-color:var(--accent);opacity:.7;cursor:default':''}" ${alreadySaved?'disabled':''}>
       ${alreadySaved?'✓ '+t('已儲存','Saved today'):t('完成訓練並儲存 ✓','Finish & save ✓')}
     </button>`;
@@ -888,7 +891,8 @@ function rLibrary(container){
   container.innerHTML=h;
   if(S.libSel){
     const ex=LIB.find(e=>e.id===S.libSel);
-    if(ex)setTimeout(()=>init3DViewer(ex.lib3d||'squat'),200);
+    if(ex)// Force reflow then init 3D
+requestAnimationFrame(()=>requestAnimationFrame(()=>init3DViewer(ex.lib3d||'squat')));
   }
 }
 function selLibEx(id){S.libSel=S.libSel===id?null:id;rLibrary(document.getElementById('app-content'));}
@@ -933,9 +937,12 @@ function init3DViewer(exKey){
   if(!window.THREE){console.warn('3D viewer: THREE not loaded');return;}
   if(v3.renderer){v3.renderer.dispose();if(v3.animFrame)cancelAnimationFrame(v3.animFrame);}
   v3.animT=0;v3.theta=0.8;v3.phi=0.35;v3.tTheta=0.8;v3.tPhi=0.35;
-  const W=Math.max(vw.clientWidth,280),H=240;
+  // Force layout recalc before reading dimensions
+  const rect=vw.getBoundingClientRect();
+  const W=Math.max(rect.width||vw.offsetWidth||320,280),H=240;
   v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:true});
   v3.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  vc.width=W;vc.height=H;vc.style.width=W+'px';vc.style.height=H+'px';
   v3.renderer.setSize(W,H,false);v3.renderer.shadowMap.enabled=true;
   v3.renderer.setClearColor(0x080c14,1);
   v3.scene=new THREE.Scene();v3.scene.fog=new THREE.FogExp2(0x080c14,.07);
@@ -1089,23 +1096,26 @@ function moveEx(el){var day=el.dataset.day,idx=parseInt(el.dataset.idx),dir=pars
   plan.splice(to,0,item);
   sv('customPlan');rContent();
 }
-function togCardio(el){var day=el.dataset.day,exId=el.dataset.id;
-  if(!S.logs[day])S.logs[day]={};
-  const key='__cardio__'+exId;
-  const wasDone=!!S.logs[day][key];
-  if(!wasDone){
-    S.logs[day][key]=true;
-    const pts=addPts('set_done','cardio');
-    toast('+'+pts+' pts');
-    startTimer(S.timerMax);
-    // check level up
-    const prevLvl=Math.floor((S.scores.total-pts)/LEVEL_XP);
-    if(Math.floor(S.scores.total/LEVEL_XP)>prevLvl)
-      setTimeout(()=>showLvlUp(t('升級！','Level Up!'),t('你越來越強！','Getting stronger!'),true),600);
-  }else{
-    S.logs[day][key]=false;
-  }
-  sv('logs');rContent();rHdr();
+function togCardio(el){
+  try{
+    var day=el.dataset.day,exId=el.dataset.id;
+    if(!day||!exId){console.warn('togCardio: missing data',el.dataset);return;}
+    if(!S.logs[day])S.logs[day]={};
+    const key='__cardio__'+exId;
+    const wasDone=!!S.logs[day][key];
+    if(!wasDone){
+      S.logs[day][key]=true;
+      const pts=addPts('set_done','cardio');
+      toast('+'+pts+' pts');
+      startTimer(S.timerMax);
+      const prevLvl=Math.floor((S.scores.total-pts)/LEVEL_XP);
+      if(Math.floor(S.scores.total/LEVEL_XP)>prevLvl)
+        setTimeout(()=>showLvlUp(t('升級！','Level Up!'),t('你越來越強！','Getting stronger!'),true),600);
+    }else{
+      S.logs[day][key]=false;
+    }
+    sv('logs');rContent();rHdr();
+  }catch(err){console.error('togCardio error:',err);toast('Error: '+err.message);}
 }
 
 // =============== INIT ===============
