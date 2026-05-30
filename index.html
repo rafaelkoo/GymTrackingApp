@@ -290,7 +290,42 @@ const LIB=[
   {id:'dip',name:'Dip',zh:'雙槓臂屈伸',cat:'arms',muscle:['Triceps','Chest'],equip:'Bodyweight',level:'Intermediate',dEn:'Lower until elbows at 90°, press up fully.',dZh:'下沉至手肘90度，完全推起。',lib3d:'ohp'},
   {id:'plank',name:'Plank',zh:'平板支撐',cat:'core',muscle:['Core','Shoulders'],equip:'Bodyweight',level:'Beginner',dEn:'Forearms on floor, body straight head to heels. Brace abs.',dZh:'前臂撐地，身體從頭至腳保持一直線，收緊腹肌。',lib3d:'lunge'},
   {id:'treadmill',name:'Treadmill Run',zh:'跑步機',cat:'cardio',muscle:['Full Body'],equip:'Machine',level:'Beginner',dEn:'Build pace gradually, land midfoot, slight forward lean.',dZh:'逐漸加速，以腳掌中部著地，輕微前傾。',lib3d:'lunge'},
-];
+,
+  // ── Chest ──
+  {id:'cable_fly',name:'Cable Fly',zh:'滑輪飛鳥',cat:'chest',muscle:['Chest','Front Deltoid'],equip:'Cable',level:'Beginner',dEn:'Stand between cables, arms slightly bent, bring handles together in front of chest.',dZh:'站於滑輪中間，手臂略彎，將把手在胸前合攏。',lib3d:'curl'},
+  {id:'pushup',name:'Push-up',zh:'掌上壓',cat:'chest',muscle:['Chest','Triceps','Shoulders'],equip:'Bodyweight',level:'Beginner',dEn:'Hands shoulder-width, lower chest to floor then press up. Keep body straight.',dZh:'手掌與肩同寬，胸部貼近地板後推起，保持身體成直線。',lib3d:'curl'},
+  {id:'chest_dip',name:'Chest Dip',zh:'胸部雙槓臂屈伸',cat:'chest',muscle:['Chest','Triceps','Shoulders'],equip:'Bodyweight',level:'Intermediate',dEn:'Lean forward on dips to target chest. Lower until elbows at 90°, press up.',dZh:'雙槓前傾做臂屈伸以針對胸肌，手肘彎至90度再推起。',lib3d:'ohp'},
+  // ── Back ──
+  {id:'tbar_row',name:'T-Bar Row',zh:'T形槓划船',cat:'back',muscle:['Lats','Rhomboids','Biceps'],equip:'Barbell',level:'Intermediate',dEn:'Straddle the bar, hinge at hips, pull to lower chest squeezing shoulder blades.',dZh:'跨站槓上，從臀部屈曲，將槓拉至下胸並夾緊肩胛骨。',lib3d:'row'},
+  {id:'shrug',name:'Barbell Shrug',zh:'槓鈴聳肩',cat:'back',muscle:['Traps'],equip:'Barbell',level:'Beginner',dEn:'Hold bar at hips, shrug shoulders straight up as high as possible, hold briefly.',dZh:'手持槓鈴於臀前，肩膀盡量向上聳起，稍作停頓。',lib3d:'deadlift'},
+  {id:'good_morning',name:'Good Morning',zh:'早安運動',cat:'back',muscle:['Lower Back','Hamstrings','Glutes'],equip:'Barbell',level:'Intermediate',dEn:'Bar on traps, hinge at hips with slight knee bend until torso is parallel, drive up.',dZh:'槓鈴置於斜方肌，膝蓋微彎從臀部屈曲至軀幹平行地面，再站起。',lib3d:'deadlift'},
+  // ── Legs ──
+  {id:'rdl',name:'Romanian Deadlift',zh:'羅馬尼亞硬舉',cat:'legs',muscle:['Hamstrings','Glutes','Lower Back'],equip:'Barbell',level:'Intermediate',dEn:'Hinge at hips, pushing them back, lowering bar along legs to mid-shin. Squeeze glutes to stand.',dZh:'臀部向後推，沿腿部將槓鈴下降至小腿中部，夾緊臀肌站起。',lib3d:'deadlift'},
+  {id:'hip_thrust',name:'Hip Thrust',zh:'臀推',cat:'legs',muscle:['Glutes','Hamstrings'],equip:'Barbell',level:'Beginner',dEn:'Shoulders on bench, bar across hips. Drive hips up until body is parallel, squeeze glutes at top.',dZh:'肩膀靠於椅背，槓鈴置於臀部，向上推至身體平行地面，頂部夾緊臀肌。',lib3d:'squat'},
+  {id:'bulgarian',name:'Bulgarian Split Squat',zh:'保加利亞分腿蹲',cat:'legs',muscle:['Quads','Glutes','Balance'],equip:'Dumbbell',level:'Intermediate',dEn:'Rear foot elevated, lower front knee toward floor keeping shin vertical.',dZh:'後腳抬高，前膝向地板下降，保持脛骨垂直。',lib3d:'lunge'},
+  {id:'hack_squat',name:'Hack Squat',zh:'哈克深蹲',cat:'legs',muscle:['Quads','Glutes'],equip:'Machine',level:'Beginner',dEn:'Back against pad, feet on platform. Lower until 90° knee angle, drive through heels.',dZh:'背靠墊子，腳踏平台，膝蓋彎至90度後用腳跟推起。',lib3d:'squat'},
+  {id:'seated_calf',name:'Seated Calf Raise',zh:'坐姿提踵',cat:'legs',muscle:['Soleus','Calves'],equip:'Machine',level:'Beginner',dEn:'Sit with pads on knees, rise onto toes squeezing calves, lower slowly.',dZh:'坐姿膝蓋壓上墊子，踮腳尖並收縮小腿，再緩慢放下。',lib3d:'calf'},
+  // ── Shoulders ──
+  {id:'arnold_press',name:'Arnold Press',zh:'阿諾德推舉',cat:'shoulders',muscle:['All Three Deltoid Heads'],equip:'Dumbbell',level:'Intermediate',dEn:'Start with palms facing you, press up while rotating to palms forward at top.',dZh:'手掌朝向自己開始，推起時旋轉至手掌朝前。',lib3d:'ohp'},
+  {id:'upright_row',name:'Upright Row',zh:'直立划船',cat:'shoulders',muscle:['Side Deltoid','Traps'],equip:'Barbell',level:'Intermediate',dEn:'Narrow grip, pull bar straight up to chin with elbows flaring wide.',dZh:'窄握，手肘向外張開，將槓鈴垂直拉至下巴。',lib3d:'row'},
+  {id:'rear_delt_fly',name:'Rear Delt Fly',zh:'後束飛鳥',cat:'shoulders',muscle:['Rear Deltoid','Rhomboids'],equip:'Dumbbell',level:'Beginner',dEn:'Hinge to 45°, raise dumbbells out to sides squeezing rear delts at top.',dZh:'前傾45度，將啞鈴向兩側舉起，頂部收縮後束肌。',lib3d:'lateral'},
+  // ── Arms ──
+  {id:'preacher_curl',name:'Preacher Curl',zh:'牧師椅彎舉',cat:'arms',muscle:['Biceps'],equip:'Barbell',level:'Beginner',dEn:'Upper arms flat on pad, curl bar up squeezing biceps at top, lower slowly.',dZh:'上臂平放於墊上，捲起槓鈴並在頂部收縮二頭肌，緩慢放下。',lib3d:'curl'},
+  {id:'concentration_curl',name:'Concentration Curl',zh:'集中彎舉',cat:'arms',muscle:['Biceps'],equip:'Dumbbell',level:'Beginner',dEn:'Seated, elbow braced on inner thigh. Curl up and squeeze hard at top.',dZh:'坐姿，手肘抵在大腿內側，向上捲起並用力收緊。',lib3d:'curl'},
+  {id:'cable_curl',name:'Cable Curl',zh:'滑輪彎舉',cat:'arms',muscle:['Biceps','Forearms'],equip:'Cable',level:'Beginner',dEn:'Straight bar attachment, keep elbows fixed, curl up and control the negative.',dZh:'使用直桿配件，手肘固定，向上捲起並控制下降。',lib3d:'curl'},
+  {id:'overhead_tri',name:'Overhead Tricep Extension',zh:'頭上三頭伸展',cat:'arms',muscle:['Triceps Long Head'],equip:'Dumbbell',level:'Beginner',dEn:'Hold dumbbell overhead with both hands, lower behind head bending elbows, extend up.',dZh:'雙手持啞鈴舉過頭頂，彎手肘將其降至頭後，再伸展推起。',lib3d:'ohp'},
+  {id:'cable_tri',name:'Cable Tricep Pushdown',zh:'滑輪三頭下壓',cat:'arms',muscle:['Triceps'],equip:'Cable',level:'Beginner',dEn:'Straight or rope attachment, elbows fixed at sides, push down fully and squeeze.',dZh:'使用直桿或繩索配件，手肘固定，完全下壓並收縮三頭肌。',lib3d:'curl'},
+  // ── Core ──
+  {id:'crunch',name:'Crunch',zh:'捲腹',cat:'core',muscle:['Rectus Abdominis'],equip:'Bodyweight',level:'Beginner',dEn:'Lie on back, feet flat, curl shoulders toward knees. Exhale at top.',dZh:'躺下，雙腳平放，將肩膀向膝蓋捲起，頂部呼氣。',lib3d:'plank'},
+  {id:'leg_raise',name:'Leg Raise',zh:'舉腿',cat:'core',muscle:['Lower Abs','Hip Flexors'],equip:'Bodyweight',level:'Beginner',dEn:'Lie flat, raise straight legs to 90°, lower slowly without touching floor.',dZh:'平躺，將直腿舉至90度，緩慢放下但不觸地。',lib3d:'plank'},
+  {id:'cable_crunch',name:'Cable Crunch',zh:'滑輪捲腹',cat:'core',muscle:['Rectus Abdominis'],equip:'Cable',level:'Beginner',dEn:'Kneel, pull rope down crunching elbows toward knees, round the spine.',dZh:'跪姿，將繩索拉下，手肘向膝蓋彎曲，脊柱彎曲。',lib3d:'plank'},
+  {id:'russian_twist',name:'Russian Twist',zh:'俄羅斯轉體',cat:'core',muscle:['Obliques','Core'],equip:'Bodyweight',level:'Beginner',dEn:'Sit with feet raised, lean back 45°, rotate torso side to side holding weight.',dZh:'坐姿雙腳離地，後傾45度，持重物左右旋轉軀幹。',lib3d:'plank'},
+  {id:'ab_wheel',name:'Ab Wheel Rollout',zh:'滾輪捲腹',cat:'core',muscle:['Core','Lats','Shoulders'],equip:'Other',level:'Intermediate',dEn:'Kneel with wheel, roll forward keeping core braced, pull back using abs.',dZh:'跪姿持滾輪，保持核心收緊向前滾出，再用腹肌拉回。',lib3d:'plank'},
+  // ── Cardio ──
+  {id:'bike',name:'Stationary Bike',zh:'健身單車',cat:'cardio',muscle:['Full Body'],equip:'Machine',level:'Beginner',dEn:'Adjust seat height, maintain steady pace. Great for low-impact cardio.',dZh:'調整座椅高度，保持穩定節奏。非常適合低衝擊有氧。',lib3d:'lunge',isCardio:true},
+  {id:'rowing',name:'Rowing Machine',zh:'划船機',cat:'cardio',muscle:['Full Body','Back','Legs'],equip:'Machine',level:'Beginner',dEn:'Push with legs first, then lean back and pull. Drive is 60% legs, 40% arms.',dZh:'先用腿推，再後仰並拉動。發力60%靠腿，40%靠手臂。',lib3d:'row',isCardio:true},
+  {id:'jump_rope',name:'Jump Rope',zh:'跳繩',cat:'cardio',muscle:['Calves','Shoulders','Cardio'],equip:'Other',level:'Beginner',dEn:'Keep elbows close to sides, rotate wrists not arms. Land softly on balls of feet.',dZh:'手肘靠近身體，用手腕而非手臂轉繩，以腳掌前部輕輕落地。',lib3d:'run',isCardio:true},
+  {id:'hiit',name:'HIIT Intervals',zh:'高強度間歇訓練',cat:'cardio',muscle:['Full Body'],equip:'Bodyweight',level:'Intermediate',dEn:'Alternate 40s max effort with 20s rest. Repeat 8-10 rounds.',dZh:'交替40秒全力衝刺和20秒休息，重複8-10輪。',lib3d:'run',isCardio:true}];
 const LIB_CATS=['all','chest','back','legs','shoulders','arms','core','cardio'];
 const LC={chest:'#ec4899',back:'#06b6d4',legs:'#22c55e',shoulders:'#a855f7',arms:'#f97316',core:'#eab308',cardio:'#f87171'};
 
@@ -309,6 +344,7 @@ let S={
   completedTasks:DB.get('completedTasks',{}),
   scores:DB.get('scores',{total:0,weekly:0,weekStart:'',breakdown:{},history:[]}),
   expandedHist:{},
+  collapsedEx:DB.get('collapsedEx',{}),
   histFilter:'ALL',
   libSearch:'',libCat:'all',libSel:null,
   lib3dEx:'squat',
@@ -524,6 +560,14 @@ function rHdr(){
       </div>
     </div>`;
   }
+  // Sticky day pills when on today tab
+  if(S.tab==='today'){
+    h+=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:2px;-webkit-overflow-scrolling:touch">`;
+    WD.forEach((d,i)=>{const{done,total}=dSets(d);const active=S.activeDay===d;const color=PC[d];
+      h+=`<button class="pill${active?' active':''}" style="flex-shrink:0;${active?'background:'+color+';border-color:'+color+';font-weight:700':''}" onclick="S.activeDay='${d}';rContent();rNav()">${d}${done>0?`<span style='font-size:9px;opacity:.7'> ${done}/${total}</span>`:''}</button>`;
+    });
+    h+=`</div>`;
+  }
   if(S.timerSec!==null){
     const pct2=Math.round((S.timerSec/S.timerMax)*100);const tc=S.timerSec>30?'#4ade80':S.timerSec>10?'#facc15':'#f87171';
     const mm=String(Math.floor(S.timerSec/60)).padStart(2,'0'),ss=String(S.timerSec%60).padStart(2,'0');
@@ -642,12 +686,16 @@ function mkCardioRow(entry,plan,dayColor){
 function rToday(){
   try{return _rToday();}catch(err){console.error('rToday crash:',err);return '<div style="padding:20px;color:#f87171;font-size:13px;font-weight:600">⚠ '+err.message+'</div>';}
 }
+function togCollapseEx(day,id){
+  const key=day+'__'+id;
+  S.collapsedEx[key]=!S.collapsedEx[key];
+  DB.set('collapsedEx',S.collapsedEx);
+  rContent();
+}
 function _rToday(){
   const plan=S.customPlan[S.activeDay]||[];const dayColor=PC[S.activeDay];
-  let h=`<div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:8px 0 6px;margin:-2px 0 8px">
-    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">`;
-  WD.forEach(d=>{const{done,total}=dSets(d);const active=S.activeDay===d;h+=`<button class="pill${active?' active':''}" style="${active?'background:'+PC[d]+';border-color:'+PC[d]:''}" onclick="S.activeDay='${d}';rContent()">${d}${done>0?` ·${done}/${total}`:''}</button>`;});
-  h+='</div></div>';
+  // Day pills rendered into header via rHdr
+  let h='';
   if(!plan.length){h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:22px;text-align:center;margin-bottom:9px"><i class="ti ti-moon" style="font-size:28px;color:var(--text3);display:block;margin-bottom:7px"></i><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:5px">${t('休息日 💤','Rest Day 💤')}</div><div style="font-size:11px;color:var(--text3)">${t('好好恢復，明天繼續！','Recover well — back at it tomorrow!')}</div></div>`;return h+'<div style="padding-bottom:14px"></div>';}
   plan.forEach(entry=>{
     const ex=EX[entry.id];if(!ex)return;
@@ -657,9 +705,10 @@ function _rToday(){
     const maxW=Math.max(...sets.map(s=>parseFloat(s.weight)||0),0);const sl=strLvl(entry.id,maxW,S.profile.weight);
     const prH=getPR(entry.id);const allPR=prH.length?Math.max(...prH.map(p=>p.weight)):0;
     const si=plan.indexOf(entry);
-    h+=`<div class="card"><div style="padding:10px 12px 7px;border-left:3px solid ${dayColor};display:flex;align-items:flex-start;gap:6px"><div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-top:2px"><button onclick="moveEx('${S.activeDay}',${si},-1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">↑</button><button onclick="moveEx('${S.activeDay}',${si},1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">↓</button></div><div style="flex:1">
+    const ck=S.activeDay+'__'+entry.id;const isCollapsed=!!S.collapsedEx[ck];
+    h+=`<div class="card" style="margin-bottom:8px"><div style="padding:10px 12px 8px;border-left:3px solid ${dayColor};display:flex;align-items:flex-start;gap:6px"><div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-top:2px"><button onclick="moveEx('${S.activeDay}',${si},-1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">↑</button><button onclick="moveEx('${S.activeDay}',${si},1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">↓</button></div><div style="flex:1">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="font-size:13px;font-weight:700">${t(ex.zh,ex.en)}</div>
+        <div style="font-size:13px;font-weight:700;cursor:pointer" onclick="togCollapseEx('${S.activeDay}','${entry.id}')">${t(ex.zh,ex.en)} <span style="font-size:10px;color:var(--text3)">${isCollapsed?"▶":"▼"}</span></div>
         <div style="display:flex;align-items:center;gap:4px">
           ${maxW>0&&maxW>allPR?`<span style="font-size:9px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fef08a;border-radius:5px;padding:2px 6px;font-weight:700">🏆 PR!</span>`:''}
           <button onclick="event.stopPropagation();removeFromPlan('${S.activeDay}',${plan.indexOf(entry)})" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 3px;line-height:1">×</button>
@@ -672,15 +721,28 @@ function _rToday(){
         ${allPR>0?`<span class="stat-pill" style="color:#fbbf24">PR ${allPR}kg</span>`:''}
       </div>
       ${sl?`<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${t('力量等級','Strength')}</span><span style="font-size:10px;color:${sl.c};font-weight:700">${sl.l}</span></div><div style="height:3px;background:var(--border2);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;width:${sl.p}%;background:${sl.c}"></div></div>${sl.next?`<div style="font-size:9px;color:var(--text3);margin-top:2px">→ ${t('下一級需','Next level')} ${Math.round(sl.next*S.profile.weight)}kg</div>`:''}</div>`:''}
-    </div></div><div style="padding:3px 12px 10px">
-      <div style="display:grid;grid-template-columns:18px 1fr 1fr 30px;gap:5px;padding-bottom:4px">${['#',t('KG','KG'),t('次','Reps'),''].map(l=>`<div style="font-size:8px;color:var(--text4);text-align:center;letter-spacing:.1em;text-transform:uppercase">${l}</div>`).join('')}</div>`;
-    sets.forEach((s,i)=>{h+=`<div style="display:grid;grid-template-columns:18px 1fr 1fr 30px;gap:5px;align-items:center;padding:3px 0;opacity:${s.done?.7:1}">
-      <div style="font-size:9px;color:${s.done?dayColor:'var(--text4)'};text-align:center;font-family:'JetBrains Mono',monospace">${i+1}</div>
-      <input type="number" class="num-in${s.done?' done':''}" value="${s.weight}" ${s.done?'disabled':''} onchange="upSet('${S.activeDay}','${entry.id}',${i},'weight',this.value)" style="border-color:${s.done?dayColor:'var(--border2)'};color:${s.done?dayColor:'var(--text)'}"/>
-      <input type="number" class="num-in${s.done?' done':''}" value="${s.reps}" ${s.done?'disabled':''} onchange="upSet('${S.activeDay}','${entry.id}',${i},'reps',this.value)" style="border-color:${s.done?dayColor:'var(--border2)'};color:${s.done?dayColor:'var(--text)'}"/>
-      <button class="btn-check${s.done?' done':''}" onclick="togSet('${S.activeDay}','${entry.id}',${i})" style="${s.done?'background:'+dayColor+';border-color:'+dayColor+';color:#080c14':''}">${s.done?'✓':'○'}</button>
-    </div>`;});
-    h+='</div></div>';
+    </div></div>`;
+    if(!isCollapsed){
+      h+='<div style="padding:3px 12px 10px">';
+      h+='<div style="display:grid;grid-template-columns:18px 1fr 1fr 30px;gap:5px;padding-bottom:4px">';
+      ['#',t('KG','KG'),t('次','Reps'),''].forEach(function(l){h+='<div style="font-size:8px;color:var(--text4);text-align:center;letter-spacing:.1em;text-transform:uppercase">'+l+'</div>';});
+      h+='</div>';
+      sets.forEach(function(s,i){
+        var sc=s.done?dayColor:'var(--border2)';
+        var tc=s.done?dayColor:'var(--text)';
+        var dayQ=S.activeDay;
+        var idQ=entry.id;
+        h+='<div style="display:grid;grid-template-columns:18px 1fr 1fr 30px;gap:5px;align-items:center;padding:3px 0;opacity:'+(s.done?.7:1)+'">';
+        h+='<div style="font-size:9px;color:'+(s.done?dayColor:'var(--text4)')+';text-align:center;font-family:JetBrains Mono,monospace">'+(i+1)+'</div>';
+        h+='<input type="number" class="num-in'+(s.done?' done':'')+'" value="'+s.weight+'" '+(s.done?'disabled':'')+' onchange="upSet(this)" data-day="'+dayQ+'" data-id="'+idQ+'" data-idx="'+i+'" data-field="weight" style="border-color:'+sc+';color:'+tc+'">';
+        h+='<input type="number" class="num-in'+(s.done?' done':'')+'" value="'+s.reps+'" '+(s.done?'disabled':'')+' onchange="upSet(this)" data-day="'+dayQ+'" data-id="'+idQ+'" data-idx="'+i+'" data-field="reps" style="border-color:'+sc+';color:'+tc+'">';
+        h+='<button class="btn-check'+(s.done?' done':'')+'" onclick="togSet(this)" data-day="'+dayQ+'" data-id="'+idQ+'" data-idx="'+i+'" style="'+(s.done?'background:'+dayColor+';border-color:'+dayColor+';color:#080c14':'')+'">'+(s.done?'&#10003;':'&#9711;')+'</button>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+
   });
   const{done}=dSets(S.activeDay);
   if(done>0){
@@ -694,7 +756,8 @@ function _rToday(){
   h+=`<button class="btn-ghost" onclick="switchTab('library')" style="margin-bottom:14px;margin-top:5px"><i class="ti ti-plus" style="vertical-align:-2px;font-size:14px;margin-right:4px"></i>${t('管理動作','Manage exercises')}</button>`;
   return h;
 }
-function togSet(day,id,idx){
+function togSet(el){
+  var day=el.dataset.day,id=el.dataset.id,idx=parseInt(el.dataset.idx);
   S.logs[day][id][idx].done=!S.logs[day][id][idx].done;
   if(S.logs[day][id][idx].done){
     const ex=EX[id];const muscle=ex?ex.muscle:null;
@@ -710,7 +773,11 @@ function togSet(day,id,idx){
   }
   sv('logs');rContent();rHdr();
 }
-function upSet(day,id,idx,field,val){S.logs[day][id][idx][field]=parseFloat(val)||val;sv('logs');}
+function upSet(el){
+  var day=el.dataset.day,id=el.dataset.id,idx=parseInt(el.dataset.idx),field=el.dataset.field,val=el.value;
+  if(S.logs[day]&&Array.isArray(S.logs[day][id]))S.logs[day][id][idx][field]=parseFloat(val)||val;
+  sv('logs');
+}
 function saveWorkout(){
   const today=new Date().toISOString().slice(0,10);
   const lockKey='saved_'+today+'_'+S.activeDay;
@@ -902,7 +969,7 @@ function rLibrary(container){
     if(isA){
       h+=`<div style="margin-top:9px;border-top:1px solid var(--border);padding-top:9px">
         <!-- 3D Viewer -->
-        <div id="viewer-wrap" style="height:240px;border-radius:10px;overflow:hidden;background:#0a0f1a;margin-bottom:9px;position:relative;touch-action:none">
+        <div id="viewer-wrap" style="height:240px;border-radius:10px;background:#0a0f1a;margin-bottom:9px;position:relative;touch-action:none">
           <div id="viewer-canvas" style="width:100%;height:240px;display:block"></div>
           <div style="position:absolute;top:7px;right:7px;display:flex;gap:4px;pointer-events:all">
             <button class="view-btn" onclick="setLibView('front')">${t('正面','Front')}</button>
@@ -993,10 +1060,12 @@ function init3DViewer(exKey){
   v3.animT=0;v3.theta=0.8;v3.phi=0.35;v3.tTheta=0.8;v3.tPhi=0.35;
   container.innerHTML='';
   const vc=document.createElement('canvas');
-  const W=Math.max(vw.offsetWidth||350,280),H=240;
+  const W=Math.max(vw.offsetWidth||vw.clientWidth||(window.innerWidth-28)||350,280),H=240;
   container.appendChild(vc);
   vc.width=W;vc.height=H;vc.style.cssText='width:'+W+'px;height:'+H+'px;display:block';
+  console.log('[3D] init exKey='+exKey+' W='+W+' H='+H+' vc=',vc);
   v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:false});
+  console.log('[3D] renderer created:', v3.renderer);
   v3.renderer.setPixelRatio(1);
   v3.renderer.setSize(W,H,false);v3.renderer.shadowMap.enabled=true;
   v3.renderer.setClearColor(0x080c14,1);
