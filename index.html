@@ -368,7 +368,7 @@ function calcBMI(w,h){return +((w)/((h/100)**2)).toFixed(1);}
 function bmiLbl(b){if(b<18.5)return{zh:'過輕',en:'Underweight',c:'#60a5fa'};if(b<23)return{zh:'正常',en:'Normal',c:'#4ade80'};if(b<27.5)return{zh:'過重',en:'Overweight',c:'#facc15'};return{zh:'肥胖',en:'Obese',c:'#f87171'};}
 function tdee(w,h,a){return Math.round((10*w+6.25*h-5*a+5)*1.55);}
 function strLvl(id,w,bw){const s=STD[id];if(!s||!w||!bw)return null;const r=w/bw,ls=[t('新手','Beginner'),t('初級','Novice'),t('中級','Intermediate'),t('高級','Advanced')],cs=['#94a3b8','#60a5fa','#a78bfa','#4ade80'];if(r<s[0])return{l:ls[0],next:s[0],c:cs[0],p:Math.round(r/s[0]*100)};if(r<s[1])return{l:ls[1],next:s[1],c:cs[1],p:Math.round((r-s[0])/(s[1]-s[0])*100)};if(r<s[2])return{l:ls[2],next:s[2],c:cs[2],p:Math.round((r-s[1])/(s[2]-s[1])*100)};return{l:ls[3],next:null,c:cs[3],p:100};}
-function dSets(day){let d=0,tot=0;Object.values(S.logs[day]||{}).forEach(sets=>sets.forEach(s=>{tot++;if(s.done)d++;}));return{done:d,total:tot};}
+function dSets(day){let d=0,tot=0;Object.values(S.logs[day]||{}).forEach(sets=>{if(!Array.isArray(sets))return;sets.forEach(s=>{tot++;if(s.done)d++;});});return{done:d,total:tot};}
 function getPR(id){const pts=[];S.history.forEach(s=>{const sets=s.sets&&s.sets[id];if(!sets)return;const mw=Math.max(...sets.map(s=>parseFloat(s.weight)||0));if(mw>0)pts.push({date:s.date,weight:mw});});pts.sort((a,b)=>a.date.localeCompare(b.date));let run=0;return pts.map(p=>{const isPR=p.weight>run;if(isPR)run=p.weight;return{...p,isPR};});}
 function genTasks(gId,ans,profile){
   const w=profile.weight||75,h2=profile.height||170,a=profile.age||28;
@@ -587,22 +587,15 @@ function rContent(){
 function mkCardioRow(entry,plan,dayColor){
   var ex=EX[entry.id];if(!ex)return '';
   var ci=plan.indexOf(entry);
-  var cd=!!(S.logs[S.activeDay]&&S.logs[S.activeDay]['__cardio__'+entry.id]);
-  var chk=cd?'background:var(--accent);border-color:var(--accent);color:#080c14':'';
+  var day=S.activeDay;
   var lbl=t(ex.zh,ex.en);
   var rps=entry.reps+' '+t('分鐘','min');
-  var day=S.activeDay;
-  return '<div style="background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:8px;margin-bottom:7px">'
-    +'<button class="btn-check'+(cd?' done':'')+'" onclick="togCardio(this)" data-day="'+day+'" data-id="'+entry.id+'" style="'+chk+'">'+(cd?'&#10003;':'&#9711;')+'</button>'
-    +'<i class="ti ti-run" style="font-size:16px;color:var(--text3)"></i>'
-    +'<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text3)">'+lbl+'</div>'
-    +'<div style="font-size:10px;color:var(--text4)">'+rps+'</div></div>'
-    +'<div style="display:flex;flex-direction:column;gap:1px">'
-    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="-1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1">&#8593;</button>'
-    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1">&#8595;</button>'
-    +'</div>'
-    +'<button onclick="removeFromPlan(this)" data-day="'+day+'" data-idx="'+ci+'" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 2px;line-height:1">&#215;</button>'
-    +'</div>';
+  // Cardio has 1 "set" — the whole session
+  var cdKey='__cardio__'+entry.id;
+  var cd=!!(S.logs[day]&&S.logs[day][cdKey]);
+  var bdrColor=cd?dayColor:'var(--border2)';
+  var html='<div class="card" style="border-left:3px solid '+dayColor+';margin-bottom:9px">'    +'<div style="padding:10px 12px 8px;display:flex;align-items:flex-start;gap:6px">'    +'<div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-top:2px">'    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="-1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">&#8593;</button>'    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;line-height:1.2">&#8595;</button>'    +'</div>'    +'<div style="flex:1;min-width:0">'    +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'    +'<div style="font-size:13px;font-weight:700">'+lbl+'</div>'    +'<button onclick="removeFromPlan(this)" data-day="'+day+'" data-idx="'+ci+'" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 3px;line-height:1">&#215;</button>'    +'</div>'    +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'    +'<i class="ti ti-run" style="font-size:11px;margin-right:3px"></i>'+rps    +'</div>'    +'</div></div>'    +'<div style="padding:3px 12px 10px">'    +'<div style="display:grid;grid-template-columns:18px 1fr 30px;gap:6px;padding-bottom:5px">'    +'<div style="font-size:9px;color:var(--text4);text-align:center;text-transform:uppercase">#</div>'    +'<div style="font-size:9px;color:var(--text4);text-align:center;text-transform:uppercase">'+t('時長','Duration')+'</div>'    +'<div></div>'    +'</div>'    +'<div style="display:grid;grid-template-columns:18px 1fr 30px;gap:6px;align-items:center;padding:3px 0;opacity:'+(cd?0.7:1)+'">'    +'<div style="font-size:9px;color:'+(cd?dayColor:'var(--text4)')+';text-align:center;font-family:JetBrains Mono,monospace">1</div>'    +'<div style="background:var(--bg2);border:1px solid '+(cd?dayColor:'var(--border2)')+';color:'+(cd?dayColor:'var(--text)')+';border-radius:7px;padding:5px 7px;font-family:JetBrains Mono,monospace;font-size:12px;text-align:center">'+(cd?'<span style="color:'+dayColor+'">'+rps+'</span>':rps)+'</div>'    +'<button class="btn-check'+(cd?' done':'')+'" onclick="togCardio(this)" data-day="'+day+'" data-id="'+entry.id+'" style="'+(cd?'background:'+dayColor+';border-color:'+dayColor+';color:#080c14':'')+'">'    +(cd?'&#10003;':'&#9711;')    +'</button>'    +'</div>'    +'</div>'    +'</div>';
+  return html;
 }
 
 function rToday(){
@@ -617,7 +610,7 @@ function _rToday(){
   plan.forEach(entry=>{
     const ex=EX[entry.id];if(!ex)return;
     if(ex.isCardio){h+=mkCardioRow(entry,plan,dayColor);return;}
-    const sets=S.logs[S.activeDay]?.[entry.id]||[];
+    const rawSets=S.logs[S.activeDay]?.[entry.id];const sets=Array.isArray(rawSets)?rawSets:[];
     const done=sets.filter(s=>s.done).length;const vol=sets.reduce((a,s)=>a+(s.done?(parseFloat(s.weight)||0)*(parseFloat(s.reps)||0):0),0);
     const maxW=Math.max(...sets.map(s=>parseFloat(s.weight)||0),0);const sl=strLvl(entry.id,maxW,S.profile.weight);
     const prH=getPR(entry.id);const allPR=prH.length?Math.max(...prH.map(p=>p.weight)):0;
@@ -682,7 +675,7 @@ function saveWorkout(){
   if(S.savedWorkouts&&S.savedWorkouts[lockKey]){toast(t('今日已儲存過喇！','Already saved today!'));return;}
   const{done}=dSets(S.activeDay);if(!done){toast(t('未有完成任何組數','No sets completed yet'));return;}
   const sess={date:today,day:S.activeDay,sets:{}};
-  Object.entries(S.logs[S.activeDay]).forEach(([n,sets])=>{if(sets.some(s=>s.done))sess.sets[n]=sets;});
+  Object.entries(S.logs[S.activeDay]).forEach(([n,sets])=>{if(Array.isArray(sets)&&sets.some(s=>s.done))sess.sets[n]=sets;});
   S.history=S.history.filter(h=>!(h.date===today&&h.day===S.activeDay));S.history.push(sess);
   if(!S.savedWorkouts)S.savedWorkouts={};
   S.savedWorkouts[lockKey]=true;
@@ -868,7 +861,7 @@ function rLibrary(container){
       h+=`<div style="margin-top:9px;border-top:1px solid var(--border);padding-top:9px">
         <!-- 3D Viewer -->
         <div id="viewer-wrap" style="height:240px;border-radius:10px;overflow:hidden;background:#0a0f1a;margin-bottom:9px;position:relative;touch-action:none">
-          <canvas id="viewer-canvas" style="display:block;width:100%;height:100%"></canvas>
+          <div id="viewer-canvas" style="width:100%;height:240px;display:block"></div>
           <div style="position:absolute;top:7px;right:7px;display:flex;gap:4px;pointer-events:all">
             <button class="view-btn" onclick="setLibView('front')">${t('正面','Front')}</button>
             <button class="view-btn" onclick="setLibView('side')">${t('側面','Side')}</button>
@@ -929,20 +922,20 @@ function getKF(exKey,t){
 }
 function mk(geo,mat){const m=new THREE.Mesh(geo,mat);m.castShadow=true;return m;}
 function init3DViewer(exKey){
-  // Must query from app-content since these are dynamically injected
+  if(!window.THREE){console.warn('THREE not loaded');return;}
   const content=document.getElementById('app-content');
-  const vc=content?content.querySelector('#viewer-canvas'):document.getElementById('viewer-canvas');
+  const container=content?content.querySelector('#viewer-canvas'):document.getElementById('viewer-canvas');
   const vw=content?content.querySelector('#viewer-wrap'):document.getElementById('viewer-wrap');
-  if(!vc||!vw){console.warn('3D viewer: canvas not found');return;}
-  if(!window.THREE){console.warn('3D viewer: THREE not loaded');return;}
-  if(v3.renderer){v3.renderer.dispose();if(v3.animFrame)cancelAnimationFrame(v3.animFrame);}
+  if(!container||!vw){console.warn('3D container not found');return;}
+  if(v3.renderer){if(v3.animFrame)cancelAnimationFrame(v3.animFrame);v3.renderer.dispose();v3.renderer=null;}
   v3.animT=0;v3.theta=0.8;v3.phi=0.35;v3.tTheta=0.8;v3.tPhi=0.35;
-  // Force layout recalc before reading dimensions
-  const rect=vw.getBoundingClientRect();
-  const W=Math.max(rect.width||vw.offsetWidth||320,280),H=240;
-  v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:true});
-  v3.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  vc.width=W;vc.height=H;vc.style.width=W+'px';vc.style.height=H+'px';
+  container.innerHTML='';
+  const vc=document.createElement('canvas');
+  const W=Math.max(vw.offsetWidth||350,280),H=240;
+  container.appendChild(vc);
+  vc.width=W;vc.height=H;vc.style.cssText='width:'+W+'px;height:'+H+'px;display:block';
+  v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:false});
+  v3.renderer.setPixelRatio(1);
   v3.renderer.setSize(W,H,false);v3.renderer.shadowMap.enabled=true;
   v3.renderer.setClearColor(0x080c14,1);
   v3.scene=new THREE.Scene();v3.scene.fog=new THREE.FogExp2(0x080c14,.07);
@@ -985,8 +978,8 @@ function init3DViewer(exKey){
   function onDS(e){v3.isDrag=true;const p=e.touches?e.touches[0]:e;v3.prevM={x:p.clientX,y:p.clientY};}
   function onDM(e){if(!v3.isDrag)return;const p=e.touches?e.touches[0]:e;const dx=p.clientX-v3.prevM.x,dy=p.clientY-v3.prevM.y;v3.tTheta-=dx*.008;v3.tPhi=Math.max(-.1,Math.min(1.2,v3.tPhi-dy*.006));v3.prevM={x:p.clientX,y:p.clientY};}
   function onDE(){v3.isDrag=false;}
-  vc.addEventListener('mousedown',onDS);window.addEventListener('mousemove',onDM);window.addEventListener('mouseup',onDE);
-  vc.addEventListener('touchstart',onDS,{passive:true});window.addEventListener('touchmove',onDM,{passive:true});window.addEventListener('touchend',onDE);
+  vw.addEventListener('mousedown',onDS);window.addEventListener('mousemove',onDM);window.addEventListener('mouseup',onDE);
+  vw.addEventListener('touchstart',onDS,{passive:true});window.addEventListener('touchmove',onDM,{passive:true});window.addEventListener('touchend',onDE);
   // Animate
   const clock=new THREE.Clock();let lastPI=-1;
   function animate(){
