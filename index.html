@@ -325,7 +325,49 @@ const LIB=[
   {id:'bike',name:'Stationary Bike',zh:'健身單車',cat:'cardio',muscle:['Full Body'],equip:'Machine',level:'Beginner',dEn:'Adjust seat height, maintain steady pace. Great for low-impact cardio.',dZh:'調整座椅高度，保持穩定節奏。非常適合低衝擊有氧。',lib3d:'lunge',isCardio:true},
   {id:'rowing',name:'Rowing Machine',zh:'划船機',cat:'cardio',muscle:['Full Body','Back','Legs'],equip:'Machine',level:'Beginner',dEn:'Push with legs first, then lean back and pull. Drive is 60% legs, 40% arms.',dZh:'先用腿推，再後仰並拉動。發力60%靠腿，40%靠手臂。',lib3d:'row',isCardio:true},
   {id:'jump_rope',name:'Jump Rope',zh:'跳繩',cat:'cardio',muscle:['Calves','Shoulders','Cardio'],equip:'Other',level:'Beginner',dEn:'Keep elbows close to sides, rotate wrists not arms. Land softly on balls of feet.',dZh:'手肘靠近身體，用手腕而非手臂轉繩，以腳掌前部輕輕落地。',lib3d:'run',isCardio:true},
-  {id:'hiit',name:'HIIT Intervals',zh:'高強度間歇訓練',cat:'cardio',muscle:['Full Body'],equip:'Bodyweight',level:'Intermediate',dEn:'Alternate 40s max effort with 20s rest. Repeat 8-10 rounds.',dZh:'交替40秒全力衝刺和20秒休息，重複8-10輪。',lib3d:'run',isCardio:true}];
+  {id:'hiit',name:'HIIT Intervals',zh:'高強度間歇訓練',cat:'cardio',muscle:['Full Body'],equip:'Bodyweight',level:'Intermediate',dEn:'Alternate 40s max effort with 20s rest. Repeat 8-10 rounds.',dZh:'交替40秒全力衝刺和20秒休息，重複8-10輪。',lib3d:'run',isCardio:true},
+  // ══ CHEST ══
+  {id:'low_cable_fly',name:'Low Cable Fly',zh:'低位滑輪飛鳥',cat:'chest',muscle:['Lower Chest'],equip:'Cable',level:'Beginner',dEn:'Cables set low, bring handles up and together in an arc, squeezing chest at top.',dZh:'滑輪設於低位，弧形向上合攏把手，頂部收縮胸肌。',lib3d:'curl'},
+  {id:'decline_bench',name:'Decline Bench Press',zh:'下斜臥推',cat:'chest',muscle:['Lower Chest','Triceps'],equip:'Barbell',level:'Intermediate',dEn:'Bench declined 15–30°. Press bar from lower chest up, targets lower pec.',dZh:'斜板下傾15–30度，從下胸向上推槓，針對下胸。',lib3d:'curl'},
+  {id:'close_grip_bench',name:'Close-Grip Bench Press',zh:'窄距臥推',cat:'chest',muscle:['Triceps','Inner Chest'],equip:'Barbell',level:'Intermediate',dEn:'Grip shoulder-width or narrower. Lower to lower chest, press up. Tricep focus.',dZh:'握距等肩或更窄，下降至下胸再推起，針對三頭肌。',lib3d:'curl'},
+  {id:'svend_press',name:'Svend Press',zh:'斯文德推舉',cat:'chest',muscle:['Inner Chest'],equip:'Other',level:'Beginner',dEn:'Squeeze two plates together at chest, press forward and return. Constant chest tension.',dZh:'在胸前夾緊兩片槓片，向前推出再收回，保持胸肌持續張力。',lib3d:'curl'},
+  // ══ BACK ══
+  {id:'cable_row_wide',name:'Wide-Grip Cable Row',zh:'寬距滑輪划船',cat:'back',muscle:['Upper Lats','Rear Delt'],equip:'Cable',level:'Beginner',dEn:'Wide handle or bar, pull to upper chest with elbows flaring. Upper back focus.',dZh:'寬握把，手肘向外張開拉至上胸，針對上背。',lib3d:'row'},
+  {id:'chest_supported_row',name:'Chest Supported Row',zh:'胸墊划船',cat:'back',muscle:['Lats','Rhomboids'],equip:'Machine',level:'Beginner',dEn:'Lie prone on incline bench, pull dumbbells up squeezing shoulder blades.',dZh:'俯臥於斜板，向上拉啞鈴並夾緊肩胛骨。',lib3d:'row'},
+  {id:'cable_pullover',name:'Cable Pullover',zh:'滑輪過頂下拉',cat:'back',muscle:['Lats','Serratus'],equip:'Cable',level:'Beginner',dEn:'Arms straight, pull cable from overhead to hips in an arc. Great lat stretch.',dZh:'手臂伸直，弧形將滑輪從頭頂拉至臀部，非常伸展背闊肌。',lib3d:'pull'},
+  {id:'meadows_row',name:'Meadows Row',zh:'梅多斯划船',cat:'back',muscle:['Lats','Teres Major'],equip:'Barbell',level:'Advanced',dEn:'Single arm landmine row. Pull the sleeve of a landmine bar to hip, elbow high.',dZh:'單臂地雷管划船，將地雷管拉至臀部，保持手肘高位。',lib3d:'row'},
+  {id:'back_extension',name:'Back Extension',zh:'背部伸展',cat:'back',muscle:['Lower Back','Glutes'],equip:'Machine',level:'Beginner',dEn:'Hinge forward on machine, then extend back to neutral. Add weight for more resistance.',dZh:'在背部伸展機上向前屈曲，再伸展回中立位置。',lib3d:'deadlift'},
+  // ══ LEGS ══
+  {id:'goblet_squat',name:'Goblet Squat',zh:'高腳杯深蹲',cat:'legs',muscle:['Quads','Glutes'],equip:'Dumbbell',level:'Beginner',dEn:'Hold dumbbell at chest, squat deep keeping torso upright. Great for form practice.',dZh:'雙手持啞鈴於胸前，保持上身直立深蹲至底部。',lib3d:'squat'},
+  {id:'step_up',name:'Step Up',zh:'踏台',cat:'legs',muscle:['Quads','Glutes','Balance'],equip:'Dumbbell',level:'Beginner',dEn:'Step up onto box with one leg, drive through heel to stand, lower back down.',dZh:'單腿踏上箱子，用腳跟發力站起，再緩慢放下。',lib3d:'lunge'},
+  {id:'sissy_squat',name:'Sissy Squat',zh:'西西深蹲',cat:'legs',muscle:['Quads'],equip:'Bodyweight',level:'Intermediate',dEn:'Lean back as you bend knees forward over toes. Extreme quad isolation.',dZh:'向後傾斜同時膝蓋向前超過腳趾，極度孤立股四頭肌。',lib3d:'squat'},
+  {id:'nordic_curl',name:'Nordic Hamstring Curl',zh:'北歐式腿彎舉',cat:'legs',muscle:['Hamstrings'],equip:'Bodyweight',level:'Advanced',dEn:'Kneel with feet anchored, slowly lower torso to floor then use hamstrings to pull back up.',dZh:'跪姿固定腳部，緩慢將上身降至地板，再用腿後肌拉回。',lib3d:'lgc'},
+  {id:'donkey_calf',name:'Donkey Calf Raise',zh:'驢式提踵',cat:'legs',muscle:['Calves'],equip:'Machine',level:'Beginner',dEn:'Bent-over position, weight on hips, rise onto toes. More stretch than standing.',dZh:'前傾姿勢，重量置於臀部，踮腳尖。比站立式有更大伸展。',lib3d:'calf'},
+  {id:'sumo_deadlift',name:'Sumo Deadlift',zh:'相撲硬舉',cat:'legs',muscle:['Inner Thigh','Glutes','Lower Back'],equip:'Barbell',level:'Intermediate',dEn:'Wide stance, toes out 45°. Pull bar close to body. Emphasises glutes and adductors.',dZh:'寬腳距，腳趾外展45度，槓鈴緊貼身體，強調臀肌和內收肌。',lib3d:'deadlift'},
+  // ══ SHOULDERS ══
+  {id:'cable_lateral',name:'Cable Lateral Raise',zh:'滑輪側平舉',cat:'shoulders',muscle:['Side Deltoid'],equip:'Cable',level:'Beginner',dEn:'Single arm, cable at hip height, raise arm to shoulder level. Constant tension.',dZh:'單臂，滑輪置於臀部高度，將手臂舉至肩膀高度，保持持續張力。',lib3d:'lat'},
+  {id:'leaning_lateral',name:'Leaning Lateral Raise',zh:'側傾側平舉',cat:'shoulders',muscle:['Side Deltoid'],equip:'Dumbbell',level:'Beginner',dEn:'Hold a rack, lean away, raise dumbbell in free hand. Better range of motion.',dZh:'抓住架子，向外傾斜，舉起另一手啞鈴，動作幅度更大。',lib3d:'lat'},
+  {id:'w_press',name:'W-Press (Prone Y Raise)',zh:'W字推舉',cat:'shoulders',muscle:['Rear Delt','Rotator Cuff'],equip:'Dumbbell',level:'Beginner',dEn:'Lie prone on bench, raise dumbbells in a Y shape squeezing rear delts.',dZh:'俯臥於椅上，將啞鈴呈Y形舉起，收縮後束肌。',lib3d:'lat'},
+  {id:'lu_raises',name:'Lu Raises',zh:'呂小軍舉',cat:'shoulders',muscle:['Shoulders','Rotator Cuff'],equip:'Dumbbell',level:'Intermediate',dEn:'Front raise then rotate to lateral raise in one fluid motion. Named after Lu Xiaojun.',dZh:'前平舉然後旋轉成側平舉，一氣呵成。以呂小軍命名。',lib3d:'lat'},
+  // ══ ARMS ══
+  {id:'incline_curl',name:'Incline Dumbbell Curl',zh:'斜板啞鈴彎舉',cat:'arms',muscle:['Biceps Long Head'],equip:'Dumbbell',level:'Beginner',dEn:'Sit on incline bench, arms hang behind body. Curl up for long head stretch.',dZh:'坐於斜板，手臂垂於身後，向上捲起以拉伸二頭長頭。',lib3d:'curl'},
+  {id:'spider_curl',name:'Spider Curl',zh:'蜘蛛彎舉',cat:'arms',muscle:['Biceps'],equip:'Barbell',level:'Beginner',dEn:'Lie prone on incline bench, curl bar up, constant bicep tension.',dZh:'俯臥於斜板，向上捲起槓鈴，保持二頭肌持續張力。',lib3d:'curl'},
+  {id:'drag_curl',name:'Drag Curl',zh:'拖拉彎舉',cat:'arms',muscle:['Biceps Long Head'],equip:'Barbell',level:'Beginner',dEn:'Drag bar up body instead of curling out. Elbows travel back. Long head focus.',dZh:'沿身體向上拖拉槓鈴而非向外捲起，手肘向後移動，針對長頭。',lib3d:'curl'},
+  {id:'reverse_curl',name:'Reverse Curl',zh:'反握彎舉',cat:'arms',muscle:['Brachialis','Forearms'],equip:'Barbell',level:'Beginner',dEn:'Overhand grip, curl bar up. Targets brachialis and forearm extensors.',dZh:'正握（手背朝上）捲起槓鈴，針對肱肌和前臂伸肌。',lib3d:'curl'},
+  {id:'wrist_curl',name:'Wrist Curl',zh:'腕部彎舉',cat:'arms',muscle:['Forearms'],equip:'Barbell',level:'Beginner',dEn:'Forearms on bench, wrists hanging, curl wrists up and lower. Forearm flexors.',dZh:'前臂置於椅上，手腕懸空，向上捲起手腕再放下，針對前臂屈肌。',lib3d:'curl'},
+  {id:'tricep_kickback',name:'Tricep Kickback',zh:'三頭後踢',cat:'arms',muscle:['Triceps'],equip:'Dumbbell',level:'Beginner',dEn:'Hinge forward, upper arm parallel to floor, extend forearm back squeezing tricep.',dZh:'前傾，上臂平行地面，向後伸展前臂並收縮三頭肌。',lib3d:'def'},
+  {id:'jm_press',name:'JM Press',zh:'JM推舉',cat:'arms',muscle:['Triceps'],equip:'Barbell',level:'Intermediate',dEn:'Hybrid between skull crusher and close-grip bench. Bar to upper chest area.',dZh:'介於仰臥三頭伸展和窄距臥推之間的混合動作。',lib3d:'curl'},
+  // ══ CORE ══
+  {id:'pallof_press',name:'Pallof Press',zh:'帕洛夫推舉',cat:'core',muscle:['Core','Obliques'],equip:'Cable',level:'Beginner',dEn:'Stand perpendicular to cable, press out and return. Anti-rotation core training.',dZh:'垂直站於滑輪旁，向外推出再收回，抗旋轉核心訓練。',lib3d:'plank'},
+  {id:'dead_bug',name:'Dead Bug',zh:'死蟲式',cat:'core',muscle:['Deep Core','Lower Back'],equip:'Bodyweight',level:'Beginner',dEn:'On back, opposite arm and leg extend simultaneously. Spine stays pressed to floor.',dZh:'躺背，對側手腳同時伸展，脊柱保持緊貼地面。',lib3d:'plank'},
+  {id:'hollow_hold',name:'Hollow Hold',zh:'空心撐',cat:'core',muscle:['Core','Hip Flexors'],equip:'Bodyweight',level:'Intermediate',dEn:'Lie on back, press lower back to floor, raise legs and shoulders, hold.',dZh:'躺背，下背壓地，舉起腿和肩膀並保持，全程保持下背緊貼地面。',lib3d:'plank'},
+  {id:'cable_woodchop',name:'Cable Woodchop',zh:'滑輪伐木',cat:'core',muscle:['Obliques','Core'],equip:'Cable',level:'Beginner',dEn:'Rotate cable from high to low across body, engaging obliques throughout.',dZh:'將滑輪從高位到低位橫跨身體旋轉，全程收縮腹斜肌。',lib3d:'plank'},
+  {id:'landmine_rotation',name:'Landmine Rotation',zh:'地雷管旋轉',cat:'core',muscle:['Obliques','Shoulders'],equip:'Barbell',level:'Beginner',dEn:'Hold end of landmine bar, rotate side to side through full range.',dZh:'持地雷管末端，左右旋轉至最大幅度。',lib3d:'plank'},
+  // ══ CARDIO ══
+  {id:'stair_climber',name:'Stair Climber',zh:'踏步機',cat:'cardio',muscle:['Glutes','Calves','Quads'],equip:'Machine',level:'Beginner',dEn:'Steady climbing motion. Keep upright, avoid leaning on rails. Great glute work.',dZh:'穩定踏步動作，保持直立，避免倚靠扶手，有效鍛鍊臀肌。',lib3d:'lunge',isCardio:true},
+  {id:'battle_ropes',name:'Battle Ropes',zh:'戰繩',cat:'cardio',muscle:['Shoulders','Core','Arms'],equip:'Other',level:'Beginner',dEn:'Alternate or simultaneous waves. Keep core braced. 30s on, 15s off intervals.',dZh:'交替或同時甩動繩子，保持核心收緊，30秒做15秒休息間歇。',lib3d:'lat',isCardio:true},
+  {id:'sled_push',name:'Sled Push',zh:'推雪橇',cat:'cardio',muscle:['Quads','Glutes','Chest'],equip:'Other',level:'Intermediate',dEn:'Low hips, drive through legs. Explosively push sled across the floor.',dZh:'降低臀部，用腿發力，爆發性地推動雪橇。',lib3d:'lunge',isCardio:true},
+  {id:'box_jump',name:'Box Jump',zh:'跳箱',cat:'cardio',muscle:['Quads','Glutes','Calves'],equip:'Other',level:'Intermediate',dEn:'Swing arms, explode upward, land softly on box with both feet. Step down.',dZh:'擺臂，爆發向上，雙腳輕輕落於箱子上，再踏步下來。',lib3d:'squat',isCardio:true}];
 const LIB_CATS=['all','chest','back','legs','shoulders','arms','core','cardio'];
 const LC={chest:'#ec4899',back:'#06b6d4',legs:'#22c55e',shoulders:'#a855f7',arms:'#f97316',core:'#eab308',cardio:'#f87171'};
 
@@ -967,14 +1009,14 @@ function rLibrary(container){
         <i class="ti ti-chevron-${isA?'up':'down'}" style="font-size:13px;color:var(--text3);flex-shrink:0;margin-top:1px"></i>
       </div>`;
     if(isA){
-      h+=`<div style="margin-top:9px;border-top:1px solid var(--border);padding-top:9px">
+      h+=`<div style="margin-top:9px;border-top:1px solid var(--border);padding-top:9px" onclick="event.stopPropagation()">
         <!-- 3D Viewer -->
         <div id="viewer-wrap" style="height:240px;border-radius:10px;background:#0a0f1a;margin-bottom:9px;position:relative;touch-action:none">
           <div id="viewer-canvas" style="width:100%;height:240px;display:block"></div>
           <div style="position:absolute;top:7px;right:7px;display:flex;gap:4px;pointer-events:all">
-            <button class="view-btn" onclick="setLibView('front')">${t('正面','Front')}</button>
-            <button class="view-btn" onclick="setLibView('side')">${t('側面','Side')}</button>
-            <button class="view-btn" onclick="setLibView('iso')">${t('等距','Iso')}</button>
+            <button class="view-btn" onclick="event.stopPropagation();setLibView('front')">${t('正面','Front')}</button>
+            <button class="view-btn" onclick="event.stopPropagation();setLibView('side')">${t('側面','Side')}</button>
+            <button class="view-btn" onclick="event.stopPropagation();setLibView('iso')">${t('等距','Iso')}</button>
           </div>
           <div style="position:absolute;bottom:7px;left:7px;font-size:9px;color:var(--text3);background:rgba(8,12,20,.7);border-radius:5px;padding:2px 7px">${t('拖動旋轉','Drag to rotate')}</div>
           <div id="phase-info" style="position:absolute;bottom:7px;right:7px;font-size:9px;color:var(--accent);background:rgba(8,12,20,.7);border-radius:5px;padding:2px 7px"></div>
@@ -984,7 +1026,7 @@ function rLibrary(container){
         <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:9px">${ex.muscle.map(m=>`<span style="font-size:9px;background:var(--bg2);border-radius:5px;padding:2px 6px;color:var(--text3)">${m}</span>`).join('')}</div>
         <!-- Add to day -->
         <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:5px">${t('加入哪天的計劃？','Add to which day?')}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">${WD.map(d=>{const already=(S.customPlan[d]||[]).some(e=>e.id===ex.id);return`<button class="btn-add-day${already?' added':''}" data-ex="${ex.id}" data-day="${d}" onclick="togExInPlan('${ex.id}','${d}')">${already?`<i class="ti ti-check" style="font-size:10px"></i>`:'+'}${d}</button>`;}).join('')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${WD.map(d=>{const already=(S.customPlan[d]||[]).some(e=>e.id===ex.id);return`<button class="btn-add-day${already?' added':''}" data-ex="${ex.id}" data-day="${d}" onclick="event.stopPropagation();togExInPlan('${ex.id}','${d}')">${already?`<i class="ti ti-check" style="font-size:10px"></i>`:'+'}${d}</button>`;}).join('')}</div>
       </div>`;
     }
     h+='</div>';
@@ -994,7 +1036,20 @@ function rLibrary(container){
   if(S.libSel){
     const ex=LIB.find(e=>e.id===S.libSel);
     if(ex)// Force reflow then init 3D
-requestAnimationFrame(()=>requestAnimationFrame(()=>init3DViewer(ex.lib3d||'squat')));
+// Delay until card is fully visible
+setTimeout(function(){
+  // Verify viewer-wrap has actual dimensions
+  var content=document.getElementById('app-content');
+  var vw=content&&content.querySelector('#viewer-wrap');
+  if(vw&&vw.offsetWidth>0){
+    init3DViewer(ex.lib3d||'squat');
+  } else {
+    // Try once more after another paint
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ init3DViewer(ex.lib3d||'squat'); });
+    });
+  }
+},150);
   }
 }
 function selLibEx(id){S.libSel=S.libSel===id?null:id;rLibrary(document.getElementById('app-content'));}
@@ -1064,11 +1119,17 @@ function init3DViewer(exKey){
   container.appendChild(vc);
   vc.width=W;vc.height=H;vc.style.cssText='width:'+W+'px;height:'+H+'px;display:block';
   console.log('[3D] init exKey='+exKey+' W='+W+' H='+H+' vc=',vc);
-  v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:false});
+  try {
+    v3.renderer=new THREE.WebGLRenderer({canvas:vc,antialias:true,alpha:false});
+  } catch(err) {
+    console.error('[3D] WebGLRenderer failed:',err);
+    container.innerHTML='<div style="color:var(--text3);font-size:11px;text-align:center;padding:60px 20px">WebGL unavailable<br><small>Try Chrome or Safari</small></div>';
+    return;
+  }
   console.log('[3D] renderer created:', v3.renderer);
   v3.renderer.setPixelRatio(1);
   v3.renderer.setSize(W,H,false);v3.renderer.shadowMap.enabled=true;
-  v3.renderer.setClearColor(0x080c14,1);
+  v3.renderer.setClearColor(0x0d1f35,1);// slightly lighter for debug
   v3.scene=new THREE.Scene();v3.scene.fog=new THREE.FogExp2(0x080c14,.07);
   v3.camera=new THREE.PerspectiveCamera(45,W/H,.1,100);
   // Lights
