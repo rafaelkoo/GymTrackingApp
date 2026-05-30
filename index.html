@@ -115,9 +115,9 @@ canvas#pc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════
+<!-- ===============================================================
      ONBOARDING
-════════════════════════════════════════════════════════════════ -->
+================================================================ -->
 <div id="onboard">
   <div class="ob-step active" id="ob0" style="align-items:center;justify-content:center;text-align:center;gap:22px">
     <div style="font-size:50px">🏋️</div>
@@ -163,9 +163,9 @@ canvas#pc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
+<!-- ===============================================================
      MAIN APP
-════════════════════════════════════════════════════════════════ -->
+================================================================ -->
 <div id="app" style="display:none;flex:1;flex-direction:column;overflow:hidden">
   <div id="app-header"></div>
   <div id="app-content" class="fade-up"></div>
@@ -192,12 +192,12 @@ canvas#pc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 <div id="toast"></div>
 
 <script>
-// ═══════════════ DB / PERSISTENCE ═══════════════
+// =============== DB / PERSISTENCE ===============
 const DB={
   get:(k,d)=>{try{const v=localStorage.getItem('ft_'+k);return v!=null?JSON.parse(v):d;}catch{return d;}},
   set:(k,v)=>{try{localStorage.setItem('ft_'+k,JSON.stringify(v));}catch{}}
 };
-// ═══════════════ CONSTANTS ═══════════════
+// =============== CONSTANTS ===============
 const SCORE_CFG={set_done:5,task_done:10,pr_broken:25,workout_saved:15};
 const LEVEL_XP=500;
 const MUSCLE_MAP={
@@ -294,7 +294,7 @@ const LIB=[
 const LIB_CATS=['all','chest','back','legs','shoulders','arms','core','cardio'];
 const LC={chest:'#ec4899',back:'#06b6d4',legs:'#22c55e',shoulders:'#a855f7',arms:'#f97316',core:'#eab308',cardio:'#f87171'};
 
-// ═══════════════ STATE ═══════════════
+// =============== STATE ===============
 let S={
   lang:DB.get('lang','zh'),
   tab:'today',
@@ -334,7 +334,7 @@ function ensLogs(){
   });
 }
 
-// ═══════════════ SCORING ═══════════════
+// =============== SCORING ===============
 function chkWeek(){
   const now=new Date(),mon=new Date(now);
   mon.setDate(now.getDate()-((now.getDay()+6)%7));mon.setHours(0,0,0,0);
@@ -363,7 +363,7 @@ function grade(pct){
 }
 function getLevelXP(){const lvl=Math.floor(S.scores.total/LEVEL_XP);const xpInLevel=S.scores.total%LEVEL_XP;return{level:lvl+1,xp:xpInLevel,pct:Math.round(xpInLevel/LEVEL_XP*100)};}
 
-// ═══════════════ HELPERS ═══════════════
+// =============== HELPERS ===============
 function calcBMI(w,h){return +((w)/((h/100)**2)).toFixed(1);}
 function bmiLbl(b){if(b<18.5)return{zh:'過輕',en:'Underweight',c:'#60a5fa'};if(b<23)return{zh:'正常',en:'Normal',c:'#4ade80'};if(b<27.5)return{zh:'過重',en:'Overweight',c:'#facc15'};return{zh:'肥胖',en:'Obese',c:'#f87171'};}
 function tdee(w,h,a){return Math.round((10*w+6.25*h-5*a+5)*1.55);}
@@ -383,11 +383,11 @@ function genTasks(gId,ans,profile){
 }
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
 
-// ═══════════════ TIMER ═══════════════
+// =============== TIMER ===============
 function startTimer(sec){clearInterval(timerInt);S.timerSec=sec;S.timerMax=sec;S.timerOn=true;timerInt=setInterval(()=>{if(S.timerSec>0){S.timerSec--;rHdr();}else{clearInterval(timerInt);S.timerOn=false;rHdr();}},1000);}
 function stopTimer(){clearInterval(timerInt);S.timerSec=null;S.timerOn=false;rHdr();}
 
-// ═══════════════ ONBOARDING ═══════════════
+// =============== ONBOARDING ===============
 function setLang(l){S.lang=l;DB.set('lang',l);S.obStep=1;S.obGoal=null;S.obAnswers={};S.obQIdx=0;showOb();}
 function showOb(){
   document.querySelectorAll('.ob-step').forEach(e=>e.classList.remove('active'));
@@ -449,7 +449,7 @@ function finishOnboard(){
   ensLogs();renderApp();
 }
 
-// ═══════════════ LEVEL UP ANIMATIONS ═══════════════
+// =============== LEVEL UP ANIMATIONS ===============
 const cv=document.getElementById('pc');
 const cx2=cv&&cv.getContext('2d');
 let parts=[];
@@ -469,7 +469,7 @@ function burstConfetti(){resizePc();const bx=window.innerWidth/2,by=window.inner
 }
 function showLvlUp(title,sub,isLvl){
   if(isLvl){const lxi=getLevelXP();document.getElementById('lv-num').textContent=lxi.level;}
-  else document.getElementById('lv-num').textContent=title==='Day'?'✓':'🏆';
+  else document.getElementById('lv-num').textContent=title==='Day'?'OK':'WIN';
   document.getElementById('lv-title').textContent=title;
   document.getElementById('lv-sub').textContent=sub;
   document.getElementById('lv-xp-bar').style.width='0';
@@ -484,7 +484,7 @@ function dismissLvl(){
   renderApp();
 }
 
-// ═══════════════ RENDER ENGINE ═══════════════
+// =============== RENDER ENGINE ===============
 function renderApp(){chkWeek();rHdr();rNav();rContent();}
 function rHdr(){
   const hdr=document.getElementById('app-header');if(!hdr)return;
@@ -582,7 +582,29 @@ function rContent(){
   if(S.tab==='score')setTimeout(animMBars,80);
 }
 
-// ═══════════════ TODAY TAB ═══════════════
+// =============== TODAY TAB ===============
+
+function mkCardioRow(entry,plan,dayColor){
+  var ex=EX[entry.id];if(!ex)return '';
+  var ci=plan.indexOf(entry);
+  var cd=!!(S.logs[S.activeDay]&&S.logs[S.activeDay]['__cardio__'+entry.id]);
+  var chk=cd?'background:var(--accent);border-color:var(--accent);color:#080c14':'';
+  var lbl=t(ex.zh,ex.en);
+  var rps=entry.reps+' '+t('分鐘','min');
+  var day=S.activeDay;
+  return '<div style="background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+    +'<button class="btn-check'+(cd?' done':'')+'" onclick="togCardio(this)" data-day="'+day+'" data-id="'+entry.id+'" style="'+chk+'">'+(cd?'&#10003;':'&#9711;')+'</button>'
+    +'<i class="ti ti-run" style="font-size:16px;color:var(--text3)"></i>'
+    +'<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text3)">'+lbl+'</div>'
+    +'<div style="font-size:10px;color:var(--text4)">'+rps+'</div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:1px">'
+    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="-1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1">&#8593;</button>'
+    +'<button onclick="moveEx(this)" data-day="'+day+'" data-idx="'+ci+'" data-dir="1" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1">&#8595;</button>'
+    +'</div>'
+    +'<button onclick="removeFromPlan(this)" data-day="'+day+'" data-idx="'+ci+'" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 2px;line-height:1">&#215;</button>'
+    +'</div>';
+}
+
 function rToday(){
   const plan=S.customPlan[S.activeDay]||[];const dayColor=PC[S.activeDay];
   let h=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:11px">`;
@@ -591,18 +613,7 @@ function rToday(){
   if(!plan.length){h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:22px;text-align:center;margin-bottom:9px"><i class="ti ti-moon" style="font-size:28px;color:var(--text3);display:block;margin-bottom:7px"></i><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:5px">${t('休息日 💤','Rest Day 💤')}</div><div style="font-size:11px;color:var(--text3)">${t('好好恢復，明天繼續！','Recover well — back at it tomorrow!')}</div></div>`;return h+'<div style="padding-bottom:14px"></div>';}
   plan.forEach(entry=>{
     const ex=EX[entry.id];if(!ex)return;
-    if(ex.isCardio){
-      const ci=plan.indexOf(entry);const cd=!!S.logs[S.activeDay]['__cardio__'+entry.id];
-      h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:8px;margin-bottom:7px;opacity:${cd?.7:1}">
-        <button class="btn-check${cd?' done':''}" onclick="togCardio('${S.activeDay}','${entry.id}')" style="${cd?'background:var(--accent);border-color:var(--accent);color:#080c14':''}">${cd?'✓':'○'}</button>
-        <i class="ti ti-run" style="font-size:16px;color:var(--text3)"></i>
-        <div style="flex:1"><div style="font-size:12px;font-weight:600;color:${cd?'var(--text3)':'var(--text3)'}">${t(ex.zh,ex.en)}</div><div style="font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace">${entry.reps} ${t('分鐘','min')}</div></div>
-        <div style="display:flex;flex-direction:column;gap:1px">
-          <button onclick="moveEx('${S.activeDay}',${ci},-1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1" title="Move up">↑</button>
-          <button onclick="moveEx('${S.activeDay}',${ci},1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1" title="Move down">↓</button>
-        </div>
-        <button onclick="removeFromPlan('${S.activeDay}',${ci})" style="background:none;border:none;color:var(--text4);font-size:18px;cursor:pointer;padding:0 2px;line-height:1">×</button>
-      </div>`;return;}
+    if(ex.isCardio){h+=mkCardioRow(entry,plan,dayColor);return;}
     const sets=S.logs[S.activeDay]?.[entry.id]||[];
     const done=sets.filter(s=>s.done).length;const vol=sets.reduce((a,s)=>a+(s.done?(parseFloat(s.weight)||0)*(parseFloat(s.reps)||0):0),0);
     const maxW=Math.max(...sets.map(s=>parseFloat(s.weight)||0),0);const sl=strLvl(entry.id,maxW,S.profile.weight);
@@ -686,7 +697,7 @@ function saveWorkout(){
   toast(t('訓練已儲存！+15分','Workout saved! +15pts'));rContent();rHdr();
 }
 
-// ═══════════════ TASKS TAB ═══════════════
+// =============== TASKS TAB ===============
 function rTasks(){
   const gd=S.goalId?GOALS.find(g=>g.id===S.goalId):null;
   const todayIdx=new Date().getDay()===0?6:new Date().getDay()-1;
@@ -716,7 +727,7 @@ function rTasks(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div>
         <div style="font-size:16px;font-weight:800">${new Date().toLocaleDateString(S.lang==='zh'?'zh-HK':'en-GB',{weekday:'long'})}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:1px">${t('今日任務','Today's tasks')}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${t('今日任務','Todays tasks')}</div>
       </div>
       ${gd?`<div style="display:inline-flex;align-items:center;gap:5px;background:${gd.bg};border-radius:99px;padding:3px 10px"><i class="ti ${gd.icon}" style="color:${gd.color};font-size:12px"></i><span style="font-size:10px;font-weight:700;color:${gd.color}">${t(gd.zh,gd.en)}</span></div>`:''}
     </div>
@@ -747,9 +758,9 @@ function rTasks(){
   // Training summary card (link to today tab)
   if(planExes.length||planCardio.length){
     h+=`<div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:8px">${t('今日訓練','Today's Training')}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:8px">${t('今日訓練','Todays Training')}</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${planExes.map(e=>t(EX[e.id]?.zh||e.id,EX[e.id]?.en||e.id)).join(' · ')}</div>
-      <button onclick="switchTab('today')" style="background:var(--accent);color:#080c14;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%">${t('去今日訓練頁 →','Go to Today's Workout →')}</button>
+      <button onclick="switchTab('today')" style="background:var(--accent);color:#080c14;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%">${t('去今日訓練頁 →','Go to Todays Workout →')}</button>
     </div>`;
   }
 
@@ -761,7 +772,7 @@ function togHabitTask(key,pts){
   sv('completedTasks');rContent();rHdr();
 }
 
-// ═══════════════ SCORE TAB ═══════════════
+// =============== SCORE TAB ===============
 function rScore(){
   const lxi=getLevelXP();const weekly=S.scores.weekly||0;const total=S.scores.total||0;
   const weekGrade=grade(Math.min(100,Math.round(weekly/3)));
@@ -820,7 +831,7 @@ function animMBars(){
   Object.entries(MUSCLE_MAP).forEach(([id,cfg])=>{const raw=S.scores.breakdown?.[id]||0;const pct=Math.min(100,Math.round(raw/Math.max(cfg.target,1)*100));const el=document.getElementById('mb-'+id);if(el)setTimeout(()=>el.style.width=pct+'%',40);});
 }
 
-// ═══════════════ LIBRARY + 3D VIEWER ═══════════════
+// =============== LIBRARY + 3D VIEWER ===============
 function rLibrary(container){
   // Three.js loaded from head
   const filtered=LIB.filter(ex=>{
@@ -985,7 +996,7 @@ function init3DViewer(exKey){
     else if(bp==='row'){v3.legL.rotation.x=r(-kf.torso*.28);v3.legR.rotation.x=r(-kf.torso*.28);v3.legL.userData.ll.rotation.x=r(kf.torso*.38);v3.legR.userData.ll.rotation.x=r(kf.torso*.38);fig.position.y=-(kf.torso/90)*.18;v3.armL.rotation.x=r(kf.torso-kf.arm*.38);v3.armR.rotation.x=r(kf.torso-kf.arm*.38);v3.armL.rotation.z=r(11);v3.armR.rotation.z=r(-11);const bYr=fig.position.y-.45+(kf.arm/80)*.5;bg.position.set(0,bYr,.32-(kf.arm/80)*.22);bg.rotation.x=r(kf.torso*.28);}
     else{v3.legL.rotation.x=r(-kf.hip*.38);v3.legR.rotation.x=r(kf.hip*.82);v3.legL.userData.ll.rotation.x=r(kf.hip*.48);v3.legR.userData.ll.rotation.x=r(kf.hip*1.08);v3.legL.position.z=-(kf.hip/90)*.28;v3.legR.position.z=(kf.hip/90)*.22;fig.position.y=-(kf.hip/90)*.38;}
     // Phase label
-    if(kf.phaseIdx!==lastPI){lastPI=kf.phaseIdx;const ct=document.getElementById('app-content');const pi=ct?ct.querySelector('#phase-info'):document.getElementById('phase-info');if(pi){const phases=ex3.phases||[];pi.textContent=phases[kf.phaseIdx]||'';}}}
+    if(kf.phaseIdx!==lastPI){lastPI=kf.phaseIdx;const ct=document.getElementById('app-content');const pi=ct?ct.querySelector('#phase-info'):document.getElementById('phase-info');if(pi){const phases=ex3.phases||[];pi.textContent=phases[kf.phaseIdx]||'';}}
     // Camera
     v3.theta+=(v3.tTheta-v3.theta)*.09;v3.phi+=(v3.tPhi-v3.phi)*.09;
     if(!v3.isDrag)v3.tTheta+=dt*.14;
@@ -1000,7 +1011,7 @@ window.setLibView=function(v){
   else{v3.tTheta=.85;v3.tPhi=.42;}
 };
 
-// ═══════════════ PROFILE TAB ═══════════════
+// =============== PROFILE TAB ===============
 function rProfile(){
   const bmi=calcBMI(S.profile.weight,S.profile.height);const bi=bmiLbl(bmi);
   const td=tdee(S.profile.weight,S.profile.height,S.profile.age);
@@ -1041,7 +1052,7 @@ function toggleLang(){S.lang=S.lang==='zh'?'en':'zh';DB.set('lang',S.lang);rende
 function toggleBMI(){S.bmiOpen=!S.bmiOpen;rHdr();}
 
 
-// ═══════════════ DRAG-TO-REORDER ═══════════════
+// =============== DRAG-TO-REORDER ===============
 let dragIdx=null,dragDay=null;
 function dragStart(e){
   dragIdx=parseInt(e.currentTarget.dataset.idx);
@@ -1065,12 +1076,12 @@ function dragDrop(e){
   plan.splice(toIdx,0,moved);
   sv('customPlan');rContent();
 }
-function removeFromPlan(day,idx){
+function removeFromPlan(el){var day,idx;if(typeof el==='object'&&el.dataset){day=el.dataset.day;idx=parseInt(el.dataset.idx);}else{day=arguments[0];idx=arguments[1];}
   S.customPlan[day].splice(idx,1);
   sv('customPlan','logs');rContent();
   toast(t('已移除','Removed'));
 }
-function moveEx(day,idx,dir){
+function moveEx(el){var day=el.dataset.day,idx=parseInt(el.dataset.idx),dir=parseInt(el.dataset.dir);
   const plan=S.customPlan[day];
   const to=idx+dir;
   if(to<0||to>=plan.length)return;
@@ -1078,7 +1089,7 @@ function moveEx(day,idx,dir){
   plan.splice(to,0,item);
   sv('customPlan');rContent();
 }
-function togCardio(day,exId){
+function togCardio(el){var day=el.dataset.day,exId=el.dataset.id;
   if(!S.logs[day])S.logs[day]={};
   const key='__cardio__'+exId;
   const wasDone=!!S.logs[day][key];
@@ -1097,7 +1108,7 @@ function togCardio(day,exId){
   sv('logs');rContent();rHdr();
 }
 
-// ═══════════════ INIT ═══════════════
+// =============== INIT ===============
 ensLogs();chkWeek();
 if(DB.get('goalId',null)&&DB.get('profile',null)){
   document.getElementById('onboard').classList.add('hidden');
