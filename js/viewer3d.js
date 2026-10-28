@@ -107,84 +107,132 @@ function canvasTex(w, h, draw, rep) {
 }
 
 // ---------- the figure ----------
+// Muscle groups the highlight can target. Coarse names (old API) expand to fine ones.
+export const MUSCLE_GROUPS = {
+  chest: ['pec'], back: ['lats', 'traps', 'rhomb', 'lowback'], delt: ['deltF', 'deltS', 'deltR'], upper: ['biceps', 'triceps'],
+  fore: ['forearm'], abdomen: ['abs', 'obliques'], pelvis: ['glutes'], thigh: ['quads', 'hams', 'adductors'], shin: ['calves', 'tibialis'],
+  hand: [], head: [], foot: []
+};
+let FIBER = null;
+function fiberTex() { // muscle-fibre striations: light, so it only tints; reads clearly once a muscle turns red
+  if (FIBER) return FIBER;
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 256, 128);
+  for (let x = 0; x < 256;) { const w = 1 + Math.random() * 2.4, a = 0.05 + Math.random() * 0.12; g.fillStyle = `rgba(60,20,15,${a})`; g.fillRect(x, 0, w, 128); x += w + 1.5 + Math.random() * 3; }
+  for (let i = 0; i < 1400; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * 0.25})`; g.fillRect(Math.random() * 256, Math.random() * 128, 1, 3 + Math.random() * 6); }
+  FIBER = new T.CanvasTexture(c); FIBER.colorSpace = T.SRGBColorSpace; FIBER.wrapS = FIBER.wrapT = T.RepeatWrapping; FIBER.repeat.set(3, 1); FIBER.anisotropy = 4;
+  return FIBER;
+}
 function buildFigure(opts = {}) {
   const ghost = !!opts.ghost;
   const parts = {};
   const mats = [];
-  const mk = (color = COL.skin) => {
+  const mk = (color = COL.skin, fiber = false) => {
     const m = ghost ? new T.MeshStandardMaterial({ color: COL.ghost, transparent: true, opacity: 0.26, depthWrite: false, roughness: 0.6, emissive: new T.Color(COL.ghost).multiplyScalar(0.25) })
-      : new T.MeshStandardMaterial({ color, roughness: 0.58, metalness: 0.0 });
+      : new T.MeshStandardMaterial({ color, roughness: fiber ? 0.5 : 0.6, metalness: 0.0, ...(fiber ? { map: fiberTex(), bumpMap: fiberTex(), bumpScale: 0.35 } : {}) });
     mats.push(m); return m;
   };
   const mesh = (g, m, name) => { const o = new T.Mesh(g, m); o.castShadow = !ghost; o.receiveShadow = !ghost; if (name) (parts[name] = parts[name] || []).push(o); return o; };
-  const ell = (sx, sy, sz, m, name) => { const o = mesh(new T.SphereGeometry(1, 24, 16), m, name); o.scale.set(sx, sy, sz); return o; };
+  const SPH = new T.SphereGeometry(1, 28, 18);
+  const ell = (sx, sy, sz, m, name) => { const o = mesh(SPH, m, name); o.scale.set(sx, sy, sz); return o; };
+  // a muscle: own fibre material so it can turn red on its own; fibres run along local Y
+  const mus = (name, sx, sy, sz, parent, pos, rot) => {
+    // sink each muscle into the body and widen it a little so it reads as definition, not a stuck-on lump
+    const o = ell(sx * 1.12, sy * 1.04, sz * 0.78, mk(COL.skin, true), name); o.position.set(pos[0] * 0.94, pos[1], pos[2] * 0.94); if (rot) o.rotation.set(...rot); parent.add(o); return o;
+  };
 
   const root = new T.Group();
   const pelvis = new T.Group(); root.add(pelvis);
   const spine = new T.Group(); spine.rotation.order = 'XYZ'; pelvis.add(spine);
   const neck = new T.Group(); neck.position.set(0, B.torso, 0); spine.add(neck);
+  const skin = mk();
 
-  // pelvis + glutes
-  const mP = mk(); const hips = mesh(lathe([[0, -0.11], [0.1, -0.1], [0.15, -0.05], [0.162, 0.02], [0.148, 0.09], [0.138, 0.13]], 24), mP, 'pelvis');
-  hips.scale.set(1, 1, 0.72); pelvis.add(hips);
-  for (const s of [-1, 1]) { const g = ell(0.08, 0.085, 0.07, mP, 'pelvis'); g.position.set(s * 0.072, -0.03, -0.065); pelvis.add(g); }
-  // abdomen (waist) with a hint of abs
-  const mA = mk(); const abd = mesh(lathe([[0.136, 0.06], [0.128, 0.12], [0.13, 0.18], [0.142, 0.24], [0.15, 0.27]], 24), mA, 'abdomen');
-  abd.scale.set(1, 1, 0.7); spine.add(abd);
-  const absM = ell(0.08, 0.095, 0.024, mA, 'abdomen'); absM.position.set(0, 0.17, 0.08); spine.add(absM);
-  // chest: front half (pecs) and back half (lats/traps) for highlighting
+  // ── core body (skin) ──
+  const hips = mesh(lathe([[0, -0.11], [0.1, -0.1], [0.15, -0.05], [0.162, 0.02], [0.148, 0.09], [0.138, 0.13]], 28), skin); hips.scale.set(1, 1, 0.72); pelvis.add(hips);
+  const abd = mesh(lathe([[0.136, 0.06], [0.128, 0.12], [0.13, 0.18], [0.142, 0.24], [0.15, 0.27]], 28), skin); abd.scale.set(1, 1, 0.7); spine.add(abd);
   const prof = [[0.15, 0.26], [0.168, 0.31], [0.18, 0.37], [0.182, 0.42], [0.168, 0.46], [0.12, 0.5], [0.06, 0.52]];
-  const mC = mk(), mB = mk();
-  const chF = mesh(lathe(prof, 24, -Math.PI / 2, Math.PI), mC, 'chest'); chF.scale.set(1.05, 1, 0.66); spine.add(chF);
-  const chB = mesh(lathe(prof, 24, Math.PI / 2, Math.PI), mB, 'back'); chB.scale.set(1.05, 1, 0.66); spine.add(chB);
+  const chest = mesh(lathe(prof, 28), skin); chest.scale.set(1.05, 1, 0.66); spine.add(chest);
+
   for (const s of [-1, 1]) {
-    const pec = ell(0.085, 0.058, 0.034, mC, 'chest'); pec.position.set(s * 0.078, 0.375, 0.084); pec.rotation.z = s * 0.25; spine.add(pec);
-    const lat = ell(0.05, 0.13, 0.075, mB, 'back'); lat.position.set(s * 0.145, 0.32, -0.035); lat.rotation.z = s * -0.18; spine.add(lat);
+    // glutes
+    mus('glutes', 0.085, 0.09, 0.07, pelvis, [s * 0.072, -0.03, -0.068]);
+    mus('glutes', 0.05, 0.06, 0.04, pelvis, [s * 0.125, 0.0, -0.04]);           // glute medius
+    // chest: pec major as two fanned lobes
+    mus('pec', 0.088, 0.058, 0.032, spine, [s * 0.078, 0.385, 0.086], [0, 0, s * 0.32]);
+    mus('pec', 0.08, 0.045, 0.03, spine, [s * 0.072, 0.345, 0.088], [0, 0, s * -0.1]);
+    // abs: three rows of the six-pack + lower block
+    for (const [y, h] of [[0.27, 0.03], [0.215, 0.028], [0.16, 0.028]]) mus('abs', 0.033, h, 0.018, spine, [s * 0.035, y, 0.094]);
+    mus('abs', 0.03, 0.04, 0.016, spine, [s * 0.03, 0.095, 0.092]);
+    // obliques + serratus fingers
+    mus('obliques', 0.04, 0.085, 0.05, spine, [s * 0.112, 0.16, 0.05], [0, 0, s * 0.12]);
+    for (const y of [0.29, 0.325, 0.36]) mus('serratus', 0.03, 0.012, 0.022, spine, [s * 0.138, y, 0.066], [0, s * -0.5, s * -0.5]);
+    // back: lats (wings), upper traps, rhomboids, erectors
+    mus('lats', 0.065, 0.14, 0.035, spine, [s * 0.118, 0.28, -0.07], [0, s * 0.45, s * -0.22]);
+    mus('traps', 0.032, 0.08, 0.035, spine, [s * 0.07, 0.468, -0.028], [0, 0, s * 1.15]);  // neck to shoulder
+    mus('rhomb', 0.045, 0.05, 0.018, spine, [s * 0.05, 0.345, -0.098], [0, 0, s * 0.5]);
+    mus('lowback', 0.028, 0.11, 0.024, spine, [s * 0.036, 0.13, -0.09]);
   }
-  const trap = ell(0.14, 0.055, 0.07, mB, 'back'); trap.position.set(0, 0.47, -0.025); spine.add(trap);
+  mus('traps', 0.075, 0.11, 0.022, spine, [0, 0.4, -0.105]);                   // middle/lower trapezius diamond
   // neck + head
-  const mN = mk(); const nk = mesh(lathe([[0.052, 0.0], [0.048, 0.06], [0.05, 0.11]], 16), mN); neck.add(nk);
+  const nk = mesh(lathe([[0.052, 0.0], [0.048, 0.06], [0.05, 0.11]], 16), skin); neck.add(nk);
+  for (const s of [-1, 1]) mus('neck', 0.016, 0.065, 0.016, neck, [s * 0.03, 0.06, 0.03], [0.3, 0, s * -0.35]); // sternocleidomastoid
   const mH = mk(); const head = ell(0.094, 0.112, 0.104, mH, 'head'); head.position.set(0, 0.18, 0.005); neck.add(head);
   const jaw = ell(0.07, 0.05, 0.07, mH, 'head'); jaw.position.set(0, 0.12, 0.035); neck.add(jaw);
   const nose = mesh(new T.ConeGeometry(0.016, 0.04, 10), mH, 'head'); nose.rotation.x = Math.PI / 2; nose.position.set(0, 0.17, 0.112); neck.add(nose);
-  for (const s of [-1, 1]) { const ear = ell(0.012, 0.028, 0.02, mH, 'head'); ear.position.set(s * 0.094, 0.175, 0.0); neck.add(ear); }
+  for (const s of [-1, 1]) { const ear = ell(0.012, 0.028, 0.02, mH, 'head'); ear.position.set(s * 0.094, 0.175, 0.0); neck.add(ear); const brow = ell(0.03, 0.01, 0.015, mH); brow.position.set(s * 0.035, 0.205, 0.095); neck.add(brow); }
 
   function limb(side) {
     const s = side === 'L' ? 1 : -1, o = {};
-    const mD = mk(), mU = mk(), mF = mk(), mHd = mk(), mT = mk(), mS = mk(), mFt = mk(ghost ? undefined : 0x3A3632);
+    const mHd = mk(), mFt = mk(ghost ? undefined : 0x3A3632);
     o.delt = new T.Group(); spine.add(o.delt);
-    const dl = ell(0.06, 0.056, 0.064, mD, 'delt'); dl.position.set(s * 0.01, 0.0, 0); o.delt.add(dl);
-    // upper arm: local -Y along the bone, +Z = biceps side
+    const cap = ell(0.055, 0.05, 0.058, skin); o.delt.add(cap);
+    // upper arm: local -Y along the bone, +Z = biceps side, s*X = lateral
     o.upper = new T.Group(); spine.add(o.upper);
-    const ua = mesh(lathe([[0, 0.03], [0.036, 0.022], [0.05, -0.02], [0.052, -0.09], [0.048, -0.16], [0.042, -0.22], [0.037, -0.27], [0.03, -0.3], [0, -0.31]]), mU, 'upper'); o.upper.add(ua);
-    const bi = ell(0.028, 0.058, 0.02, mU, 'upper'); bi.position.set(0, -0.13, 0.022); o.upper.add(bi);
-    const tri = ell(0.032, 0.07, 0.024, mU, 'upper'); tri.position.set(0, -0.12, -0.026); o.upper.add(tri);
+    const ua = mesh(lathe([[0, 0.03], [0.036, 0.022], [0.046, -0.02], [0.046, -0.09], [0.043, -0.16], [0.038, -0.22], [0.034, -0.27], [0.03, -0.3], [0, -0.31]], 20), skin); o.upper.add(ua);
+    mus('deltF', 0.04, 0.07, 0.034, o.upper, [s * 0.008, -0.03, 0.036], [0.15, 0, 0]);
+    mus('deltS', 0.04, 0.075, 0.034, o.upper, [s * 0.04, -0.035, 0.0], [0, 0, s * 0.12]);
+    mus('deltR', 0.04, 0.07, 0.034, o.upper, [s * 0.008, -0.03, -0.036], [-0.15, 0, 0]);
+    mus('biceps', 0.03, 0.075, 0.026, o.upper, [s * -0.006, -0.155, 0.026]);
+    mus('biceps', 0.024, 0.06, 0.02, o.upper, [s * 0.014, -0.15, 0.03]);
+    mus('triceps', 0.03, 0.085, 0.026, o.upper, [s * -0.006, -0.13, -0.028]);  // long head
+    mus('triceps', 0.026, 0.06, 0.022, o.upper, [s * 0.028, -0.1, -0.016]);    // lateral head
     // forearm: +Z = palm side
     o.fore = new T.Group(); o.fore.position.y = -B.upper; o.upper.add(o.fore);
-    const fa = mesh(lathe([[0, 0.032], [0.04, 0.016], [0.045, -0.04], [0.04, -0.1], [0.032, -0.18], [0.026, -0.245], [0.02, -0.265], [0, -0.27]]), mF, 'fore');
-    fa.scale.set(1.12, 1, 0.86); o.fore.add(fa); const ej = ell(0.04, 0.04, 0.04, mF, 'fore'); o.fore.add(ej);
+    const fa = mesh(lathe([[0, 0.032], [0.038, 0.016], [0.04, -0.04], [0.036, -0.1], [0.03, -0.18], [0.025, -0.245], [0.02, -0.265], [0, -0.27]], 20), skin);
+    fa.scale.set(1.12, 1, 0.86); o.fore.add(fa); const ej = ell(0.038, 0.038, 0.038, skin); o.fore.add(ej);
+    mus('forearm', 0.032, 0.08, 0.024, o.fore, [s * -0.008, -0.07, 0.016]);   // flexors
+    mus('forearm', 0.03, 0.085, 0.022, o.fore, [s * 0.016, -0.065, -0.014]);  // extensors / brachioradialis
     // hand: palm + curled fingers around the grip axis (local X) + thumb
     const hand = new T.Group(); hand.position.y = -B.fore; o.fore.add(hand); o.hand = hand;
     const palm = mesh(rbox(0.08, 0.085, 0.034, 0.012), mHd, 'hand'); palm.position.set(0, -0.045, -0.004); hand.add(palm);
     const fing = mesh(new T.TorusGeometry(0.026, 0.017, 8, 14, Math.PI * 1.25), mHd, 'hand'); fing.rotation.set(0, Math.PI / 2, -Math.PI * 0.2); fing.scale.set(1, 1, 2.1);
     fing.position.set(0, -0.085, 0.022); hand.add(fing);
+    for (let k = 0; k < 3; k++) { const kn = ell(0.011, 0.008, 0.009, mHd, 'hand'); kn.position.set(-0.026 + k * 0.026, -0.072, -0.015); hand.add(kn); }
     const th = mesh(new T.CapsuleGeometry(0.012, 0.03, 4, 8), mHd, 'hand'); th.position.set(s * 0.04, -0.04, 0.03); th.rotation.set(0.6, 0, s * 0.5); hand.add(th);
-    // thigh: +Z = front (quads)
+    // thigh: +Z = front (quads), s*X = lateral
     o.thigh = new T.Group(); o.thigh.position.set(s * B.hipX, 0, 0); pelvis.add(o.thigh);
-    const th1 = mesh(lathe([[0, 0.05], [0.078, 0.035], [0.094, -0.03], [0.093, -0.12], [0.084, -0.24], [0.068, -0.35], [0.057, -0.42], [0.05, -0.45], [0, -0.47]]), mT, 'thigh'); th1.scale.set(1, 1, 1.06); o.thigh.add(th1);
-    
-    // shin: +Z = front, calf behind
+    const th1 = mesh(lathe([[0, 0.05], [0.074, 0.035], [0.086, -0.03], [0.084, -0.12], [0.076, -0.24], [0.062, -0.35], [0.053, -0.42], [0.048, -0.45], [0, -0.47]], 24), skin); o.thigh.add(th1);
+    mus('quads', 0.038, 0.15, 0.032, o.thigh, [0, -0.2, 0.068]);                 // rectus femoris
+    mus('quads', 0.042, 0.16, 0.036, o.thigh, [s * 0.058, -0.21, 0.03], [0, 0, s * -0.05]);  // vastus lateralis
+    mus('quads', 0.036, 0.065, 0.034, o.thigh, [s * -0.045, -0.35, 0.04]);       // vastus medialis (teardrop)
+    mus('hams', 0.034, 0.16, 0.034, o.thigh, [s * 0.026, -0.22, -0.06]);         // biceps femoris
+    mus('hams', 0.032, 0.15, 0.032, o.thigh, [s * -0.026, -0.23, -0.058]);       // semitendinosus
+    mus('adductors', 0.035, 0.12, 0.04, o.thigh, [s * -0.062, -0.13, 0.0], [0, 0, s * 0.12]);
+    // shin: +Z = front, calves behind
     o.shin = new T.Group(); o.shin.position.y = -B.thigh; o.thigh.add(o.shin);
-    const sh = mesh(lathe([[0, 0.03], [0.05, 0.01], [0.052, -0.05], [0.055, -0.12], [0.048, -0.22], [0.037, -0.32], [0.03, -0.41], [0.028, -0.44], [0, -0.455]]), mS, 'shin'); o.shin.add(sh);
-    const calf = ell(0.042, 0.095, 0.04, mS, 'shin'); calf.position.set(0, -0.13, -0.024); o.shin.add(calf);
-    const kj = ell(0.054, 0.054, 0.054, mS, 'shin'); o.shin.add(kj); const kc = ell(0.03, 0.032, 0.016, mS, 'shin'); kc.position.set(0, 0.0, 0.042); o.shin.add(kc);
+    const sh = mesh(lathe([[0, 0.03], [0.048, 0.01], [0.048, -0.05], [0.048, -0.12], [0.043, -0.22], [0.035, -0.32], [0.03, -0.41], [0.028, -0.44], [0, -0.455]], 20), skin); o.shin.add(sh);
+    mus('calves', 0.03, 0.085, 0.034, o.shin, [s * 0.022, -0.12, -0.036]);       // gastrocnemius lateral
+    mus('calves', 0.032, 0.095, 0.036, o.shin, [s * -0.02, -0.125, -0.038]);     // gastrocnemius medial
+    mus('calves', 0.036, 0.09, 0.024, o.shin, [0, -0.24, -0.026]);               // soleus
+    mus('tibialis', 0.02, 0.11, 0.02, o.shin, [s * 0.02, -0.16, 0.038]);
+    const kj = ell(0.052, 0.052, 0.052, skin); o.shin.add(kj); const kc = ell(0.03, 0.032, 0.016, skin); kc.position.set(0, 0.0, 0.044); o.shin.add(kc);
     // foot (trainer shape)
     o.foot = new T.Group(); o.foot.position.y = -B.shin; o.shin.add(o.foot);
     const fs = new T.Shape(); fs.moveTo(-0.04, -0.075); fs.quadraticCurveTo(0, -0.1, 0.04, -0.075); fs.lineTo(0.05, 0.08); fs.quadraticCurveTo(0.048, 0.19, 0, 0.2); fs.quadraticCurveTo(-0.05, 0.19, -0.05, 0.08); fs.lineTo(-0.04, -0.075);
     const fg = new T.ExtrudeGeometry(fs, { depth: 0.04, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.014, bevelSegments: 3 });
     fg.rotateX(Math.PI / 2); fg.computeVertexNormals();
     const ft = mesh(fg, mFt, 'foot'); ft.position.set(0, -0.03, 0); ft.scale.x = s; o.foot.add(ft);
-    const ank = ell(0.036, 0.04, 0.045, mS); ank.position.set(0, -0.01, 0.005); o.foot.add(ank);
+    const ank = ell(0.036, 0.04, 0.045, skin); ank.position.set(0, -0.01, 0.005); o.foot.add(ank);
     return o;
   }
   const L = limb('L'), R = limb('R');
@@ -575,13 +623,14 @@ export async function createViewer(container, opts = {}) {
   // ----- highlight (glow follows effort) -----
   let hi = new Set();
   const base = new T.Color(COL.skin);
-  function setHighlight(names) { hi = new Set(names || []); glow(true); }
+  function setHighlight(names) { hi = new Set(); (names || []).forEach(n => (MUSCLE_GROUPS[n] || [n]).forEach(f => hi.add(f))); glow(true); }
   function glow() {
     for (const [n, list] of Object.entries(F.parts)) {
+      if (n === 'foot' || n === 'hand' || n === 'head') continue;
       const on = hi.has(n);
       for (const m of list) {
-        if (on) { m.material.color.copy(base).lerp(accent, 0.55 + effort * 0.35); m.material.emissive.copy(accent).multiplyScalar(0.06 + effort * 0.32); }
-        else if (n !== 'foot') { m.material.color.copy(base); m.material.emissive.setRGB(0, 0, 0); }
+        if (on) { m.material.color.copy(base).lerp(accent, 0.7 + effort * 0.3); m.material.emissive.copy(accent).multiplyScalar(0.04 + effort * 0.22); }
+        else { m.material.color.copy(base); m.material.emissive.setRGB(0, 0, 0); }
       }
     }
   }

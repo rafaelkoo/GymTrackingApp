@@ -48,13 +48,13 @@ export const GQS = {
 
 // muscle name -> [Chinese, body part on the 3D figure]
 export const MUSCLES = {
-  'Chest': ['胸肌', 'chest'], 'Upper Chest': ['上胸', 'chest'], 'Lower Chest': ['下胸', 'chest'], 'Inner Chest': ['胸肌內側', 'chest'],
-  'Triceps': ['三頭肌', 'upper'], 'Triceps Long Head': ['三頭肌長頭', 'upper'], 'Biceps': ['二頭肌', 'upper'], 'Biceps Long Head': ['二頭肌長頭', 'upper'], 'Brachialis': ['肱肌', 'upper'],
-  'Forearms': ['前臂', 'fore'], 'Shoulders': ['肩膀', 'delt'], 'Front Deltoid': ['前三角', 'delt'], 'Side Deltoid': ['中三角', 'delt'], 'Rear Deltoid': ['後三角', 'delt'], 'Rear Delt': ['後三角', 'delt'], 'All Three Deltoid Heads': ['三角肌全部', 'delt'], 'Rotator Cuff': ['旋轉肌群', 'delt'],
-  'Lats': ['背闊肌', 'back'], 'Upper Lats': ['上背闊肌', 'back'], 'Rhomboids': ['菱形肌', 'back'], 'Traps': ['斜方肌', 'back'], 'Teres Major': ['大圓肌', 'back'], 'Serratus': ['前鋸肌', 'back'], 'Lower Back': ['下背', 'back'],
-  'Quads': ['股四頭肌', 'thigh'], 'Hamstrings': ['大腿後肌', 'thigh'], 'Inner Thigh': ['大腿內側', 'thigh'], 'Hip Flexors': ['髖屈肌', 'thigh'], 'Glutes': ['臀肌', 'pelvis'], 'Calves': ['小腿', 'shin'], 'Soleus': ['比目魚肌', 'shin'], 'Balance': ['平衡', 'thigh'],
-  'Core': ['核心', 'abdomen'], 'Rectus Abdominis': ['腹直肌', 'abdomen'], 'Obliques': ['腹斜肌', 'abdomen'], 'Lower Abs': ['下腹', 'abdomen'], 'Deep Core': ['深層核心', 'abdomen'],
-  'Full Body': ['全身', 'thigh'], 'Cardio': ['心肺', 'thigh'], 'Legs': ['腿部', 'thigh'], 'Back': ['背部', 'back'], 'Arms': ['手臂', 'upper']
+  'Chest': ['胸肌', 'pec'], 'Upper Chest': ['上胸', 'pec'], 'Lower Chest': ['下胸', 'pec'], 'Inner Chest': ['胸肌內側', 'pec'],
+  'Triceps': ['三頭肌', 'triceps'], 'Triceps Long Head': ['三頭肌長頭', 'triceps'], 'Biceps': ['二頭肌', 'biceps'], 'Biceps Long Head': ['二頭肌長頭', 'biceps'], 'Brachialis': ['肱肌', 'biceps'],
+  'Forearms': ['前臂', 'forearm'], 'Shoulders': ['肩膀', 'deltF deltS deltR'], 'Front Deltoid': ['前三角', 'deltF'], 'Side Deltoid': ['中三角', 'deltS'], 'Rear Deltoid': ['後三角', 'deltR'], 'Rear Delt': ['後三角', 'deltR'], 'All Three Deltoid Heads': ['三角肌全部', 'deltF deltS deltR'], 'Rotator Cuff': ['旋轉肌群', 'deltR'],
+  'Lats': ['背闊肌', 'lats'], 'Upper Lats': ['上背闊肌', 'lats'], 'Rhomboids': ['菱形肌', 'rhomb'], 'Traps': ['斜方肌', 'traps'], 'Teres Major': ['大圓肌', 'lats'], 'Serratus': ['前鋸肌', 'serratus'], 'Lower Back': ['下背', 'lowback'],
+  'Quads': ['股四頭肌', 'quads'], 'Hamstrings': ['大腿後肌', 'hams'], 'Inner Thigh': ['大腿內側', 'adductors'], 'Hip Flexors': ['髖屈肌', 'quads'], 'Glutes': ['臀肌', 'glutes'], 'Calves': ['小腿', 'calves'], 'Soleus': ['比目魚肌', 'calves'], 'Balance': ['平衡', 'glutes'],
+  'Core': ['核心', 'abs obliques'], 'Rectus Abdominis': ['腹直肌', 'abs'], 'Obliques': ['腹斜肌', 'obliques'], 'Lower Abs': ['下腹', 'abs'], 'Deep Core': ['深層核心', 'abs'],
+  'Full Body': ['全身', 'quads glutes hams calves'], 'Cardio': ['心肺', 'quads calves'], 'Legs': ['腿部', 'quads hams calves'], 'Back': ['背部', 'lats rhomb'], 'Arms': ['手臂', 'biceps triceps']
 };
 
 const LV = { B: 'Beginner', I: 'Intermediate', A: 'Advanced' };
@@ -169,7 +169,7 @@ export const EX_LIST = RAW.map(r => {
 
 export function bodyParts(ex) {
   const s = new Set();
-  for (const m of ex.muscles) { const p = MUSCLES[m]; if (p) s.add(p[1]); }
+  for (const m of ex.muscles) { const p = MUSCLES[m]; if (p) p[1].split(' ').forEach(x => s.add(x)); }
   return [...s];
 }
 export const muscleZh = m => (MUSCLES[m] ? MUSCLES[m][0] : m);
