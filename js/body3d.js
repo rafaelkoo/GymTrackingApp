@@ -72,16 +72,31 @@ export function buildBody(T, data) {
   // ── grip: curl the fingers once ──
   const palm = new T.Vector3(0, -1, 0);
   for (const s of ['l', 'r']) {
-    for (const f of ['index', 'middle', 'ring', 'pinky', 'thumb']) for (let j = 1; j <= 3; j++) {
+    for (const f of ['index', 'middle', 'ring', 'pinky']) for (let j = 1; j <= 3; j++) {
       const b = by[`${f}_0${j}_${s}`], c = by[`${f}_0${j + 1}_${s}`] || by[`${f}_04_leaf_${s}`]; if (!b || !c) continue;
       const d = restP.get(c).clone().sub(restP.get(b)).normalize();
       const ax = new T.Vector3().crossVectors(d, palm).normalize();
-      const ang = f === 'thumb' ? [0, 0.55, 0.6, 0.5][j] : [0, 1.0, 1.25, 0.8][j];
+      const ang = [0, 1.0, 1.25, 0.8][j];
       const axL = ax.applyQuaternion(restQ.get(b).clone().invert());
       b.quaternion.copy(restLocalQ.get(b)).multiply(new T.Quaternion().setFromAxisAngle(axL, ang));
     }
   }
   group.updateMatrixWorld(true);
+  // thumb: swing it across so its tip rests on the curled index finger (wrapping the handle), then bend it a little
+  for (const s of ['l', 'r']) {
+    const t1 = by['thumb_01_' + s], tip = by['thumb_04_leaf_' + s], ix = by['index_03_' + s], mid = by['middle_02_' + s];
+    const p1 = t1.getWorldPosition(new T.Vector3());
+    const target = ix.getWorldPosition(new T.Vector3()).lerp(mid.getWorldPosition(new T.Vector3()), 0.3).add(new T.Vector3(0, -0.012, 0));
+    const from = tip.getWorldPosition(new T.Vector3()).sub(p1).normalize(), to = target.sub(p1).normalize();
+    const qw = new T.Quaternion().setFromUnitVectors(from, to).multiply(t1.getWorldQuaternion(new T.Quaternion()));
+    const qp = t1.parent.getWorldQuaternion(new T.Quaternion()); t1.quaternion.copy(qp.invert().multiply(qw)); t1.updateMatrixWorld(true);
+    for (const j of [2, 3]) {   // gentle flex of the two thumb joints toward the palm side
+      const b = by[`thumb_0${j}_${s}`], c = by[`thumb_0${j + 1}_${s}`] || tip;
+      const d = c.getWorldPosition(new T.Vector3()).sub(b.getWorldPosition(new T.Vector3())).normalize();
+      const ax = new T.Vector3().crossVectors(d, palm).normalize().applyQuaternion(b.getWorldQuaternion(new T.Quaternion()).invert());
+      b.quaternion.multiply(new T.Quaternion().setFromAxisAngle(ax, 0.3)); b.updateMatrixWorld(true);
+    }
+  }
   // centre of the closed fist in the hand bone's frame: the handle goes here
   const gripLocal = {};
   for (const s of ['l', 'r']) {
@@ -221,5 +236,5 @@ export function buildBody(T, data) {
     hlAttr.needsUpdate = true;
   }
   function setEffort(e, accent) { if (accent) uni.uAcc.value.copy(accent); uni.uK.value = 0.8 + 0.2 * e; uni.uE.value = 0.06 + 0.22 * e; }
-  return { group, drive, setHighlight, setEffort, regions: REG, bones: by };
+  return { group, drive, setHighlight, setEffort, regions: REG, bones: by, gripLocal, L };
 }

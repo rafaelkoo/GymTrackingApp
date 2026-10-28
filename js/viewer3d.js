@@ -14,7 +14,7 @@ export async function loadThree() {
 }
 
 // Body measurements in metres. Pelvis origin = hip-joint height.
-const B = { upper: 0.29, lower: 0.33, fore: 0.26, thigh: 0.44, shin: 0.44, shX: 0.19, shY: 0.44, hipX: 0.10, torso: 0.48 };
+const B = { upper: 0.281, lower: 0.371, fore: 0.261, thigh: 0.429, shin: 0.459, shX: 0.212, shY: 0.484, hipX: 0.114, torso: 0.549 };   // matched to the skinned body (js/body3d.js)
 const DEG = Math.PI / 180;
 const COL = {
   skin: 0xCBBEAD, skinDark: 0xB9B0A2, ghost: 0xFF4D4D,
