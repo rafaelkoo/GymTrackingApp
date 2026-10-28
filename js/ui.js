@@ -349,7 +349,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.0</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.1</p>`;
   return h;
 }
 
@@ -385,19 +385,21 @@ function sheetHTML(ex) {
     <div class="row" style="margin-bottom:12px"><button class="ibtn" data-a="closeEx" aria-label="${t('返回', 'Back')}">${I('back')}</button>
       <div style="flex:1;min-width:0"><h1 class="h2" style="font-size:26px">${esc(exName(ex))}</h1><div class="sub">${esc(S.lang === 'zh' ? ex.en : ex.zh)}</div></div></div>
     <div class="stage"><div class="cv" id="cv"></div><div class="load" id="cvLoad">${t('載入 3D 模型…', 'Loading 3D model…')}</div>
-      <div class="ov"><span class="pill acc" id="phName">${esc(phases[0] ? t(phases[0].zh, phases[0].en) : '')}</span><span class="pill">${t('拖動旋轉', 'Drag to rotate')}</span></div></div>
+      <div class="ov"><span class="pill acc" id="phName">${esc(phases[0] ? t(phases[0].zh, phases[0].en) : '')}</span><span class="pill" id="ovR">${t('拖動旋轉', 'Drag to rotate')}</span></div>
+      <div class="ov-b" id="badTag" hidden><span class="pill bad">${t('紅色 = 錯誤動作', 'Red = wrong form')}</span></div></div>
     <div class="ctrls"><button class="ibtn" data-a="v3play" id="v3play" aria-label="${t('暫停', 'Pause')}">${I('pause')}</button>
       <div class="phases" style="grid-template-columns:repeat(${Math.max(1, phases.length)},minmax(0,1fr))" id="phBar">${phases.map((p, i) => `<div class="${i === 0 ? 'on' : ''}"><i></i><span>${esc(t(p.zh, p.en))}</span></div>`).join('')}</div></div>
     <div class="row" style="justify-content:space-between;margin-bottom:12px">
       <div class="seg" role="group" aria-label="${t('角度', 'View')}">${[['side', '側面', 'Side'], ['front', '正面', 'Front'], ['q', '斜角', '3/4']].map(([v, zh, en]) => `<button data-a="v3view" data-v="${v}" aria-pressed="${(mv.cam && mv.cam.view || 'q') === v}">${t(zh, en)}</button>`).join('')}</div>
       <div class="seg" role="group" aria-label="${t('速度', 'Speed')}"><button data-a="v3speed" data-v="0.5" aria-pressed="false">0.5×</button><button data-a="v3speed" data-v="1" aria-pressed="true">1×</button></div></div>
+    <button class="chip" data-a="v3slow" aria-pressed="true" style="margin-bottom:12px">${I('timer')}${t('重點位置自動慢鏡', 'Slow down at key moments')}</button>
     <div class="cue" aria-live="polite"><span class="ph-n" id="cueN">1</span><p id="cueT"><b>${esc(phases[0] ? t(phases[0].zh, phases[0].en) : '')}</b>${esc(phases[0] ? t(phases[0].czh, phases[0].cen) : '')}</p></div>
     ${ex.approx ? `<p class="note" style="margin:-4px 0 12px">${I('info')}${t('示範用咗動作模式相近嘅動畫，細節（例如器械）可能唔同。', 'The demo uses a closely related movement; details such as the machine may differ.')}</p>` : ''}
     <section class="card"><h2 class="h3" style="margin-bottom:8px">${t('練到嘅肌肉', 'Muscles worked')}</h2><div class="row" style="flex-wrap:wrap;gap:6px">${ex.muscles.map((m, i) => `<span class="tag ${i === 0 ? 'acc' : ''}">${esc(t(muscleZh(m), m))}</span>`).join('')}
       <span class="tag">${t(equipZh(ex.equip), ex.equip)}</span><span class="tag">${t(levelZh(ex.level), ex.level)}</span></div>
       <p class="sub" style="margin-top:10px">${t('3D 模型上橙色部分就係主要發力位置。', 'Orange on the model marks the main working muscles.')}</p></section>
     <section class="card"><h2 class="h3" style="margin-bottom:6px">${t('要點', 'How to')}</h2><p style="font-size:15px;line-height:1.5">${esc(t(ex.dZh, ex.dEn))}</p></section>
-    ${mv.mistakes ? `<section class="card"><h2 class="h3" style="margin-bottom:4px">${t('常見錯誤', 'Common mistakes')}</h2>${mv.mistakes.map(m => `<div class="mist">${I('alert')}<span>${esc(t(m.zh, m.en))}</span></div>`).join('')}</section>` : ''}
+    ${mv.mistakes ? `<section class="card"><h2 class="h3" style="margin-bottom:4px">${t('常見錯誤', 'Common mistakes')}</h2><p class="sub" style="margin-bottom:6px">${t('撳「睇錯誤」，紅色公仔會重疊示範錯誤做法。', 'Tap “Show me” to overlay the wrong form in red.')}</p>${mv.mistakes.map((m, i) => `<div class="mist">${I('alert')}<span style="flex:1">${esc(t(m.zh, m.en))}</span>${m.patch ? `<button class="chip" data-a="v3bad" data-v="${i}" aria-pressed="false" style="height:36px">${t('睇錯誤', 'Show me')}</button>` : ''}</div>`).join('')}</section>` : ''}
     <section class="card"><h2 class="h3" style="margin-bottom:10px">${t('加入計劃', 'Add to plan')}</h2><div class="days7">${WD.map(d => { const on = (S.customPlan[d] || []).some(x => x.id === ex.id); return `<button data-a="togPlan" data-id="${ex.id}" data-v="${d}" aria-pressed="${on}" aria-label="${dayLong(d)}">${dayShort(d)}<small>${on ? '✓' : '+'}</small></button>`; }).join('')}</div></section>
   </div></div>`;
 }
@@ -546,6 +548,16 @@ const A = {
   },
   v3play(el) { if (!ui.viewer) return; const p = ui.viewer.toggle(); el.innerHTML = I(p ? 'pause' : 'play'); el.setAttribute('aria-label', p ? t('暫停', 'Pause') : t('播放', 'Play')); },
   v3view(el) { ui.viewer && ui.viewer.setView(el.dataset.v); el.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); },
+  v3slow(el) { const on = el.getAttribute('aria-pressed') !== 'true'; el.setAttribute('aria-pressed', on); ui.viewer && ui.viewer.setSlowmo(on); },
+  v3bad(el) {
+    if (!ui.viewer) return;
+    const was = el.getAttribute('aria-pressed') === 'true';
+    document.querySelectorAll('[data-a="v3bad"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.textContent = t('睇錯誤', 'Show me'); });
+    const on = !was && ui.viewer.setMistake(+el.dataset.v);
+    if (!on) ui.viewer.setMistake(-1);
+    if (on) { el.setAttribute('aria-pressed', 'true'); el.textContent = t('收起', 'Hide'); document.querySelector('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    const tag = document.getElementById('badTag'); if (tag) tag.hidden = !on;
+  },
   v3speed(el) { ui.viewer && ui.viewer.setSpeed(+el.dataset.v); el.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); },
   lang(el) { S.lang = el.dataset.v; save('lang'); render(); },
   logW() {
