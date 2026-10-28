@@ -12,7 +12,13 @@ const days = (a, b) => (new Date(b) - new Date(a)) / DAY;
 
 if (!S.targets || typeof S.targets !== 'object') S.targets = {};
 
-export function setTarget(id, kg, reps, by) { S.targets[id] = { kg, reps, by: by || null, set: isoToday() }; save('targets'); }
+export function setTarget(id, kg, reps, by) {
+  const ses = sessions(id, false), base = ses.length ? Math.max(...ses.map(x => x.e1)) : 0;
+  const old = S.targets[id];
+  // keep the original start (and its plan) when only the deadline or numbers are edited the same day
+  S.targets[id] = { kg, reps, by: by || null, set: old && old.set === isoToday() ? old.set : isoToday(), base: old && old.set === isoToday() ? old.base : base };
+  save('targets');
+}
 export function clearTarget(id) { delete S.targets[id]; save('targets'); }
 
 // smallest sensible jump for this exercise
@@ -37,7 +43,9 @@ export function sessions(id, skipToday) {
     if (skipToday && h.date === today) continue;
     const sets = h.sets && h.sets[id]; if (!Array.isArray(sets)) continue;
     const ds = sets.filter(x => x.done !== false && num(x.reps) > 0); if (!ds.length) continue;
-    const top = Math.max(...ds.map(x => num(x.weight)));
+    // working weight = the weight used for the most sets (ties go to the heavier), so one heavy top set doesn't count as the norm
+    const cnt = {}; ds.forEach(x => { const w = num(x.weight); cnt[w] = (cnt[w] || 0) + 1; });
+    const top = +Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || b - a)[0];
     out.push({ date: h.date, sets: ds, top, e1: Math.max(...ds.map(x => e1rm(num(x.weight), num(x.reps)))), atTop: ds.filter(x => num(x.weight) === top) });
   }
   return out.sort((a, b) => a.date.localeCompare(b.date));
@@ -124,18 +132,70 @@ export function bodyAdvice() {
   const weeksLeft = p.goalDate ? days(isoToday(), p.goalDate) / 7 : null;
   const losing = diff < 0, safe = cur * 0.01;   // about 1% of body weight per week at most
   let need = weeksLeft && weeksLeft > 0 ? diff / weeksLeft : (losing ? -0.5 : 0.25);
+  const rawNeed = need;
   const tooFast = losing ? -need > safe : need > 0.5;
   if (tooFast) need = losing ? -safe : 0.5;
   const kcal = Math.round(need * 7700 / 7 / 50) * 50, eat = Math.max(1500, td + kcal);
   const trend = slope === null ? null : slope;
   const onTrack = trend !== null && (losing ? trend <= need * 0.8 : trend >= need * 0.8);
   const dir = losing ? t2('減', 'lose') : t2('增', 'gain');
-  const zh = `${weeksLeft && weeksLeft > 0 ? `距離期限仲有 ${Math.ceil(weeksLeft)} 星期，` : ''}每星期要${losing ? '減' : '增'}約 ${Math.abs(need).toFixed(2)} kg。` +
+  const zh = (tooFast && weeksLeft > 0 ? `距離期限仲有 ${Math.ceil(weeksLeft)} 星期，照期限每星期要${losing ? '減' : '增'} ${Math.abs(rawNeed).toFixed(2)} kg，太快。按安全速度，每星期${losing ? '減' : '增'}約 ${Math.abs(need).toFixed(2)} kg。`
+    : `${weeksLeft && weeksLeft > 0 ? `距離期限仲有 ${Math.ceil(weeksLeft)} 星期，` : ''}每星期要${losing ? '減' : '增'}約 ${Math.abs(need).toFixed(2)} kg。`) +
     `${trend === null ? '記錄多幾次體重就計到你而家嘅速度。' : `你最近每星期${trend < 0 ? '減' : '增'}緊 ${Math.abs(trend).toFixed(2)} kg，${onTrack ? '進度良好。' : '要調整。'}`}` +
-    ` 建議每日食約 ${eat.toLocaleString()} kcal（維持量約 ${td.toLocaleString()}）。${tooFast ? ` 照期限計速度太快，已經限制喺每星期 ${Math.abs(need).toFixed(2)} kg 以內，建議延長期限。` : ''}${eat === 1500 ? ' 已經係建議最低食量，唔好再減。' : ''}`;
-  const en = `${weeksLeft && weeksLeft > 0 ? `${Math.ceil(weeksLeft)} weeks to your date, so ` : ''}aim to ${losing ? 'lose' : 'gain'} about ${Math.abs(need).toFixed(2)} kg a week. ` +
+    ` 建議每日食約 ${eat.toLocaleString()} kcal（維持量約 ${td.toLocaleString()}）。${tooFast ? ' 建議將期限延後，或者接受遲少少達標。' : ''}${eat === 1500 ? ' 已經係建議最低食量，唔好再減。' : ''}`;
+  const en = (tooFast && weeksLeft > 0 ? `${Math.ceil(weeksLeft)} weeks to your date would need ${Math.abs(rawNeed).toFixed(2)} kg a week, which is too fast. At a safe pace, aim for about ${Math.abs(need).toFixed(2)} kg a week. `
+    : `${weeksLeft && weeksLeft > 0 ? `${Math.ceil(weeksLeft)} weeks to your date, so ` : ''}aim to ${losing ? 'lose' : 'gain'} about ${Math.abs(need).toFixed(2)} kg a week. `) +
     `${trend === null ? 'Log your weight a few more times to measure your pace.' : `Lately you're ${trend < 0 ? 'losing' : 'gaining'} ${Math.abs(trend).toFixed(2)} kg a week, ${onTrack ? 'which is on track.' : 'so adjust.'}`}` +
-    ` Eat about ${eat.toLocaleString()} kcal a day (maintenance about ${td.toLocaleString()}).${tooFast ? ` The deadline needs an unsafe pace, so this is capped at ${Math.abs(need).toFixed(2)} kg a week; consider a later date.` : ''}${eat === 1500 ? ' That is the suggested minimum; don\'t go lower.' : ''}`;
+    ` Eat about ${eat.toLocaleString()} kcal a day (maintenance about ${td.toLocaleString()}).${tooFast ? ' Consider a later date.' : ''}${eat === 1500 ? ' That is the suggested minimum; don\'t go lower.' : ''}`;
   return { state: onTrack ? 'ontrack' : trend === null ? 'nopace' : 'behind', zh, en, eat, td, need, trend, weeksLeft, tooFast, dir };
 }
 function t2(zh) { return zh; }
+
+// ── week-by-week plan to a target ──
+const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+export function targetPlan(id, prefer) {
+  const tg = S.targets[id]; if (!tg) return null;
+  const ses = sessions(id, false), goal = e1rm(tg.kg, tg.reps), inc = increment(id) || 0, reps = planReps(id, prefer);
+  // starting point: best est. 1RM when the target was set (or the first session after)
+  let base = tg.base || 0;
+  if (!base) { const before = ses.filter(x => x.date <= tg.set); base = before.length ? Math.max(...before.map(x => x.e1)) : (ses[0] ? ses[0].e1 : 0); }
+  if (!base) return { tg, empty: true };
+  const start = tg.set;
+  // a steady, sustainable pace is about 1.5% of est. 1RM a week; faster than 2.5% is aggressive
+  const steadyWeeks = Math.max(1, Math.ceil((goal - base) / (base * 0.015)));
+  const weeks = tg.by ? Math.max(1, Math.ceil(days(start, tg.by) / 7)) : Math.min(52, steadyWeeks);
+  const perWeek = (goal - base) / weeks, pct = perWeek / base * 100;
+  const aggressive = tg.by && pct > 2.5;
+  const suggestBy = addDays(start, steadyWeeks * 7);
+  const today = isoToday(), out = [];
+  let prevKg = 0;
+  for (let i = 1; i <= weeks; i++) {
+    const ws = addDays(start, (i - 1) * 7), we = addDays(start, i * 7);   // [ws, we)
+    const last = i === weeks, e = base + perWeek * i;
+    let r = last ? tg.reps : reps, kg = e / (1 + (r <= 1 ? 0 : r / 30));
+    kg = inc ? Math.round(kg / inc) * inc : Math.round(kg);
+    if (last) kg = tg.kg;
+    if (kg < prevKg) kg = prevKg; prevKg = kg;
+    const inWeek = ses.filter(x => x.date >= ws && x.date < we);
+    const best = inWeek.length ? Math.max(...inWeek.map(x => x.e1)) : 0;
+    const hit = best >= e1rm(kg, r) * 0.98;
+    const status = we <= today ? (hit ? 'hit' : inWeek.length ? 'miss' : 'skip') : ws <= today ? (hit ? 'hit' : 'now') : 'next';
+    out.push({ n: i, ws, we, kg, reps: r, e1: e, status, best });
+  }
+  const cur = out.find(w => w.status === 'now') || out.find(w => w.status === 'next') || null;
+  return { tg, base, goal, weeks: out, perWeek, pct, aggressive, suggestBy, steadyWeeks, cur };
+}
+
+// ── week-by-week body-weight plan (from today to the goal date) ──
+export function bodyPlan() {
+  const p = S.profile, log = S.bodyLog || [];
+  const cur = log.length ? log[log.length - 1].kg : p.weight, goal = p.goalWeight, diff = goal - cur;
+  if (Math.abs(diff) < 0.3) return null;
+  const losing = diff < 0, cap = losing ? cur * 0.01 : 0.5, today = isoToday();
+  const wantWeeks = p.goalDate ? Math.max(1, Math.ceil(days(today, p.goalDate) / 7)) : null;
+  const minWeeks = Math.ceil(Math.abs(diff) / cap);
+  const weeks = Math.min(52, Math.max(wantWeeks || Math.ceil(Math.abs(diff) / (losing ? 0.5 : 0.25)), minWeeks));
+  const per = diff / weeks, out = [];
+  for (let i = 1; i <= weeks; i++) out.push({ n: i, date: addDays(today, i * 7), kg: Math.round((cur + per * i) * 10) / 10 });
+  return { weeks: out, per, cur, goal, capped: wantWeeks !== null && minWeeks > wantWeeks, safeDate: addDays(today, minWeeks * 7) };
+}

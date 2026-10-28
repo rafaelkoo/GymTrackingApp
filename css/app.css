@@ -221,6 +221,19 @@ svg.i { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentCo
 .tgrow { display: block; width: 100%; text-align: left; padding: 12px 0; border-top: 1px solid var(--s2); }
 .tgrow b { font-size: 15px; font-weight: 600; }
 .tag.bad { background: rgba(255,138,122,.13); color: var(--bad); }
+/* target plan */
+.plan { border-top: 1px solid var(--s2); padding-top: 12px; margin-bottom: 12px; }
+.weeks { list-style: none; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.wk { display: grid; grid-template-columns: 52px 64px minmax(0, 1fr) 24px; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border-radius: 9px; background: var(--s2); font-size: 13px; }
+.wk .wn { font-weight: 700; color: var(--tx2); }
+.wk .wd { color: var(--tx3); font-size: 12px; }
+.wk b { font-size: 15px; }
+.wk .ws { text-align: center; font-weight: 800; }
+.wk.hit { background: var(--acc-bg); } .wk.hit .ws { color: var(--acc); }
+.wk.miss .ws { color: var(--bad); } .wk.skip { opacity: .6; }
+.wk.now { outline: 1.5px solid var(--acc); } .wk.now .ws { color: var(--acc); }
+.wk.next { color: var(--tx2); }
+.warn { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: var(--warn); background: rgba(242,193,78,.08); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
 /* workout log */
 .logd { border-top: 1px solid var(--s2); }
 .logd:first-of-type { border-top: none; }

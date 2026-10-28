@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -171,6 +171,7 @@ function strengthCard(day, e, idx, firstOpen) {
       ${sl ? `<span class="tag">${t('力量', 'Strength')}: ${t(sl.l[0], sl.l[1])}</span>` : ''}
       ${last ? `<span class="tag">${t('上次', 'Last')} ${last.date.slice(5).replace('-', '/')}</span>` : ''}
       <button class="tag acc" data-a="openEx" data-id="${e.id}" data-tab="how" style="margin-left:auto;height:32px">${I('cube')}&nbsp;${t('3D 示範', '3D demo')}</button></div>
+      ${(() => { const pl = targetPlan(e.id, day); return pl && pl.cur ? `<div class="note" style="color:var(--acc);font-weight:600">${I('target')}${t(`目標計劃：今個星期要做到 ${pl.cur.kg} kg × ${pl.cur.reps}`, `Target plan: ${pl.cur.kg} kg × ${pl.cur.reps} this week`)}${pl.cur.status === 'hit' ? t('（已達成 ✓）', ' (done ✓)') : ''}</div>` : ''; })()}
       ${(() => { const sg = nextLoad(e.id, day); if (!sg || nDone) return ''; return `<div class="sugg"><span class="sugg-i ${sg.kind}">${I(sg.kind === 'up' ? 'chart' : sg.kind === 'down' ? 'reset' : 'target')}</span><div style="flex:1;min-width:0"><b class="num">${t('建議', 'Try')} ${sg.kg ? sg.kg + ' kg × ' : ''}${sg.reps} ${t('次', 'reps')}</b><span>${esc(t(sg.zh, sg.en))}</span></div>${sg.kg ? `<button class="btn btn-g" data-a="applySugg" data-d="${day}" data-id="${e.id}" data-v="${sg.kg}" data-r="${sg.reps}">${t('套用', 'Use')}</button>` : ''}</div>`; })()}
       <div class="sets-h"><span>${t('組', 'SET')}</span><span>${t('上次', 'LAST')}</span><span>KG</span><span>${t('次數', 'REPS')}</span><span></span></div>`;
     sets.forEach((s, i) => {
@@ -360,7 +361,7 @@ function renderMe() {
     <div class="tile"><span class="k">${t('飲水', 'Water')}</span><span class="v">${(p.weight * 0.033).toFixed(1)}</span><span class="s">L / ${t('日', 'day')}</span></div></div>`;
   { const ba = bodyAdvice(); h += `<section class="card"><div class="card-h"><h2 class="h2">${t('體重目標建議', 'Weight goal advice')}</h2>${stateChip(ba.state)}</div>
     <div class="row" style="gap:8px;margin-bottom:10px"><div class="field" style="flex:1"><label for="pf-goalDate">${t('目標日期（可選）', 'Goal date (optional)')}</label><input id="pf-goalDate" type="date" class="input" style="font-size:16px" value="${p.goalDate || ''}" data-c="goalDate"></div></div>
-    <p style="font-size:15px;line-height:1.5">${esc(t(ba.zh, ba.en))}</p></section>`; }
+    <p style="font-size:15px;line-height:1.5">${esc(t(ba.zh, ba.en))}</p>${bodyPlanHTML()}</section>`; }
   h += `<section class="card"><div class="card-h"><h2 class="h2">${t('身體數據', 'Body stats')}</h2></div><div class="grid3">
     ${[['height', '身高 (cm)', 'Height (cm)'], ['age', '年齡', 'Age'], ['goalWeight', '目標體重', 'Goal (kg)']].map(([f, zh, en]) => `<div class="field"><label for="pf-${f}">${t(zh, en)}</label><input id="pf-${f}" class="input" inputmode="decimal" value="${p[f]}" data-c="prof" data-f="${f}"></div>`).join('')}</div></section>`;
   h += `<section class="card"><div class="card-h"><h2 class="h2">${t('休息時間', 'Rest timer')}</h2><span class="sub">${t('完成一組自動開始', 'Starts when you tick a set')}</span></div>
@@ -373,7 +374,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.4</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.5</p>`;
   return h;
 }
 
@@ -430,9 +431,30 @@ function targetBlock(ex, editing) {
       <div class="bar" style="margin-bottom:6px"><i style="width:${st.pct}%"></i></div>
       <div class="row sub small" style="justify-content:space-between;margin-bottom:10px"><span>${t('估算 1RM', 'Est. 1RM')} <b class="num" style="color:var(--tx)">${Math.round(st.cur)}</b> / ${Math.round(st.goal)} kg</span><span class="num">${st.pct}%</span></div>
       <p style="font-size:15px;line-height:1.5;margin-bottom:10px">${esc(t(adv.zh, adv.en))}</p>
+      ${planHTML(ex.id)}
       <div class="row"><button class="btn btn-g" style="flex:1" data-a="tgEdit" data-id="${ex.id}">${t('修改', 'Edit')}</button><button class="btn btn-g btn-danger" data-a="tgDel" data-id="${ex.id}">${t('刪除', 'Remove')}</button></div>`;
   }
   return h + '</section>';
+}
+const WK = { hit: ['✓', 'hit'], miss: ['✗', 'miss'], skip: ['–', 'skip'], now: ['●', 'now'], next: ['', 'next'] };
+function planHTML(id) {
+  const pl = targetPlan(id); if (!pl || pl.empty) return '';
+  const hit = pl.weeks.filter(w => w.status === 'hit').length, past = pl.weeks.filter(w => w.status === 'hit' || w.status === 'miss' || w.status === 'skip').length;
+  let h = `<div class="plan"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 class="h3">${t('達標計劃', 'Plan to target')}</h3><span class="sub small">${t(`${pl.weeks.length} 星期 · 已達 ${hit}/${past}`, `${pl.weeks.length} weeks · hit ${hit}/${past}`)}</span></div>
+    <p class="sub small" style="margin-bottom:8px">${t(`由 ${fmtDate(pl.tg.set)} 起，每星期估算 1RM 要加約 ${pl.perWeek.toFixed(1)} kg（${pl.pct.toFixed(1)}%）。每個星期做到一組就當達標。`, `From ${fmtDate(pl.tg.set)}: about +${pl.perWeek.toFixed(1)} kg est. 1RM a week (${pl.pct.toFixed(1)}%). One set at the weekly number counts.`)}</p>`;
+  if (pl.aggressive) h += `<p class="warn">${I('alert')}<span>${t(`呢個期限要每星期進步 ${pl.pct.toFixed(1)}%，比一般穩定速度（約 1.5%）快好多，容易受傷或者停滯。建議將期限延到 ${fmtDate(pl.suggestBy)}。`, `This deadline needs ${pl.pct.toFixed(1)}% a week, much faster than a steady 1.5%. Consider moving it to ${fmtDate(pl.suggestBy)}.`)}</span></p>`;
+  h += `<ol class="weeks">${pl.weeks.map(w => `<li class="wk ${WK[w.status][1]}"><span class="wn">${t('第', 'W')}${w.n}${t('週', '')}</span><span class="wd">${fmtDate(w.ws)}</span><b class="num">${w.kg ? w.kg + ' kg × ' : ''}${w.reps}</b><span class="ws" aria-label="${w.status}">${WK[w.status][0]}</span></li>`).join('')}</ol></div>`;
+  return h;
+}
+function bodyPlanHTML() {
+  const bp = bodyPlan(); if (!bp) return '';
+  const log = S.bodyLog || [];
+  const shown = bp.weeks.slice(0, 12);
+  return `<div class="plan" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 class="h3">${t('每星期體重目標', 'Weekly weight targets')}</h3><span class="sub small">${t(`${bp.weeks.length} 星期`, `${bp.weeks.length} weeks`)}</span></div>
+    ${bp.capped ? `<p class="warn">${I('alert')}<span>${t(`你揀嘅日期太急，已經按安全速度計，大約 ${fmtDate(bp.safeDate)} 達標。`, `Your date is too fast, so this uses a safe pace and reaches the goal around ${fmtDate(bp.safeDate)}.`)}</span></p>` : ''}
+    <ol class="weeks">${shown.map(w => { const got = log.filter(x => x.date <= w.date && x.date > (new Date(new Date(w.date).getTime() - 7 * 864e5)).toISOString().slice(0, 10)).pop(); const ok = got && (bp.per < 0 ? got.kg <= w.kg + 0.2 : got.kg >= w.kg - 0.2); const st = w.date <= isoToday() ? (got ? (ok ? 'hit' : 'miss') : 'skip') : 'next';
+      return `<li class="wk ${WK[st][1]}"><span class="wn">${t('第', 'W')}${w.n}${t('週', '')}</span><span class="wd">${fmtDate(w.date)}</span><b class="num">${w.kg} kg</b><span class="ws">${WK[st][0]}</span></li>`; }).join('')}</ol>
+    ${bp.weeks.length > 12 ? `<p class="sub small" style="margin-top:6px">${t(`之後再 ${bp.weeks.length - 12} 星期去到 ${bp.goal} kg`, `${bp.weeks.length - 12} more weeks to ${bp.goal} kg`)}</p>` : ''}</div>`;
 }
 function targetsCard() {
   const ids = Object.keys(S.targets || {}).filter(id => EX[id]);
@@ -448,7 +470,7 @@ function targetsCard() {
     const st = targetStatus(id), adv = targetAdvice(id, st);
     h += `<button class="tgrow" data-a="openEx" data-id="${id}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(exName(EX[id]))}</b>${stateChip(st.state)}</div>
       <div class="row sub small" style="justify-content:space-between;margin:4px 0 6px"><span class="num">${st.tg.kg} kg × ${st.tg.reps}${st.tg.by ? ' · ' + fmtDate(st.tg.by) : ''}</span><span class="num">${st.pct}%</span></div>
-      <div class="bar"><i style="width:${st.pct}%"></i></div><span class="sub small" style="display:block;margin-top:6px">${esc(t(adv.zh, adv.en))}</span></button>`;
+      <div class="bar"><i style="width:${st.pct}%"></i></div>${(() => { const pl = targetPlan(id); return pl && pl.cur ? `<span class="small" style="display:block;margin-top:6px;color:var(--acc);font-weight:600">${t(`今個星期目標：${pl.cur.kg} kg × ${pl.cur.reps}（第 ${pl.cur.n}/${pl.weeks.length} 週）`, `This week: ${pl.cur.kg} kg × ${pl.cur.reps} (week ${pl.cur.n}/${pl.weeks.length})`)}</span>` : ''; })()}<span class="sub small" style="display:block;margin-top:4px">${esc(t(adv.zh, adv.en))}</span></button>`;
   });
   const ba = bodyAdvice();
   h += `<button class="tgrow" data-a="tab" data-v="me"><div class="row" style="justify-content:space-between"><b>${t('體重', 'Body weight')} → ${S.profile.goalWeight} kg</b>${stateChip(ba.state)}</div><span class="sub small" style="display:block;margin-top:6px">${esc(t(ba.zh, ba.en))}</span></button>`;
