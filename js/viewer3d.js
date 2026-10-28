@@ -380,7 +380,8 @@ export async function createViewer(container, opts = {}) {
         }
       } else if (k === 'plate') {
         const g = plate(0.17, 0.04); equip.add(g);
-        dyn.push(c => { g.position.copy(c.hand.L).add(c.hand.R).multiplyScalar(0.5); });
+        const qFace = new T.Quaternion().setFromAxisAngle(UP, Math.PI / 2);
+        dyn.push(c => { g.position.copy(c.hand.L).add(c.hand.R).multiplyScalar(0.5); if (p.face === 'body') c.fig.spine.getWorldQuaternion(g.quaternion).multiply(qFace); });
       } else if (k === 'bench') {
         bench(p.y ?? 0.44, p.z0 ?? -0.95, p.z1 ?? 0.35, p.w ?? 0.3, p.x ?? 0);
       } else if (k === 'incline') {
@@ -412,6 +413,8 @@ export async function createViewer(container, opts = {}) {
         box(0.2, th, 0.12, mFrame, tx, th / 2, tz + 0.12);
         for (let i = 0; i < 14; i++) box(0.16, 0.028, 0.09, i === 9 ? mStripe : mSteel, tx, 0.12 + i * 0.032, tz + 0.12);
         const pulley = sh(new T.Mesh(new T.TorusGeometry(0.04, 0.012, 8, 20), mSteel)); pulley.rotation.y = Math.PI / 2; add(pulley, anchor.x, anchor.y, anchor.z);
+        { const top = new T.Vector3(tx, Math.min(th - 0.04, anchor.y + 0.06), tz + 0.12), end = anchor.clone().add(new T.Vector3(0, 0.06, 0));
+          if (top.distanceTo(end) > 0.12) { const beam = rod(0.03, 1, mFrame); equip.add(beam); placeRod(beam, top, end); } }
         const wire = rod(0.005, 1, mat(0x9A9287, 0.5, 0.5), 6); equip.add(wire);
         const hg = new T.Group(); equip.add(hg);
         if (p.handle === 'bar') { const b = rod(0.014, p.handleLen || 0.6, mMetal); b.rotation.z = Math.PI / 2; hg.add(b); }
@@ -497,9 +500,10 @@ export async function createViewer(container, opts = {}) {
         box(0.06, (p.y ?? 1.0) - 0.05, 0.06, mFrame, 0, ((p.y ?? 1.0) - 0.05) / 2, (p.z ?? 0.2) - 0.05);
         box(0.36, 0.07, 0.34, mPad, 0, 0.56, -0.12); box(0.06, 0.52, 0.06, mFrame, 0, 0.26, -0.12); box(0.5, 0.04, 0.6, mFrame, 0, 0.02, 0.05);
       } else if (k === 'machine') { // generic chest / shoulder press machine frame with handles following the hands
-        box(0.08, 1.6, 0.08, mFrame, 0.42, 0.8, -0.35); box(0.08, 1.6, 0.08, mFrame, -0.42, 0.8, -0.35); box(0.92, 0.07, 0.08, mFrame, 0, 1.6, -0.35);
+        const [px, py, pz] = p.pivot || [0.42, 1.5, -0.35];
+        const ph = Math.max(py + 0.1, 1.75); box(0.08, ph, 0.08, mFrame, px, ph / 2, pz); box(0.08, ph, 0.08, mFrame, -px, ph / 2, pz); box(px * 2 + 0.08, 0.07, 0.08, mFrame, 0, ph, pz);
         const arms = [rod(0.016, 1, mMetal), rod(0.016, 1, mMetal)]; arms.forEach(a => equip.add(a));
-        dyn.push(c => { placeRod(arms[0], new T.Vector3(0.42, 1.5, -0.35), c.hand.L); placeRod(arms[1], new T.Vector3(-0.42, 1.5, -0.35), c.hand.R); });
+        dyn.push(c => { placeRod(arms[0], new T.Vector3(px, py, pz), c.hand.L); placeRod(arms[1], new T.Vector3(-px, py, pz), c.hand.R); });
       } else if (k === 'landmine') {
         const r = rod(0.015, 1, mMetal); equip.add(r); const pl = plate(0.2, 0.06); equip.add(pl);
         const base = new T.Vector3(p.x ?? 0, 0.05, p.z ?? 1.7); box(0.2, 0.1, 0.2, mFrame, base.x, 0.05, base.z);
@@ -690,7 +694,7 @@ export async function createViewer(container, opts = {}) {
   return {
     setMove(id, highlight) {
       const m = MOVES[id] || MOVES.squat_bb; move = compileMove(m);
-      buildProps(m.props); tNow = 0; lastPhase = -1; ghostKeys = null; G.root.visible = false;
+      buildProps(m.props); if (body) body.setHand(m.hand === 'open'); tNow = 0; lastPhase = -1; ghostKeys = null; G.root.visible = false;
       const c = m.cam || {};
       cam.base.set(...(c.target || [0, 0.9, 0])); cam.dist = c.dist || 3.4; cam.tPhi = cam.phi = c.phi ?? 0.22;
       cam.tTheta = cam.theta = VIEWS[c.view || 'q']; cam.follow = c.follow ?? 0.35;

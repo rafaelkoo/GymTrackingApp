@@ -69,7 +69,8 @@ export function buildBody(T, data) {
     o.bind(skeleton, new T.Matrix4()); group.add(o); meshes[k] = o;
   }
 
-  // ── grip: curl the fingers once ──
+  // ── grip: curl the fingers once (open-hand moves switch back with setHand) ──
+  const FINGERS = bones.filter(b => /^(index|middle|ring|pinky|thumb)_0[1-3]_/.test(b.name));
   const palm = new T.Vector3(0, -1, 0);
   for (const s of ['l', 'r']) {
     for (const f of ['index', 'middle', 'ring', 'pinky']) for (let j = 1; j <= 3; j++) {
@@ -97,6 +98,15 @@ export function buildBody(T, data) {
       b.quaternion.multiply(new T.Quaternion().setFromAxisAngle(ax, 0.3)); b.updateMatrixWorld(true);
     }
   }
+  const curlQ = new Map(FINGERS.map(b => [b, b.quaternion.clone()]));
+  // open hand: fingers nearly straight with a relaxed bend
+  const openQ = new Map(FINGERS.map(b => {
+    const q = restLocalQ.get(b).clone(); if (/^thumb/.test(b.name)) return [b, q];
+    const c = by[b.name.replace(/_0(\d)_/, (m, d) => `_0${+d + 1}_`)] || by[b.name.replace(/_0\d_/, '_04_leaf_')];
+    const d = restP.get(c).clone().sub(restP.get(b)).normalize();
+    const ax = new T.Vector3().crossVectors(d, palm).normalize().applyQuaternion(restQ.get(b).clone().invert());
+    return [b, q.multiply(new T.Quaternion().setFromAxisAngle(ax, 0.12))];
+  }));
   // centre of the closed fist in the hand bone's frame: the handle goes here
   const gripLocal = {};
   for (const s of ['l', 'r']) {
@@ -104,6 +114,15 @@ export function buildBody(T, data) {
     const c = pts.reduce((a, p) => a.add(p), new T.Vector3()).multiplyScalar(1 / pts.length);
     gripLocal[s] = by['hand_' + s].worldToLocal(c);
   }
+
+  // palm centre (slightly below the palm skin) for flat-hand moves, in the hand bone's frame
+  const palmLocal = {};
+  for (const s of ['l', 'r']) {
+    const c = ['hand', 'index_01', 'middle_01', 'pinky_01'].map(n => restP.get(by[`${n}_${s}`]).clone()).reduce((a, p) => a.add(p), new T.Vector3()).multiplyScalar(0.25).add(new T.Vector3(0, -0.025, 0));
+    palmLocal[s] = c.applyMatrix4(new T.Matrix4().compose(restP.get(by['hand_' + s]), restQ.get(by['hand_' + s]), new T.Vector3(1, 1, 1)).invert());
+  }
+  let openHand = false;
+  function setHand(open) { openHand = !!open; for (const b of FINGERS) b.quaternion.copy((openHand ? openQ : curlQ).get(b)); group.updateMatrixWorld(true); }
 
   // ── rest frames for driven bones: down = toward the child joint, front = facing ──
   const FWD = new T.Vector3(0, 0, 1);
@@ -162,9 +181,14 @@ export function buildBody(T, data) {
       cl.quaternion.copy(restLocalQ.get(cl)).multiply(new T.Quaternion().setFromAxisAngle(axL, ang)); cl.updateMatrixWorld(true);
       // arm: IK from the body's shoulder to the figure's wrist, elbow on the figure's side
       // the hand's orientation comes from the figure; the wrist sits back from the grip point so the handle is in the fist
-      const qHand = aimQ(by['hand_' + s], axisOf(S.hand, 0, -1, 0), axisOf(S.hand, 0, 0, 1));
+      // flat hand on the floor (push-ups, burpees): palm down, fingers pointing forward from the body
+      const grip0 = cur && cur.hand ? cur.hand[s === 'l' ? 'L' : 'R'] : posOf(S.hand);
+      const palmF = axisOf(S.hand, 0, 0, 1), flat = openHand && grip0.y < 0.22;
+      const fwd = flat ? axisOf(F.spine, 0, 0, 1).setY(0) : null;
+      if (flat && fwd.lengthSq() < 1e-4) fwd.set(0, 0, 1);
+      const qHand = flat ? aimQ(by['hand_' + s], fwd.normalize(), new T.Vector3(0, -1, 0)) : aimQ(by['hand_' + s], axisOf(S.hand, 0, -1, 0), palmF);
       const grip = cur && cur.hand ? cur.hand[s === 'l' ? 'L' : 'R'] : posOf(S.hand);
-      const wrT = grip.clone().sub(gripLocal[s].clone().applyQuaternion(qHand));
+      const wrT = grip.clone().sub((openHand ? palmLocal[s] : gripLocal[s]).clone().applyQuaternion(qHand));
       const shM = posOf(by['upperarm_' + s]), elF = posOf(S.fore);
       const pole = elF.clone().sub(posOf(S.upper).add(posOf(S.hand)).multiplyScalar(0.5));
       const arm = ik(shM, wrT, L.up, L.fo, pole);
@@ -236,5 +260,5 @@ export function buildBody(T, data) {
     hlAttr.needsUpdate = true;
   }
   function setEffort(e, accent) { if (accent) uni.uAcc.value.copy(accent); uni.uK.value = 0.8 + 0.2 * e; uni.uE.value = 0.06 + 0.22 * e; }
-  return { group, drive, setHighlight, setEffort, regions: REG, bones: by, gripLocal, L };
+  return { group, drive, setHand, setHighlight, setEffort, regions: REG, bones: by, gripLocal, L };
 }

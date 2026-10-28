@@ -322,6 +322,7 @@ export const MOVES = {
     mistakes: [M('斜板角度太高變咗推肩', 'Bench so steep it becomes a shoulder press'), M('落得太淺', 'Partial range')]
   },
   pushup: {
+    hand: 'open',
     period: 3.2, cam: { view: 'side', target: [0, 0.4, 0], dist: 3.1, phi: 0.2 },
     props: [],
     keys: loop([
@@ -833,6 +834,7 @@ export const MOVES = {
     mistakes: [M('腰向下塌', 'Hips sagging'), M('屁股翹太高', 'Hips piked up'), M('閉氣', 'Holding your breath')]
   },
   crunch: {
+    hand: 'open',
     period: 3, cam: { view: 'side', target: [0, 0.3, 0], dist: 2.9, phi: 0.25 },
     props: [{ type: 'mat' }],
     keys: loop([
@@ -850,6 +852,7 @@ export const MOVES = {
     mistakes: [M('用手拉頸', 'Pulling on your neck'), M('坐成個起身', 'Sitting all the way up')]
   },
   leg_raise: {
+    hand: 'open',
     period: 3.4, cam: { view: 'side', target: [0, 0.35, 0.1], dist: 3, phi: 0.25 },
     props: [{ type: 'mat' }],
     keys: loop([
@@ -885,7 +888,7 @@ export const MOVES = {
   },
   russian_twist: {
     period: 3, cam: { view: 'front', target: [0, 0.4, 0.1], dist: 2.9, phi: 0.3 },
-    props: [{ type: 'mat' }, { type: 'plate' }],
+    props: [{ type: 'mat' }, { type: 'plate', face: 'body' }],
     keys: loop([
       { t: 0, pel: [0.13, 0], trunk: -40, yaw: -35, f: [0.13, 0.2, 0.6], kp: [0, 1, 0.3], ht: [0.0, 0.36, 0.25], ep: [0.6, -0.6, 0.2] },
       { t: 0.5, yaw: 35 }
@@ -897,6 +900,7 @@ export const MOVES = {
     mistakes: [M('只係郁手', 'Only moving the arms'), M('圓背', 'Rounding the back')]
   },
   dead_bug: {
+    hand: 'open',
     period: 4.4, cam: { view: 'q', target: [0, 0.35, 0], dist: 3, phi: 0.45 },
     props: [{ type: 'mat' }],
     keys: loop([
@@ -914,6 +918,7 @@ export const MOVES = {
     mistakes: [M('下背拱起', 'Lower back arching'), M('郁得太快', 'Moving too fast')]
   },
   hollow: {
+    hand: 'open',
     period: 4, cam: { view: 'side', target: [0, 0.3, 0], dist: 3, phi: 0.2 },
     props: [{ type: 'mat' }],
     keys: loop([
@@ -1121,7 +1126,7 @@ const CURL_PH = PH4(
 Object.assign(MOVES, {
   machine_press: {
     period: 3.6, cam: { view: 'q', target: [0, 1.0, 0.1], dist: 3.4, phi: 0.2 },
-    props: [{ type: 'seat', y: 0.45, z: -0.02, back: 0.75, backTilt: 15 }, { type: 'machine' }],
+    props: [{ type: 'seat', y: 0.45, z: -0.02, back: 0.75, backTilt: 15 }, { type: 'machine', pivot: [0.56, 1.06, -0.12] }],
     keys: loop([
       { t: 0, pel: [0.55, -0.02], trunk: -15, f: [0.2, 0.08, 0.45], kp: [0.3, 0.4, 1], h: [0.31, 1.0, 0.14], ep: [1, -0.6, -0.1], pn: [0, -0.3, 1] },
       { t: 0.1, h: [0.31, 1.0, 0.14] }, { t: 0.45, h: [0.21, 1.1, 0.6] }, { t: 0.55, h: [0.21, 1.1, 0.6] }
@@ -1255,6 +1260,7 @@ Object.assign(MOVES, {
     mistakes: [M('屈髖坐落去', 'Bending at the hips'), M('落得太快', 'Dropping too fast')]
   },
   nordic: {
+    hand: 'open',
     period: 4.6, cam: { view: 'side', target: [0, 0.4, 0.3], dist: 3.2 },
     props: [{ type: 'mat' }, { type: 'kneepad', y: 0.15, z: -0.42 }],
     keys: loop([
@@ -1446,6 +1452,7 @@ Object.assign(MOVES, {
     mistakes: [M('只用手臂甩', 'Swinging with the arms only'), M('腰椎扭轉過度', 'Twisting the lower back')]
   },
   burpee: {
+    hand: 'open',
     period: 3.4, cam: { view: 'side', target: [0, 0.7, 0.2], dist: 3.6 },
     props: [{ type: 'mat' }],
     keys: loop([
