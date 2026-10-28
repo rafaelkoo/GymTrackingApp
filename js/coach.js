@@ -225,3 +225,42 @@ export function targetReport(id) {
   const shouldE1 = e1rm(wk.kg, wk.reps), gap = bestNow - shouldE1;   // + = ahead
   return { pl, wk, bestNow, shouldE1, gap, hitThisWeek: wk.status === 'hit' };
 }
+
+// ── strength progress for every lift (no target needed) ──
+// The clock starts at your first session, or at your comeback after a break of more than 4 weeks.
+// Expected est. 1RM grows about 1.5% a week for the first 12 weeks, 1% to week 26, then 0.5%.
+const GAP_DAYS = 28;
+function growth(weeks) {
+  let f = 1;
+  for (let i = 1; i <= Math.floor(weeks); i++) f *= 1 + (i <= 12 ? 0.015 : i <= 26 ? 0.01 : 0.005);
+  const frac = weeks - Math.floor(weeks), nx = Math.floor(weeks) + 1;
+  return f * (1 + frac * (nx <= 12 ? 0.015 : nx <= 26 ? 0.01 : 0.005));
+}
+// turn an est. 1RM into a set to do: weight on your plate steps, extra reps before the next jump
+function setFor(e, reps, inc) {
+  const per = 1 + (reps <= 1 ? 0 : reps / 30);
+  let kg = inc ? Math.floor(e / per / inc) * inc : Math.floor(e / per);
+  if (kg <= 0) kg = inc || 1;
+  let r = reps;
+  if (kg * per < e * 0.99) { r = Math.ceil(30 * (e / kg - 1)); if (r > reps + 5) { kg += inc || 1; r = reps; } }
+  return { kg, reps: Math.max(reps, r) };
+}
+export function strengthReport(id, prefer) {
+  const e = EX[id]; if (!e || e.isCardio) return null;
+  const inc = increment(id); if (inc === 0) return null;
+  const ses = sessions(id, false).filter(s => s.top > 0); if (!ses.length) return null;
+  let a = 0; for (let i = 1; i < ses.length; i++) if (days(ses[i - 1].date, ses[i].date) > GAP_DAYS) a = i;
+  const run = ses.slice(a), start = run[0].date, today = isoToday();
+  const base = Math.max(...run.filter(s => days(start, s.date) < 7).map(s => s.e1));
+  const reps = planReps(id, prefer), weeksIn = Math.max(0, days(start, today) / 7), weekNo = Math.floor(weeksIn) + 1;
+  const expE = base * growth(weeksIn), should = setFor(expE, reps, inc);
+  const recent = run.filter(s => days(s.date, today) < 14);
+  const bestS = recent.length ? recent.reduce((m, s) => (s.e1 > m.e1 ? s : m)) : null;
+  let you = null;
+  if (bestS) { const top = bestS.sets.reduce((m, x) => (e1rm(num(x.weight), num(x.reps)) > e1rm(num(m.weight), num(m.reps)) ? x : m)); you = { kg: num(top.weight), reps: num(top.reps) }; }
+  const gap = bestS ? bestS.e1 / expE - 1 : null;   // + = ahead
+  const state = weekNo === 1 ? 'start' : !bestS ? 'idle' : gap >= -0.02 ? 'ontrack' : gap >= -0.06 ? 'close' : 'behind';
+  const ahead = [4, 8].map(k => ({ k, ...setFor(base * growth(weeksIn + k), reps, inc) }));
+  const daysOff = days(run[run.length - 1].date, today);
+  return { id, start, weekNo, sessions: run.length, base, expE, should, you, gap, state, ahead, comeback: a > 0, daysOff };
+}

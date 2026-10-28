@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -227,6 +227,7 @@ function renderProgress() {
     <div class="tile"><span class="k">${t('本週', 'This week')}</span><span class="v">${weekly}</span><span class="s">${t('分 · 評級 ', 'pts · grade ')}${g}</span></div>
     <div class="tile"><span class="k">${t('新紀錄', 'New PRs')}</span><span class="v">${prsThisMonth()}</span><span class="s">${t('今個月', 'this month')}</span></div></div>`;
   h += targetsCard();
+  h += liftProgressCard();
   // exercise chart
   const ids = trainedIds();
   if (!ui.progEx || !ids.includes(ui.progEx)) ui.progEx = ids[0] || null;
@@ -374,7 +375,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.7</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.8</p>`;
   return h;
 }
 
@@ -424,7 +425,7 @@ function targetBlock(ex, editing) {
   if (sg) h += `<section class="card" style="margin-top:12px"><div class="card-h"><h2 class="h3">${t('下次建議', 'Next session')}</h2></div><div class="sugg" style="margin:0"><span class="sugg-i ${sg.kind}">${I(sg.kind === 'up' ? 'chart' : sg.kind === 'down' ? 'reset' : 'target')}</span><div style="flex:1;min-width:0"><b class="num">${sg.kg ? sg.kg + ' kg × ' : ''}${sg.reps} ${t('次', 'reps')}</b><span>${esc(t(sg.zh, sg.en))}</span></div></div></section>`;
   h += `<section class="card" style="margin-top:${sg ? 0 : 12}px"><div class="card-h"><h2 class="h3">${t('目標', 'Target')}</h2>${st ? stateChip(st.state) : ''}</div>`;
   if (editing || ui.tgEdit === ex.id) h += targetForm(ex);
-  else if (!st) h += `<p class="sub" style="margin-bottom:10px">${t('設定一個目標，例如喺某日之前做到某個重量，App 會話你進度同點樣調整。', 'Set a target weight and date and the app tracks your pace and tells you how to adjust.')}</p><button class="btn btn-g btn-w" data-a="tgEdit" data-id="${ex.id}">${I('target')}${t('設定目標', 'Set a target')}</button>`;
+  else if (!st) h += (strengthReport(ex.id) ? `<h3 class="h3" style="margin-bottom:6px">${t('每週進度', 'Weekly progress')}</h3>${strengthReportHTML(strengthReport(ex.id))}` : '') + `<p class="sub" style="margin-bottom:10px">${t('設定一個目標，例如喺某日之前做到某個重量，App 會話你進度同點樣調整。', 'Set a target weight and date and the app tracks your pace and tells you how to adjust.')}</p><button class="btn btn-g btn-w" data-a="tgEdit" data-id="${ex.id}">${I('target')}${t('設定目標', 'Set a target')}</button>`;
   else {
     const adv = targetAdvice(ex.id, st), tg = st.tg;
     h += `<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:6px"><b class="num" style="font-size:22px">${tg.kg} kg × ${tg.reps}</b><span class="sub">${tg.by ? t('期限 ', 'by ') + fmtDate(tg.by) : t('冇期限', 'no deadline')}</span></div>
@@ -479,6 +480,35 @@ function bodyPlanHTML() {
       return `<li class="wk ${WK[st][1]}"><span class="wn">${t('第', 'W')}${w.n}${t('週', '')}</span><span class="wd">${fmtDate(w.date)}</span><b class="num">${w.kg} kg</b><span class="ws">${WK[st][0]}</span></li>`; }).join('')}</ol>
     ${bp.weeks.length > startIdx + 12 ? `<p class="sub small" style="margin-top:6px">${t(`之後再 ${bp.weeks.length - startIdx - 12} 星期，${fmtDate(bp.endDate)} 去到 ${bp.goal} kg`, `${bp.weeks.length - startIdx - 12} more weeks to ${bp.goal} kg by ${fmtDate(bp.endDate)}`)}</p>` : ''}
     <button class="btn btn-g btn-w" data-a="bodyRestart" style="margin-top:10px">${I('reset')}${t('由今日重新開始計劃', 'Restart the plan from today')}</button></div>`;
+}
+function strengthReportHTML(r) {
+  if (!r) return '';
+  const set = x => `${x.kg} kg × ${x.reps}`;
+  const wk = t(`第 ${r.weekNo} 週`, `Week ${r.weekNo}`);
+  let cls = '', main, msg;
+  if (r.state === 'start') {
+    main = t(`起點：${r.you ? set(r.you) : set(r.should)}`, `Starting point: ${r.you ? set(r.you) : set(r.should)}`);
+    msg = r.comeback ? t('休息咗一段時間，由今次重新計。', 'Back after a break, so the clock restarts here.') : t('第一個星期，呢個就係你嘅起點。', 'Your first week, so this is your baseline.');
+  } else if (r.state === 'idle') {
+    cls = 'bad'; main = t(`應該做到 ${set(r.should)}`, `Should be at ${set(r.should)}`);
+    msg = t(`已經 ${Math.round(r.daysOff)} 日冇練。${r.daysOff > 28 ? '下次練會由新起點計。' : '盡快練返，一個月內返嚟唔會重新計。'}`, `${Math.round(r.daysOff)} days since you trained it. ${r.daysOff > 28 ? 'Next session starts a new baseline.' : 'Come back within 4 weeks to keep the plan.'}`);
+  } else {
+    const pct = Math.round(r.gap * 100);
+    cls = r.state === 'ontrack' ? 'good' : r.state === 'behind' ? 'bad' : '';
+    main = t(`應該 ${set(r.should)} · 你 ${set(r.you)}`, `Plan ${set(r.should)} · you ${set(r.you)}`);
+    msg = r.state === 'ontrack' ? (pct >= 3 ? t(`比計劃強 ${pct}%，做得好！`, `${pct}% ahead of plan. Nice work!`) : t('跟得上計劃。', 'On plan.'))
+      : r.state === 'close' ? t(`差少少（${-pct}%）。下次照建議加重或者加次數就追得返。`, `Slightly behind (${-pct}%). Follow the next-session suggestion to catch up.`)
+      : t(`落後 ${-pct}%。檢查吓每星期有冇練夠呢個動作、瞓得夠唔夠、蛋白質夠唔夠；連續做唔足就減 10% 再加返上去。`, `${-pct}% behind. Check you train it every week, sleep and protein; if you keep missing reps, drop 10% and build back up.`);
+  }
+  return `<div class="report ${cls}"><span class="rk">${wk}</span><div><b class="num">${main}</b><span>${msg}</span><span class="num">${t('之後', 'Next')}：${r.ahead.map(a => t(`${a.k} 週後 ${set(a)}`, `in ${a.k} wk ${set(a)}`)).join(' · ')}</span></div></div>`;
+}
+function liftProgressCard() {
+  const list = trainedIds().filter(id => !S.targets[id]).map(id => strengthReport(id)).filter(r => r && r.daysOff <= 42)
+    .sort((a, b) => a.daysOff - b.daysOff);
+  if (!list.length) return '';
+  return `<section class="card"><div class="card-h"><h2 class="h2">${t('力量進度', 'Strength progress')}</h2><span class="sub small">${t('每星期應該去到邊', 'Where you should be each week')}</span></div>
+    <p class="sub small" style="margin-bottom:8px">${t('由第一次練（或者休息超過 4 星期之後返嚟嗰次）開始計：頭 12 星期每週估算 1RM 加約 1.5%，之後 1%，半年後 0.5%。', 'Counted from your first session (or your return after 4+ weeks off): est. 1RM about +1.5% a week for 12 weeks, then 1%, then 0.5% after six months.')}</p>
+    ${list.slice(0, 10).map(r => `<button class="tgrow" data-a="openEx" data-id="${r.id}"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:6px"><b>${esc(exName(EX[r.id]))}</b><span class="sub small">${t(`練咗 ${r.sessions} 次`, `${r.sessions} sessions`)}</span></div>${strengthReportHTML(r)}</button>`).join('')}</section>`;
 }
 function targetsCard() {
   const ids = Object.keys(S.targets || {}).filter(id => EX[id]);
