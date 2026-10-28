@@ -14,8 +14,8 @@ export async function loadBody(T) {
   ]);
   const tl = new T.TextureLoader();
   const tex = (f, srgb) => new Promise((res, rej) => tl.load(BASE + f, t => { t.flipY = false; if (srgb) t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; res(t); }, undefined, rej));
-  const [skinMap, skinN, eyeMap, hairMap] = await Promise.all([tex('skin.jpg', true), tex('skin_n.jpg'), tex('eye.jpg', true), tex('hair.jpg', true)]);
-  return { meta, bin, maps: { skinMap, skinN, eyeMap, hairMap } };
+  const skinN = await tex('skin_n.jpg');
+  return { meta, bin, maps: { skinN } };
 }
 
 export function buildBody(T, data) {
@@ -44,7 +44,9 @@ export function buildBody(T, data) {
     return g;
   };
   const uni = { uAcc: { value: new T.Color('#FF7A2F') }, uK: { value: 0 }, uE: { value: 0 } };
-  const skinMat = new T.MeshStandardMaterial({ map: maps.skinMap, normalMap: maps.skinN, roughness: 0.62, metalness: 0 });
+  // anatomy-chart look: one smooth light-grey material, muscle shape kept faintly from the normal map
+  const GREY = 0xC6C2BD;
+  const skinMat = new T.MeshStandardMaterial({ color: GREY, normalMap: maps.skinN, normalScale: new T.Vector2(0.35, 0.35), roughness: 0.78, metalness: 0 });
   skinMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, uni);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float hl;\nvarying float vHl;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvHl = hl;');
@@ -54,16 +56,16 @@ export function buildBody(T, data) {
   };
   const mats = {
     body: skinMat,
-    eyes: new T.MeshStandardMaterial({ map: maps.eyeMap, roughness: 0.3 }),
+    eyes: new T.MeshStandardMaterial({ color: 0xBFBAB4, roughness: 0.6 }),
     // the hair texture is a grey mask meant to be tinted
-    brows: new T.MeshStandardMaterial({ map: maps.hairMap, color: 0x3B2A20, roughness: 0.85, side: T.DoubleSide }),
-    hair: new T.MeshStandardMaterial({ map: maps.hairMap, color: 0x2E221B, roughness: 0.85, side: T.DoubleSide })
+    brows: new T.MeshStandardMaterial({ color: GREY, roughness: 0.85, side: T.DoubleSide }),
+    hair: new T.MeshStandardMaterial({ color: 0xC4BFB9, roughness: 0.9, side: T.DoubleSide })
   };
   const meshes = {};
   for (const [k, m] of Object.entries(meta.meshes)) {
     const g = geoOf(m);
     if (k === 'body') g.setAttribute('hl', new T.BufferAttribute(new Float32Array(m.count), 1));
-    const o = new T.SkinnedMesh(g, mats[k]); o.frustumCulled = false; o.castShadow = true; o.receiveShadow = k === 'body';
+    const o = new T.SkinnedMesh(g, mats[k]); if (k === 'brows') o.visible = false; o.frustumCulled = false; o.castShadow = true; o.receiveShadow = k === 'body';
     o.bind(skeleton, new T.Matrix4()); group.add(o); meshes[k] = o;
   }
 
@@ -207,6 +209,6 @@ export function buildBody(T, data) {
     for (const n of fine) { const m = masks[n]; if (!m) continue; for (let i = 0; i < a.length; i++) if (m[i] > a[i]) a[i] = m[i]; }
     hlAttr.needsUpdate = true;
   }
-  function setEffort(e, accent) { if (accent) uni.uAcc.value.copy(accent); uni.uK.value = 0.55 + 0.35 * e; uni.uE.value = 0.03 + 0.2 * e; }
+  function setEffort(e, accent) { if (accent) uni.uAcc.value.copy(accent); uni.uK.value = 0.8 + 0.2 * e; uni.uE.value = 0.06 + 0.22 * e; }
   return { group, drive, setHighlight, setEffort, regions: REG, bones: by };
 }

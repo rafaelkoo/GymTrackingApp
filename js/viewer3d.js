@@ -291,12 +291,9 @@ export async function createViewer(container, opts = {}) {
   scene.add(key); scene.add(key.target);
   const rim = new T.DirectionalLight(0xFF9A5A, 1.1); rim.position.set(-3, 3, -3.5); scene.add(rim);
   const fill = new T.DirectionalLight(0xCAD6FF, 0.35); fill.position.set(-3, 2, 3); scene.add(fill);
-  // studio look: plain light backdrop like an anatomy illustration
+  // studio look: the gym room, lit brighter on the figure so the grey body and red muscles read clearly
   if (opts.studio) {
-    gym.visible = false;
-    scene.background = new T.Color(0xEFEBE5); scene.fog = new T.Fog(0xEFEBE5, 5, 11);
-    floor.material.map = null; floor.material.color.set(0xE6E1D9); floor.material.needsUpdate = true;
-    hemi.intensity = 2.1; hemi.groundColor.set(0x8F877C); key.intensity = 38; rim.color.set(0xFFFFFF); rim.intensity = 0.6;
+    hemi.intensity = 1.45; key.intensity = 62; key.angle = 0.5; rim.color.set(0xFFD2B0); rim.intensity = 1.3; fill.intensity = 0.55;
     renderer.toneMappingExposure = 1.0;
   }
 
