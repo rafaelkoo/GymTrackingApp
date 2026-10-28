@@ -311,3 +311,4 @@ input[type=range] { width: 100%; accent-color: var(--acc); height: 32px; }
 .rvlist b.v { font-size: 15px; color: var(--tx); }
 .rvlist .i { flex-shrink: 0; width: 16px; text-align: center; font-weight: 700; color: var(--tx3, var(--tx2)); }
 .rvlist .hit .i { color: var(--acc); } .rvlist .miss .i { color: var(--bad, #e5484d); } .rvlist .now .i { color: var(--gold, #e8b04b); }
+.guide .rvlist .n { font-weight: 500; color: var(--tx2); }

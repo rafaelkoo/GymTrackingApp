@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate, liftGoals, liftGoal, cutting } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate, liftGoals, liftGoal, cutting, scheme, schemeChanges, applyScheme, isCompound } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -192,7 +192,7 @@ function cardioCard(day, e, idx) {
   const ex = EX[e.id], done = exDone(day, e), mins = parseInt(e.reps) || 30;
   return `<section class="ex ${done ? 'done' : ''}"><div class="ex-h" style="cursor:default">
     <span class="ex-badge">${done ? I('check') : idx + 1}</span>
-    <span class="ex-t"><b>${esc(exName(ex))}</b><span>${t('有氧', 'Cardio')} · ${mins} ${t('分鐘', 'min')}</span></span>
+    <span class="ex-t"><b>${esc(exName(ex))}</b><span>${t('有氧', 'Cardio')} · ${mins} ${t('分鐘', 'min')}${e.id !== 'warmup' && (S.customPlan[day] || []).some(x => EX[x.id] && EX[x.id].cat === 'legs') ? ` · ${t('腳日：建議斜坡行或者單車，唔好跑', 'Leg day: incline walk or bike, not running')}` : e.id !== 'warmup' ? ` · ${t('第二區：講到句子、唱唔到歌', 'Zone 2: can talk, can\'t sing')}` : ''}</span></span>
     ${done ? '' : `<span class="stepper"><button data-a="cardioMin" data-d="${day}" data-id="${e.id}" data-v="-5" aria-label="${t('減 5 分鐘', 'Minus 5 minutes')}">−</button><button data-a="cardioMin" data-d="${day}" data-id="${e.id}" data-v="5" aria-label="${t('加 5 分鐘', 'Plus 5 minutes')}">+</button></span>`}
     <button class="tick" data-a="cardioTick" data-d="${day}" data-id="${e.id}" aria-pressed="${done}" aria-label="${t('完成有氧', 'Complete cardio')}">${I('check')}</button></div></section>`;
 }
@@ -297,11 +297,38 @@ function renderProgress() {
 }
 
 // ---------- PLAN ----------
+function guideCard() {
+  const sc = scheme(), ch = schemeChanges(sc), open = ui.guideOpen;
+  const row = (k, v) => `<li><span class="n">${k}</span><b class="v num">${v}</b></li>`;
+  let h = `<section class="card hot guide"><div class="card-h"><h2 class="h2">${t('訓練指引', 'Training guide')}</h2><span class="tag acc">${t(sc.zh, sc.en)}</span></div>
+    <ul class="rvlist">${row(t('複合動作（深蹲、推、拉）', 'Compound (squat, press, pull)'), `${sc.c[0]} × ${sc.c[1]}–${sc.c[2]}`)}${row(t('孤立動作（彎舉、側平舉）', 'Isolation (curls, raises)'), `${sc.i[0]} × ${sc.i[1]}–${sc.i[2]}`)}
+      ${row(t('組間休息', 'Rest between sets'), `${sc.rest < 120 ? sc.rest + t(' 秒', 's') : sc.rest / 60 + t(' 分鐘', ' min')}`)}${row(t('每個部位每週組數', 'Sets per body part / week'), `${sc.sets[0]}–${sc.sets[1]}`)}
+      ${row(t('每週有氧', 'Cardio / week'), `${sc.cardio} ${t('分鐘', 'min')}`)}${row(t('每日步數', 'Daily steps'), sc.steps.toLocaleString())}</ul>`;
+  h += `<button class="btn btn-g btn-w" data-a="guideOpen" style="margin-top:10px" aria-expanded="${!!open}">${t(open ? '收埋點做' : '點做？', open ? 'Hide how-to' : 'How does it work?')}</button>`;
+  if (open) {
+    const tips = [
+      [`加重：每組都做到 ${sc.c[2]}（孤立 ${sc.i[2]}）次就加重，加完由 ${sc.c[1]}（孤立 ${sc.i[1]}）次重新開始。`, `Add weight once every set reaches ${sc.c[2]} (isolation ${sc.i[2]}) reps, then start again at ${sc.c[1]} (${sc.i[1]}).`],
+      ['先重訓、後有氧；可以分開兩個時段（相隔 6 小時以上）更好。', 'Lift first, cardio after; even better, split them 6+ hours apart.'],
+      ['有氧主力做第二區：斜坡行、單車、划艇機，辛苦到講到句子但唱唔到歌。', 'Most cardio in zone 2: incline walk, bike, rower; you can talk but not sing.'],
+      ['腳日之後唔好跑步，改斜坡行或者踩單車。', 'No running after leg day; walk on an incline or cycle instead.'],
+      [sc.key === 'fat' || sc.key === 'recomp' ? 'HIIT 每星期最多 1–2 次，唔好排喺腳日前一日。減脂主要靠食量，有氧係輔助。' : 'HIIT 可有可無，每星期最多 1–2 次。', sc.key === 'fat' || sc.key === 'recomp' ? 'HIIT at most 1-2 times a week, not the day before legs. Food does most of the fat loss; cardio helps.' : 'HIIT is optional, at most 1-2 times a week.'],
+      [sc.key === 'fat' ? '減緊重：目標係體重跌而力量唔跌；力量升得慢係正常。' : sc.key === 'muscle' ? '增肌：每日食多約 250–300 kcal，每星期體重升 0.25–0.5%。' : sc.key === 'strength' ? '力量：主要動作休息足 2–4 分鐘，每次加細步。' : '每個部位每星期最好練兩次。', sc.key === 'fat' ? 'Cutting: aim to lose weight without losing strength; slow strength gains are normal.' : sc.key === 'muscle' ? 'Building: eat about 250-300 kcal over maintenance, gain 0.25-0.5% a week.' : sc.key === 'strength' ? 'Strength: rest 2-4 minutes on main lifts and add small steps.' : 'Train each body part twice a week if you can.']
+    ];
+    h += `<ul class="rvtips" style="margin-top:10px">${tips.map(x => `<li>${esc(t(x[0], x[1]))}</li>`).join('')}</ul>`;
+  }
+  if (ch.out.length) {
+    if (ui.guideConfirm) h += `<div class="warn" style="margin-top:10px;display:block"><b>${t(`會改 ${ch.out.length} 個動作：`, `This changes ${ch.out.length} exercises:`)}</b><ul class="rvtips" style="margin:6px 0 8px">${ch.out.slice(0, 8).map(c => `<li>${esc(exName(EX[c.id]))}（${dayShort(c.d)}）：${c.from} → ${c.to}</li>`).join('')}${ch.out.length > 8 ? `<li>${t(`仲有 ${ch.out.length - 8} 個…`, `and ${ch.out.length - 8} more…`)}</li>` : ''}</ul>${ch.kept.length ? `<span class="sub small" style="display:block;margin-bottom:8px">${t(`你自己改過嘅 ${ch.kept.length} 個動作唔會郁。`, `${ch.kept.length} exercises you edited yourself stay as they are.`)}</span>` : ''}
+      <div class="row" style="gap:8px"><button class="btn btn-p" data-a="guideApply" style="flex:1">${t('確定套用', 'Apply')}</button><button class="btn btn-g" data-a="guideCancel">${t('取消', 'Cancel')}</button></div></div>`;
+    else h += `<button class="btn btn-p btn-w" data-a="guideAsk" style="margin-top:8px">${I('target')}${t(`套用到計劃（${ch.out.length} 個動作）`, `Apply to my plan (${ch.out.length} exercises)`)}</button>`;
+  } else h += `<p class="sub small" style="margin-top:8px">${t('你個計劃已經跟緊呢個指引。', 'Your plan already follows this guide.')}</p>`;
+  return h + '</section>';
+}
 function renderPlan() {
   const day = ui.planDay, plan = S.customPlan[day] || [];
   const trainDays = WD.filter(d => (S.customPlan[d] || []).length).length;
   let h = `<header class="ph"><div><div class="eyebrow">${t(`每週 ${trainDays} 日訓練`, `${trainDays} training days a week`)}</div><h1 class="h1">${t('計劃', 'Plan')}</h1></div>
     <button class="btn btn-g" data-a="resetPlan" style="min-height:44px">${I('reset')}${t('還原預設', 'Reset')}</button></header>`;
+  h += guideCard();
   h += `<div class="days7" role="tablist" aria-label="${t('揀日子', 'Pick a day')}" style="margin-bottom:14px">${WD.map(d => {
     const f = dayFocus(d);
     return `<button role="tab" data-a="planDay" data-v="${d}" aria-selected="${d === day}" aria-pressed="${d === day}">${dayShort(d)}<small>${f ? (f === 'cardio' ? t('有氧', 'Cardio') : t(CATS[f].zh, CATS[f].en.slice(0, 4))) : t('休息', 'Rest')}</small></button>`;
@@ -316,7 +343,7 @@ function renderPlan() {
       h += `<div class="mini"><span class="lab">${t('分鐘', 'MIN')}</span><div class="ctl"><button data-a="planNum" data-i="${i}" data-f="reps" data-v="-5" aria-label="${t('減', 'Less')}">−</button><span class="v num">${parseInt(e.reps) || 30}</span><button data-a="planNum" data-i="${i}" data-f="reps" data-v="5" aria-label="${t('加', 'More')}">+</button></div></div>`;
     } else {
       h += `<div class="mini"><span class="lab">${t('組', 'SETS')}</span><div class="ctl"><button data-a="planNum" data-i="${i}" data-f="sets" data-v="-1" aria-label="${t('減一組', 'One less set')}">−</button><span class="v num">${e.sets}</span><button data-a="planNum" data-i="${i}" data-f="sets" data-v="1" aria-label="${t('加一組', 'One more set')}">+</button></div></div>
-        <div class="mini"><span class="lab">${t('次', 'REPS')}</span><div class="ctl"><button data-a="planNum" data-i="${i}" data-f="reps" data-v="-1" aria-label="${t('減一次', 'One less rep')}">−</button><span class="v num">${esc(e.reps)}</span><button data-a="planNum" data-i="${i}" data-f="reps" data-v="1" aria-label="${t('加一次', 'One more rep')}">+</button></div></div>`;
+        <div class="mini"><span class="lab">${t('次', 'REPS')}</span><div class="ctl"><button data-a="planNum" data-i="${i}" data-f="reps" data-v="-1" aria-label="${t('減一次', 'One less rep')}">−</button><span class="v num"${Array.isArray(e.range) && e.range[0] !== e.range[1] ? ' style="font-size:13px"' : ''}>${Array.isArray(e.range) && e.range[0] !== e.range[1] ? e.range[0] + '–' + e.range[1] : esc(e.reps)}</span><button data-a="planNum" data-i="${i}" data-f="reps" data-v="1" aria-label="${t('加一次', 'One more rep')}">+</button></div></div>`;
     }
     h += `<button class="ibtn ghost" data-a="planDel" data-i="${i}" aria-label="${t('移除', 'Remove')} ${esc(exName(ex))}" style="width:36px">${I('x')}</button></div>`;
   });
@@ -380,7 +407,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 3.0</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 3.1</p>`;
   return h;
 }
 
@@ -513,6 +540,9 @@ function reviewHTML(rv) {
   const tips = [];
   if (rv.planned && rv.done < rv.planned) tips.push(t(`今個星期練咗 ${rv.done} 日，計劃係 ${rv.planned} 日。下星期預先揀定時間，或者將計劃改少一日都得。`, `You trained ${rv.done} of ${rv.planned} planned days. Book the times ahead, or plan one day fewer.`));
   rv.judged.filter(l => !l.ok && !l.close).forEach(l => tips.push(t(`${exName(EX[l.id])} 落後：下星期每次都做足先加重；連續兩次做唔足就減 10%。`, `${exName(EX[l.id])} is behind: add weight only after hitting every rep; drop 10% after two misses.`)));
+  if (rv.vol.cardio < rv.sc.cardio * 0.9) tips.push(t(`有氧做咗 ${rv.vol.cardio} 分鐘，目標 ${rv.sc.cardio}。可以每次加 10 分鐘斜坡行，或者多行啲路。`, `Cardio ${rv.vol.cardio} of ${rv.sc.cardio} min. Add 10 minutes of incline walking per session, or walk more.`));
+  const low = ['chest', 'back', 'legs', 'shoulders', 'arms'].filter(c => (rv.vol.sets[c] || 0) < rv.sc.sets[0]);
+  if (low.length) tips.push(t(`${low.map(c => CATS[c].zh).join('、')}今個星期少過 ${rv.sc.sets[0]} 組。每個部位一星期練兩次最容易夠量。`, `${low.map(c => CATS[c].en).join(', ')} got fewer than ${rv.sc.sets[0]} sets. Training each part twice a week makes this easy.`));
   if (!rv.weighed) tips.push(t('今個星期未記體重，記低先比較到減重進度。', 'No weigh-in this week; log one so the weight plan can compare.'));
   if (rv.bp && rv.bp.ahead !== null && rv.bp.ahead < -0.5) tips.push(t('體重落後計劃：檢查食量同步數。', 'Weight is behind plan: check food and steps.'));
   if (!tips.length) tips.push(t('全部跟上計劃，下星期照做！', 'Everything on plan. Same again next week!'));
@@ -531,6 +561,9 @@ function reviewHTML(rv) {
     ${rv.bp ? bodyReportHTML(rv.bp) : ''}
     ${!rv.weighed ? `<div class="row" style="margin-bottom:10px"><label class="sr" for="rvW">${t('今日體重', 'Today\'s weight')}</label><input id="rvW" class="input" inputmode="decimal" placeholder="${t('今日體重 kg', 'Today\'s weight kg')}" style="flex:1"><button class="btn btn-g" data-a="rvLogW">${t('記錄', 'Log')}</button></div>` : ''}
     ${rv.lifts.length ? `<h3 class="h3" style="margin:6px 0">${t('今個星期嘅動作', 'This week\'s lifts')}</h3><ul class="rvlist">${rv.lifts.map(liftRow).join('')}</ul>` : ''}
+    <h3 class="h3" style="margin:12px 0 6px">${t('訓練量', 'Volume')} <span class="sub small">· ${t(rv.sc.zh, rv.sc.en)}</span></h3><ul class="rvlist">
+      <li class="${rv.vol.cardio >= rv.sc.cardio * 0.9 ? 'hit' : rv.vol.cardio >= rv.sc.cardio * 0.6 ? 'now' : 'miss'}"><span class="n">${t('有氧', 'Cardio')}</span><span class="v num">${rv.vol.cardio} / ${rv.sc.cardio} ${t('分鐘', 'min')}</span><span class="i">${rv.vol.cardio >= rv.sc.cardio * 0.9 ? '✓' : rv.vol.cardio >= rv.sc.cardio * 0.6 ? '≈' : '✗'}</span></li>
+      ${['chest', 'back', 'legs', 'shoulders', 'arms'].map(c => { const n = rv.vol.sets[c] || 0, [a, b] = rv.sc.sets, st = n >= a && n <= b + 4 ? 'hit' : n >= a * 0.6 ? 'now' : 'miss'; return `<li class="${st}"><span class="n">${t(CATS[c].zh, CATS[c].en)}</span><span class="v num">${n} ${t('組', 'sets')} · ${t('目標', 'aim')} ${a}–${b}</span><span class="i">${st === 'hit' ? '✓' : st === 'now' ? '≈' : '✗'}</span></li>`; }).join('')}</ul>
     <h3 class="h3" style="margin:12px 0 6px">${t('要改進', 'To work on')}</h3><ul class="rvtips">${tips.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
     ${rv.next.length || rv.nextBody ? `<h3 class="h3" style="margin:12px 0 6px">${t('下星期目標', 'Next week')}</h3><ul class="rvlist">${rv.nextBody ? `<li class="next"><span class="n">${t('體重', 'Body weight')}</span><b class="v num">${rv.nextBody.kg} kg</b></li>` : ''}${rv.next.map(x => `<li class="next"><span class="n">${esc(exName(EX[x.id]))}</span><b class="v num">${x.s.kg} kg × ${x.s.reps}</b></li>`).join('')}</ul>` : ''}
     <button class="btn btn-p btn-w" data-a="reviewDone" style="margin-top:12px">${I('check')}${t('完成檢討', 'Finish review')}</button></section>`;
@@ -844,9 +877,13 @@ const A = {
   planDay(el) { ui.planDay = el.dataset.v; render(); },
   planNum(el) {
     const d = ui.planDay, i = +el.dataset.i, f = el.dataset.f, e = S.customPlan[d][i], ex = EX[e.id];
-    if (f === 'sets') { e.sets = Math.max(1, Math.min(12, (e.sets || 3) + +el.dataset.v)); syncSets(d, e.id); }
+    if (f === 'sets') { e.sets = Math.max(1, Math.min(12, (e.sets || 3) + +el.dataset.v)); syncSets(d, e.id); if (!ex.isCardio) e.custom = true; }
     else if (ex.isCardio) e.reps = Math.max(5, Math.min(180, (parseInt(e.reps) || 30) + +el.dataset.v));
-    else { e.reps = Math.max(1, Math.min(100, (parseInt(e.reps) || 12) + +el.dataset.v)); (S.logs[d][e.id] || []).forEach(s => { if (!s.done) s.reps = e.reps; }); }
+    else {
+      const dv = +el.dataset.v; e.reps = Math.max(1, Math.min(100, (parseInt(e.reps) || 12) + dv));
+      if (Array.isArray(e.range)) e.range = [e.reps, Math.max(e.reps, e.range[1] + dv)];   // shift the whole range
+      e.custom = true; (S.logs[d][e.id] || []).forEach(s => { if (!s.done) s.reps = e.reps; });
+    }
     save('customPlan', 'logs'); render();
   },
   planDel(el) {
@@ -877,6 +914,10 @@ const A = {
     (S.logs[d][id] || []).forEach(s => { if (!s.done) { s.weight = kg; s.reps = r; } }); save('logs'); toast(t(`已套用 ${kg} kg`, `Set to ${kg} kg`)); render();
   },
   tgPick() { ui.tgPick = !ui.tgPick; render(); },
+  guideOpen() { ui.guideOpen = !ui.guideOpen; render(); },
+  guideAsk() { ui.guideConfirm = true; render(); },
+  guideCancel() { ui.guideConfirm = false; render(); },
+  guideApply() { const n = applyScheme(); ui.guideConfirm = false; toast(t(`已更新 ${n} 個動作`, `Updated ${n} exercises`)); render(); },
   tgFromGoal(el) {
     const g = liftGoal(el.dataset.id); if (!g) return;
     setTarget(g.id, g.kg, g.reps, g.by); toast(t(`已設目標：${g.kg} kg × ${g.reps}`, `Target set: ${g.kg} kg × ${g.reps}`)); render();
@@ -973,6 +1014,7 @@ const A = {
     if (!(S.bodyLog || []).length || o.edit) logWeight(p.weight);
     chkWeek(); save('profile', 'goalId', 'goalAnswers', 'weekTasks', 'scores');
     const wasEdit = o.edit; ui.ob = null; ui.tab = wasEdit ? 'me' : 'today'; ensLogs(); save('logs'); render();
+    if (wasEdit && schemeChanges().out.length) toast(t('目標改咗：去「計劃」頁睇新嘅訓練指引', 'Goal changed: see the new training guide on the Plan tab'));
   }
 };
 

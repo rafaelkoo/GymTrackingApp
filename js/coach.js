@@ -3,7 +3,7 @@
 // - target pace: weekly e1RM trend vs the pace the deadline needs
 // - body weight: weekly trend vs the pace the goal date needs, as a daily calorie change
 import { EX, WD, STD } from './data.js';
-import { S, save, isoToday, tdee } from './state.js';
+import { S, save, isoToday, tdee, syncSets } from './state.js';
 
 const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
 export const e1rm = (w, r) => (r <= 1 ? w : w * (1 + r / 30));   // Epley
@@ -36,6 +36,12 @@ export function planReps(id, prefer) {
   const t = S.targets[id]; return t ? t.reps : 10;
 }
 
+// rep range for an exercise in the plan: [low, high]. Old plans without a range use one number.
+export function planRange(id, prefer) {
+  for (const d of [prefer, ...WD]) { const e = d && (S.customPlan[d] || []).find(x => x.id === id); if (e && typeof e.reps === 'number') return Array.isArray(e.range) ? e.range : [e.reps, e.reps]; }
+  const r = planReps(id, prefer); return [r, r];
+}
+
 // completed sessions for an exercise, oldest first (optionally leaving today out)
 export function sessions(id, skipToday) {
   const today = isoToday(), out = [];
@@ -52,49 +58,56 @@ export function sessions(id, skipToday) {
 }
 
 // what to lift next time
-// Double progression with three guards:
-// 1. after a break: 3+ weeks off -> repeat the old weight; 6+ weeks -> drop 10%
-// 2. if one jump would be more than 10% (light weights), add reps first (up to +3), then add weight
-// 3. don't run far ahead of the weekly strength plan: if the jump would put you >5% past it, add reps instead
+// Double progression inside the plan's rep range (e.g. 8-12):
+// reach the top of the range on every set -> add weight and go back to the bottom.
+// Guards: 3+ weeks off -> repeat; 6+ weeks -> drop ~10%; a jump over 10% or one that runs >5% past the
+// weekly strength plan -> add reps first (up to 3 past the top), then add weight.
 const REP_ROOM = 3;
 export function nextLoad(id, prefer) {
   const e = EX[id]; if (!e || e.isCardio) return null;
-  const ses = sessions(id, true), reps = planReps(id, prefer), inc = increment(id);
+  const ses = sessions(id, true), [lo, hi] = planRange(id, prefer), inc = increment(id);
   if (!ses.length) return null;
   const last = ses[ses.length - 1], prev = ses[ses.length - 2];
   const off = days(last.date, isoToday()), wks = Math.floor(off / 7);
-  const hit = s => s.atTop.every(x => num(x.reps) >= reps);
   const minR = s => Math.min(...s.atTop.map(x => num(x.reps)));
+  const r0 = minR(last), rng = lo === hi ? `${hi}` : `${lo}–${hi}`;
   if (inc === 0) { // bodyweight: progress reps
-    const best = Math.max(...last.sets.map(x => num(x.reps)));
-    if (off >= 21) return { kg: 0, reps, kind: 'same', zh: `隔咗 ${wks} 星期冇練，先做返每組 ${reps} 次`, en: `${wks} weeks off; start back at ${reps} reps a set` };
-    return hit(last) ? { kg: 0, reps: best + 1, kind: 'up', zh: '上次全部做足，下次每組加 1 次', en: 'You hit every rep last time; add one rep per set' }
-      : { kg: 0, reps, kind: 'same', zh: `上次未做足，下次再挑戰每組 ${reps} 次`, en: `Missed some reps; aim for ${reps} per set again` };
+    if (off >= 21) return { kg: 0, reps: lo, kind: 'same', zh: `隔咗 ${wks} 星期冇練，先做返每組 ${lo} 次`, en: `${wks} weeks off; start back at ${lo} reps a set` };
+    return r0 >= lo ? { kg: 0, reps: r0 + 1, kind: 'up', zh: '上次全部做足，下次每組加 1 次', en: 'You hit every rep last time; add one rep per set' }
+      : { kg: 0, reps: lo, kind: 'same', zh: `上次未做足，下次再挑戰每組 ${lo} 次`, en: `Missed some reps; aim for ${lo} per set again` };
   }
-  // 1. coming back from a break
+  // coming back from a break
   if (off >= 42) {
     const kg = Math.max(inc, roundTo(last.top * 0.9, inc));
-    if (kg >= last.top) return { kg: last.top, reps, kind: 'same', zh: `隔咗 ${wks} 星期冇練。重量太輕減唔到一級，維持 ${last.top} kg，做得順先再加`, en: `${wks} weeks off. Too light to drop a step, so repeat ${last.top} kg until it feels smooth` };
-    return { kg, reps, kind: 'down', zh: `隔咗 ${wks} 星期冇練，由 ${kg} kg（約上次嘅 9 成）重新起步，做得順再加`, en: `${wks} weeks off; restart at ${kg} kg (about 90%) and build back up` };
+    if (kg >= last.top) return { kg: last.top, reps: lo, kind: 'same', zh: `隔咗 ${wks} 星期冇練。重量太輕減唔到一級，維持 ${last.top} kg，做得順先再加`, en: `${wks} weeks off. Too light to drop a step, so repeat ${last.top} kg until it feels smooth` };
+    return { kg, reps: lo, kind: 'down', zh: `隔咗 ${wks} 星期冇練，由 ${kg} kg（約上次嘅 9 成）重新起步，做得順再加`, en: `${wks} weeks off; restart at ${kg} kg (about 90%) and build back up` };
   }
-  if (off >= 21) return { kg: last.top, reps, kind: 'same', zh: `隔咗 ${wks} 星期冇練，先維持上次嘅 ${last.top} kg，唔好即刻加`, en: `${wks} weeks off; repeat ${last.top} kg before adding weight` };
-  if (hit(last)) {
-    const r0 = minR(last), up = roundTo(last.top + inc, inc), jump = (up - last.top) / last.top;
-    // 3. how far ahead of the weekly plan the jump would put you
+  if (off >= 21) return { kg: last.top, reps: lo, kind: 'same', zh: `隔咗 ${wks} 星期冇練，先維持上次嘅 ${last.top} kg，唔好即刻加`, en: `${wks} weeks off; repeat ${last.top} kg before adding weight` };
+  // top of the range on every set: time to add weight (unless the jump is too big)
+  // moved to a lower rep range (e.g. 15s -> 8-12): convert through est. 1RM, leaving ~2 reps in the tank
+  if (r0 > hi + 1 && lo < r0) {
+    const e1 = e1rm(last.top, r0), kg = Math.max(roundTo(last.top + inc, inc), Math.floor(e1 / (1 + (lo + 2) / 30) / inc) * inc);
+    return { kg, reps: lo, kind: 'up', zh: `你上次 ${last.top} kg 做到 ${r0} 次，高過而家嘅範圍（${rng}）。按估算 1RM 換算，${lo} 次應該做 ${kg} kg`, en: `Last time ${last.top} kg for ${r0} reps is above your ${rng} range. Converted via est. 1RM: ${kg} kg for ${lo}` };
+  }
+  if (r0 >= hi) {
+    const up = roundTo(last.top + inc, inc), jump = (up - last.top) / last.top;
     const sr = strengthReport(id, prefer);
     const planNext = sr && sr.state !== 'idle' ? sr.base * growth(Math.max(0, days(sr.start, isoToday()) / 7) + 1) : null;
-    const tooFarAhead = planNext && e1rm(up, reps) > planNext * 1.05;
-    if ((jump > 0.10 || tooFarAhead) && r0 < reps + REP_ROOM) {
+    const tooFarAhead = planNext && e1rm(up, lo) > planNext * 1.05;
+    if ((jump > 0.10 || tooFarAhead) && r0 < hi + REP_ROOM) {
       const why = jump > 0.10 ? { zh: `加到 ${up} kg 會跳 ${Math.round(jump * 100)}%，太多`, en: `going to ${up} kg is a ${Math.round(jump * 100)}% jump` } : { zh: `一次加到 ${up} kg 會快過每週計劃`, en: `jumping to ${up} kg would run ahead of the weekly plan` };
-      return { kg: last.top, reps: r0 + 1, kind: 'up', zh: `${why.zh}。先喺 ${last.top} kg 每組做 ${r0 + 1} 次，做到 ${reps + REP_ROOM} 次就加重`, en: `${why.en}. Do ${r0 + 1} reps a set at ${last.top} kg first; at ${reps + REP_ROOM} reps, add weight` };
+      return { kg: last.top, reps: r0 + 1, kind: 'up', zh: `${why.zh}。先喺 ${last.top} kg 每組做 ${r0 + 1} 次，做到 ${hi + REP_ROOM} 次就加重`, en: `${why.en}. Do ${r0 + 1} reps a set at ${last.top} kg first; at ${hi + REP_ROOM} reps, add weight` };
     }
-    return { kg: up, reps, kind: 'up', zh: `上次 ${last.top} kg 全部組數做足 ${r0 > reps ? r0 : reps} 次，可以加到 ${up} kg，次數返去 ${reps}`, en: `You hit ${r0 > reps ? r0 : reps} reps on every set at ${last.top} kg, so go to ${up} kg for ${reps}` };
+    return { kg: up, reps: lo, kind: 'up', zh: `上次 ${last.top} kg 每組都做到 ${r0} 次（範圍頂 ${hi}），加到 ${up} kg，由 ${lo} 次重新開始`, en: `You hit ${r0} reps on every set at ${last.top} kg (top of ${rng}), so go to ${up} kg and start again at ${lo}` };
   }
-  if (prev && prev.top === last.top && !hit(prev)) {
+  // inside the range: same weight, one more rep
+  if (r0 >= lo) return { kg: last.top, reps: r0 + 1, kind: 'up', zh: `維持 ${last.top} kg，每組做 ${r0 + 1} 次；做到 ${hi} 次就加重`, en: `Stay at ${last.top} kg for ${r0 + 1} reps a set; at ${hi}, add weight` };
+  // below the range
+  if (prev && prev.top === last.top && minR(prev) < lo) {
     const kg = Math.max(inc, roundTo(last.top * 0.9, inc));
-    return { kg, reps, kind: 'down', zh: `連續兩次喺 ${last.top} kg 做唔足，減到 ${kg} kg 重新起步`, en: `Missed reps at ${last.top} kg twice; drop to ${kg} kg and build back up` };
+    return { kg, reps: lo, kind: 'down', zh: `連續兩次喺 ${last.top} kg 做唔夠 ${lo} 次，減到 ${kg} kg 重新起步`, en: `Under ${lo} reps at ${last.top} kg twice; drop to ${kg} kg and build back up` };
   }
-  return { kg: last.top, reps, kind: 'same', zh: `維持 ${last.top} kg，目標每組做足 ${reps} 次`, en: `Stay at ${last.top} kg and aim for ${reps} reps on every set` };
+  return { kg: last.top, reps: lo, kind: 'same', zh: `維持 ${last.top} kg，目標每組最少 ${lo} 次`, en: `Stay at ${last.top} kg and aim for at least ${lo} reps a set` };
 }
 
 // least-squares slope (units per week) over the last `weeks`
@@ -325,7 +338,8 @@ export function weeklyReview() {
     .map(id => ({ id, s: nextLoad(id) })).filter(x => x.s && x.s.kg).slice(0, 8);
   const judged = lifts.filter(l => !l.base), behind = judged.filter(l => !l.ok && !l.close).length;
   const score = (planned ? Math.min(1, dates.length / planned) : 1) * 60 + (judged.length ? (judged.filter(l => l.ok).length / judged.length) * 25 : 12) + (weighed ? 15 : 0);
-  return { from, to: today, judged, done: dates.length, planned, lifts, prs, bp, weighed, nextBody, next, behind, score: Math.round(score) };
+  const vol = weekVolume(from, today), sc = scheme();
+  return { from, to: today, judged, vol, sc, done: dates.length, planned, lifts, prs, bp, weighed, nextBody, next, behind, score: Math.round(score) };
 }
 export function saveReview(rv) {
   if (!Array.isArray(S.reviews)) S.reviews = [];
@@ -352,3 +366,58 @@ export function liftGoal(id, prefer) {
     by: weeks ? addDays(isoToday(), Math.min(weeks, 52) * 7) : null, nowRatio: best ? best / bw : 0 };
 }
 export function liftGoals() { return Object.keys(STD).filter(id => EX[id]).map(id => liftGoal(id)).filter(g => g && g.best); }
+
+// ── training guideline per goal ──
+// Compound lifts get lower reps than isolation lifts. Numbers are common evidence-based ranges.
+const COMPOUND = new Set('squat deadlift sumo_deadlift rdl good_morning bench_press close_grip_bench decline_bench inc_db inc_mach db_press ohp arnold_press dip chest_dip pullup lat_pd vbar_pd sit_row db_row tbar_row chest_supported_row meadows_row cable_row_wide leg_press hack_squat goblet_squat lunge bulgarian step_up hip_thrust pushup'.split(' '));
+export const isCompound = id => COMPOUND.has(id);
+const SCHEMES = {
+  fat:      { zh: '減脂優先', en: 'Fat loss first', c: [4, 8, 12], i: [3, 12, 15], rest: 90, cardio: 180, steps: 9000, sets: [10, 14] },
+  recomp:   { zh: '增肌減脂', en: 'Recomp', c: [4, 8, 12], i: [3, 10, 15], rest: 90, cardio: 135, steps: 8000, sets: [10, 16] },
+  muscle:   { zh: '增肌', en: 'Build muscle', c: [4, 6, 10], i: [3, 10, 15], rest: 120, cardio: 60, steps: 7000, sets: [12, 20] },
+  strength: { zh: '力量', en: 'Strength', c: [5, 3, 6], i: [3, 8, 12], rest: 180, cardio: 45, steps: 7000, sets: [8, 12] },
+  endurance:{ zh: '心肺耐力', en: 'Endurance', c: [3, 12, 15], i: [2, 15, 20], rest: 60, cardio: 200, steps: 10000, sets: [6, 10] },
+  wellness: { zh: '健康保持', en: 'Wellness', c: [3, 8, 12], i: [2, 12, 15], rest: 90, cardio: 150, steps: 8000, sets: [6, 10] }
+};
+export function scheme() {
+  const g = S.goalId, a = S.goalAnswers || {};
+  let k = { lose_weight: 'fat', build_muscle: 'muscle', strength: 'strength', endurance: 'endurance', wellness: 'wellness' }[g] || 'recomp';
+  if (g === 'recomp') k = a.priority === 'fat' ? 'fat' : a.priority === 'muscle' ? 'muscle' : 'recomp';
+  const sc = { key: k, ...SCHEMES[k] };
+  if (k === 'endurance' && a.weekly_mins) sc.cardio = +a.weekly_mins;
+  if (g === 'recomp') { sc.zh = `增肌減脂（${k === 'fat' ? '減脂優先' : k === 'muscle' ? '增肌優先' : '平衡'}）`; sc.en = `Recomp (${k === 'fat' ? 'fat loss first' : k === 'muscle' ? 'muscle first' : 'balanced'})`; }
+  return sc;
+}
+export function schemeFor(id, sc = scheme()) { const [sets, lo, hi] = isCompound(id) ? sc.c : sc.i; return { sets, lo, hi }; }
+// what applying the guideline would change (exercises you edited yourself are left alone)
+export function schemeChanges(sc = scheme()) {
+  const out = [], kept = [];
+  for (const d of WD) for (const e of S.customPlan[d] || []) {
+    const ex = EX[e.id]; if (!ex || ex.isCardio) continue;
+    const want = schemeFor(e.id, sc), r = Array.isArray(e.range) ? e.range : [e.reps, e.reps];
+    if (e.custom) { kept.push({ d, id: e.id }); continue; }
+    if (e.sets !== want.sets || r[0] !== want.lo || r[1] !== want.hi) out.push({ d, id: e.id, from: `${e.sets} × ${r[0] === r[1] ? r[0] : r[0] + '–' + r[1]}`, to: `${want.sets} × ${want.lo}–${want.hi}` });
+  }
+  return { out, kept };
+}
+export function applyScheme(sc = scheme()) {
+  const { out } = schemeChanges(sc);
+  for (const c of out) {
+    const e = S.customPlan[c.d].find(x => x.id === c.id), w = schemeFor(c.id, sc);
+    e.sets = w.sets; e.reps = w.lo; e.range = [w.lo, w.hi];
+    if (S.logs[c.d]) { syncSets(c.d, c.id); (S.logs[c.d][c.id] || []).forEach(x => { if (!x.done) x.reps = w.lo; }); }
+  }
+  S.restSec = sc.rest;
+  save('customPlan', 'logs', 'restSec');
+  return out.length;
+}
+// this week's cardio minutes and sets per body part
+export function weekVolume(from, to) {
+  const hs = S.history.filter(h => h.date >= from && h.date <= to);
+  let cardio = 0; const sets = {};
+  for (const h of hs) {
+    for (const id of h.cardio || []) { const e = (S.customPlan[h.day] || []).find(x => x.id === id); if (id !== 'warmup') cardio += parseInt(e && e.reps) || 30; }
+    for (const [id, arr] of Object.entries(h.sets || {})) { const ex = EX[id]; if (!ex || ex.isCardio || !Array.isArray(arr)) continue; sets[ex.cat] = (sets[ex.cat] || 0) + arr.filter(x => x.done !== false && num(x.reps) > 0).length; }
+  }
+  return { cardio, sets };
+}
