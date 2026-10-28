@@ -6,7 +6,7 @@ Personal workout tracker (PWA) with 3D form demos. Live at https://rafaelkoo.git
 - **Today**: log sets (kg, reps) against last session, rest timer, daily habits, save the workout
 - **Plan**: weekly split editor: drag to reorder, change sets/reps/minutes, add from the library
 - **Progress**: weight trend per exercise with PR markers, weekly muscle coverage, daily points, body weight
-- **Library**: 93 exercises, each with an animated 3D demo, phase-by-phase cues and common mistakes
+- **Library**: 93 exercises, each with its own animated 3D demo (94 movements), phase-by-phase cues, auto slow-motion at key moments, and a red "wrong form" overlay for common mistakes
 - **Me**: body stats, BMI/TDEE/protein/water, rest-timer default, backup export/import
 
 ## Structure

@@ -7,6 +7,7 @@
 
 const P = (at, zh, en, czh, cen) => ({ at, zh, en, czh, cen });
 const M = (zh, en) => ({ zh, en });
+const sag = (o, dy) => ({ ...o, pel: [o.pel[0] + dy, o.pel[1]] });
 
 // straight body from shoulders to ankles (push-up / plank family)
 function line(shY, shZ, ankY = 0.13) {
@@ -1098,5 +1099,475 @@ export const MOVES = {
     mistakes: [M('臀部翹太高', 'Hips too high'), M('步幅太大', 'Overstriding')]
   }
 };
+
+
+// ───────────── dedicated moves for exercises that used to borrow a similar one ─────────────
+const PH4 = (a, b, c, d) => [P([0, 0.1], ...a), P([0.1, 0.45], ...b), P([0.45, 0.55], ...c), P([0.55, 1], ...d)];
+const curlKeys = (bot, mid, top, ex = {}) => loop([
+  { ...STAND, t: 0, h: bot, ...ex }, { t: 0.1, h: bot }, { t: 0.27, h: mid }, { t: 0.42, h: top }, { t: 0.52, h: top }, { t: 0.75, h: mid }
+]);
+const SUP = [[0, 0, 1], [0, 0, 1], [0, 1, 0], [0, 0.6, -0.8], [0, 0.6, -0.8], [0, 1, 0], [0, 0, 1]];
+const withPn = (keys, pns) => { keys.forEach((k, i) => { k.pn = pns[i]; }); return keys; };
+const CURL_PH = PH4(
+  ['準備', 'Set up', '上臂固定唔郁', 'Upper arms stay fixed'], ['捲', 'Curl', '只用前臂捲起', 'Curl with the forearms only'],
+  ['夾', 'Squeeze', '頂部夾緊二頭肌', 'Squeeze the biceps at the top'], ['放', 'Lower', '慢慢放到手伸直', 'Lower slowly to straight arms']);
+
+Object.assign(MOVES, {
+  machine_press: {
+    period: 3.6, cam: { view: 'q', target: [0, 1.0, 0.1], dist: 3.4, phi: 0.2 },
+    props: [{ type: 'seat', y: 0.45, z: -0.02, back: 0.75, backTilt: 15 }, { type: 'machine' }],
+    keys: loop([
+      { t: 0, pel: [0.55, -0.02], trunk: -15, f: [0.2, 0.08, 0.45], kp: [0.3, 0.4, 1], h: [0.30, 1.05, 0.06], ep: [1, -0.6, 0], pn: [0, -0.3, 1] },
+      { t: 0.1, h: [0.30, 1.05, 0.06] }, { t: 0.45, h: [0.19, 1.33, 0.52] }, { t: 0.55, h: [0.19, 1.33, 0.52] }
+    ]),
+    phases: PH4(['準備', 'Set up', '把手對住上胸，背貼實靠墊', 'Handles level with your upper chest, back on the pad'], ['推', 'Press', '向上向前推出', 'Press up and forward'],
+      ['頂部', 'Top', '手臂接近伸直，夾緊上胸', 'Arms nearly straight, squeeze the upper chest'], ['放', 'Return', '慢慢返到胸前', 'Return slowly to the chest']),
+    mistakes: [M('膊頭向前推離開靠墊', 'Shoulders rolling forward off the pad'), M('手肘升得太高', 'Elbows flared too high')]
+  },
+  decline: {
+    period: 3.8, cam: { view: 'q', target: [0, 0.8, -0.1], dist: 3.3, phi: 0.3 },
+    props: [{ type: 'pad', at: [0, 0.56, -0.2], len: 1.25, rx: -0.26 }, { type: 'kneepad', y: 0.78, z: 0.68 }, { type: 'barbell', noPlatform: true }],
+    keys: loop([
+      { t: 0, pel: [0.74, 0.08], trunk: -105, f: [0.14, 0.6, 0.74], fp: -30, kp: [0.2, 1, 0.2], h: [0.30, 1.2, -0.30], ep: [1, -0.6, 0.3], pn: [0, 0, 1] },
+      { t: 0.1, h: [0.30, 1.2, -0.30] }, { t: 0.45, ht: [0.30, 0.30, 0.18] }, { t: 0.53, ht: [0.30, 0.30, 0.18] }, { t: 0.8, h: [0.30, 1.2, -0.30] }
+    ]),
+    phases: PH4(['準備', 'Set up', '腳勾實腳墊，頭低過臀', 'Hook your feet, head lower than hips'], ['落槓', 'Lower', '槓落向下胸', 'Lower the bar to your lower chest'],
+      ['觸胸', 'Touch', '輕觸下胸', 'Light touch on the lower chest'], ['推起', 'Press', '推返到肩膊正上方', 'Press back over the shoulders']),
+    mistakes: [M('槓落得太高去到頸', 'Lowering the bar toward the neck'), M('槓喺胸口彈', 'Bouncing the bar')]
+  },
+  row_db: {
+    period: 3.2, cam: { view: 'qR', target: [0, 0.75, -0.1], dist: 3.2, phi: 0.25 },
+    props: [{ type: 'bench', y: 0.45, z0: -0.85, z1: 0.5, x: 0.13 }, { type: 'dumbbells', hand: 'R' }],
+    keys: loop([
+      { t: 0, pel: [0.92, -0.25], trunk: 80, hL: [0.2, 0.49, 0.3], epL: [0.4, -0.3, -1], fL: [0.1, 0.52, -0.66], fpL: 80, kpL: [0, -1, 0], fR: [-0.28, 0.08, -0.1], kpR: [-0.3, 0, 1], hsR: [-0.02, -0.6, 0.02], epR: [-0.3, 1, -0.3] },
+      { t: 0.1, hsR: [-0.02, -0.6, 0.02] }, { t: 0.42, htR: [-0.22, 0.12, 0.2] }, { t: 0.52, htR: [-0.22, 0.12, 0.2] }
+    ]),
+    phases: PH4(['準備', 'Set up', '一手一膝撐凳，背打平', 'One hand and knee on the bench, flat back'], ['拉', 'Row', '手肘貼身拉向腰', 'Drive the elbow back to your hip'],
+      ['夾', 'Squeeze', '夾緊背闊肌', 'Squeeze the lat'], ['放', 'Lower', '慢慢伸直手', 'Lower until the arm is straight']),
+    mistakes: [M('轉身借力', 'Twisting the torso to lift'), M('拉去心口而唔係腰', 'Pulling to the chest instead of the hip')]
+  },
+  tbar: {
+    period: 3.2, cam: { view: 'q', target: [0, 0.75, 0], dist: 3.4 },
+    props: [{ type: 'landmine', z: -1.7 }],
+    keys: loop([
+      { t: 0, pel: [0.84, -0.22], trunk: 52, f: [0.2, 0.08, -0.05], fy: 14, kp: [0.3, 0, 1], h: [0.05, 0.55, 0.22], ep: [0.5, 1, -0.3] },
+      { t: 0.1, h: [0.05, 0.55, 0.22] }, { t: 0.42, ht: [0.05, 0.17, 0.2] }, { t: 0.52, ht: [0.05, 0.17, 0.2] }
+    ]),
+    phases: PH4(['屈髖', 'Hinge', '跨住條槓，背打平', 'Straddle the bar, flat back'], ['拉', 'Row', '手肘向後拉到肚', 'Elbows back, handle to your belly'],
+      ['夾', 'Squeeze', '夾緊肩胛骨', 'Squeeze the shoulder blades'], ['放', 'Lower', '控制住伸直手', 'Lower with control']),
+    mistakes: [M('上身起伏借力', 'Heaving with the torso'), M('圓背', 'Rounding the back')]
+  },
+  row_chest: {
+    period: 3.2, cam: { view: 'side', target: [0, 0.75, 0], dist: 3.3 },
+    props: [{ type: 'pad', at: [0, 0.82, -0.06], len: 0.85, rx: -0.61 }, { type: 'dumbbells' }],
+    keys: loop([
+      { t: 0, pel: [0.78, -0.40], trunk: 55, f: [0.13, 0.08, -0.6], kp: [0.15, 0, 1], hs: [0.03, -0.6, 0.02], ep: [0.3, 1, -0.5] },
+      { t: 0.1, hs: [0.03, -0.6, 0.02] }, { t: 0.42, ht: [0.22, 0.22, 0.2] }, { t: 0.52, ht: [0.22, 0.22, 0.2] }
+    ]),
+    phases: PH4(['準備', 'Set up', '心口貼住斜板', 'Chest on the incline pad'], ['拉', 'Row', '手肘向後向上拉', 'Drive the elbows up and back'],
+      ['夾', 'Squeeze', '夾緊肩胛骨', 'Squeeze the shoulder blades'], ['放', 'Lower', '慢慢伸直手', 'Lower slowly']),
+    mistakes: [M('心口離開墊', 'Chest lifting off the pad'), M('聳膊頭', 'Shrugging')]
+  },
+  meadows: {
+    period: 3.2, cam: { view: 'q', target: [0.2, 0.75, 0], dist: 3.6 },
+    props: [{ type: 'landmine', x: 1.8, z: 0.2, hand: 'L' }],
+    keys: loop([
+      { t: 0, pel: [0.82, -0.1], trunk: 55, fL: [0.2, 0.08, -0.35], fR: [-0.15, 0.08, 0.35], kpL: [0.2, 0, 1], kpR: [-0.2, 0, 1], hR: [-0.12, 0.56, 0.3], epR: [-0.3, -0.5, -1],
+        hL: [0.27, 0.44, 0.2], epL: [1, 1, -0.6], pnL: [0, 0, -1] },
+      { t: 0.1, hL: [0.27, 0.44, 0.2] }, { t: 0.42, hL: [0.32, 0.82, -0.08] }, { t: 0.52, hL: [0.32, 0.82, -0.08] }
+    ]),
+    phases: PH4(['準備', 'Set up', '前後腳企，另一隻手撐膝', 'Staggered stance, other forearm on your knee'], ['拉', 'Row', '手肘向上向後拉向臀部', 'Drive the elbow up and back to the hip'],
+      ['夾', 'Squeeze', '手肘高位夾緊', 'Squeeze with the elbow high'], ['放', 'Lower', '控制住放落', 'Lower with control']),
+    mistakes: [M('轉身借力', 'Twisting to lift'), M('拉得太短', 'Short range')]
+  },
+  back_ext: {
+    period: 3.4, cam: { view: 'side', target: [0, 0.75, 0.15], dist: 3.3 },
+    props: [{ type: 'pad', at: [0, 0.86, 0.2], len: 0.32, rx: 0.79, w: 0.42 }, { type: 'pad', at: [0, 0.2, -0.62], len: 0.3, rx: 0.79, w: 0.4, legs: false }],
+    keys: loop([
+      { t: 0, pel: [0.92, 0.05], trunk: 45, f: [0.1, 0.3, -0.55], fp: 45, kp: [0, 0, 1], ht: [-0.1, 0.36, 0.15], ep: [1, -0.5, 0] },
+      { t: 0.1, trunk: 45 }, { t: 0.45, trunk: 112 }, { t: 0.55, trunk: 112 }
+    ]),
+    phases: PH4(['準備', 'Set up', '墊喺盆骨，身體一直線', 'Pad at your hips, body in a straight line'], ['落', 'Lower', '由髖部向前屈', 'Hinge forward from the hips'],
+      ['最低點', 'Bottom', '感到大腿後側拉伸', 'Feel the hamstrings stretch'], ['起', 'Rise', '夾臀返到一直線，唔好過度後仰', 'Squeeze glutes back to straight, no over-arching']),
+    mistakes: [M('頂部向後拗腰', 'Over-arching at the top'), M('用衝力彈', 'Bouncing')]
+  },
+  seated_row_wide: {
+    period: 3.4, cam: { view: 'q', target: [0, 0.6, 0.2], dist: 3.3 },
+    props: [{ type: 'box', w: 0.34, h: 0.4, d: 1.0, z: -0.15 }, { type: 'box', w: 0.5, h: 0.32, d: 0.06, z: 0.7, rx: -0.5 }, { type: 'cable', anchor: [0, 0.78, 1.35], handle: 'bar', handleLen: 0.8 }],
+    keys: loop([
+      { t: 0, pel: [0.50, -0.05], trunk: 18, f: [0.15, 0.30, 0.64], fp: -45, kp: [0.3, 1, 0.5], h: [0.27, 0.82, 0.62], ep: [1, 0.1, -1], pn: [0, 0, -1] },
+      { t: 0.1, pel: [0.50, -0.05], trunk: 18 }, { t: 0.42, trunk: -4, ht: [0.3, 0.32, 0.18] }, { t: 0.52, trunk: -4, ht: [0.3, 0.32, 0.18] }
+    ]),
+    phases: PH4(['伸展', 'Reach', '闊握，手伸直', 'Wide grip, arms long'], ['拉', 'Row', '手肘向外向後拉到上胸', 'Elbows out and back to your upper chest'],
+      ['夾', 'Squeeze', '夾緊上背', 'Squeeze the upper back'], ['放', 'Release', '慢慢伸返直', 'Extend slowly']),
+    mistakes: [M('上身前後大搖', 'Rocking the torso'), M('聳膊頭', 'Shrugging')]
+  },
+  hack: {
+    period: 3.8, cam: { view: 'side', target: [0, 0.75, 0], dist: 3.4 },
+    props: [{ type: 'backpad', len: 0.75 }, { type: 'pad', at: [0, 0.05, 0.3], len: 0.5, rx: -0.3, w: 0.7, legs: false }],
+    keys: loop([
+      { t: 0, pel: [0.87, -0.16], trunk: -20, f: [0.17, 0.12, 0.27], fp: -15, fy: 14, kp: [0.4, 0, 1], ht: [0.3, 0.44, 0.04], ep: [0.6, -1, 0.2] },
+      { t: 0.12, pel: [0.87, -0.16] }, { t: 0.47, pel: [0.46, -0.01] }, { t: 0.57, pel: [0.46, -0.01] }
+    ]),
+    phases: PH4(['準備', 'Set up', '背貼實靠墊，腳與肩同寬', 'Back flat on the pad, feet shoulder-width'], ['落', 'Descent', '膝蓋跟腳尖方向屈', 'Bend the knees in line with your toes'],
+      ['谷底', 'Bottom', '大腿最少平行', 'Thighs at least parallel'], ['推', 'Drive', '腳掌推起，膝唔好鎖死', 'Drive up, don\'t lock the knees']),
+    mistakes: [M('膝蓋向內', 'Knees caving in'), M('腳踭離開踏板', 'Heels lifting off the platform')]
+  },
+  calf_seated: {
+    period: 2.8, cam: { view: 'side', target: [0, 0.45, 0.2], dist: 2.8 },
+    props: [{ type: 'seat', y: 0.45, z: -0.05 }, { type: 'kneepad', y: 0.66, z: 0.36 }, { type: 'box', w: 0.5, h: 0.06, d: 0.18, z: 0.5 }],
+    keys: loop([
+      { t: 0, pel: [0.55, -0.05], trunk: 5, f: [0.12, 0.14, 0.42], fp: 0, kp: [0.1, 0.3, 1], h: [0.16, 0.66, 0.36], ep: [0.2, -0.5, -1] },
+      { t: 0.12, f: [0.12, 0.14, 0.42], fp: 0 }, { t: 0.42, f: [0.12, 0.22, 0.42], fp: 36 }, { t: 0.55, f: [0.12, 0.22, 0.42], fp: 36 }
+    ]),
+    phases: PH4(['準備', 'Set up', '墊壓喺膝蓋上，腳踭放低', 'Pad on your knees, heels down'], ['踮', 'Rise', '腳踭推到最高', 'Push the heels as high as you can'],
+      ['頂部', 'Top', '停一秒', 'Hold one second'], ['放', 'Lower', '慢慢放到最低', 'Lower slowly into the stretch']),
+    mistakes: [M('彈上彈落', 'Bouncing'), M('幅度太細', 'Half reps')]
+  },
+  calf_donkey: {
+    period: 2.8, cam: { view: 'side', target: [0, 0.6, 0.2], dist: 3.0 },
+    props: [{ type: 'box', w: 0.5, h: 0.08, d: 0.18, z: 0.1 }, { type: 'box', w: 0.6, h: 0.72, d: 0.3, z: 0.95 }],
+    keys: loop([
+      { t: 0, pel: [0.92, -0.02], trunk: 86, f: [0.12, 0.16, 0.0], fp: 0, kp: [0.1, 0, 1], h: [0.22, 0.74, 0.84], ep: [0.3, -0.5, -1] },
+      { t: 0.12, pel: [0.92, -0.02], f: [0.12, 0.16, 0.0], fp: 0 }, { t: 0.42, pel: [1.0, -0.01], f: [0.12, 0.25, 0.0], fp: 36 }, { t: 0.55, pel: [1.0, -0.01], f: [0.12, 0.25, 0.0], fp: 36 }
+    ]),
+    phases: PH4(['屈髖', 'Hinge', '上身向前，臀部喺腳上面', 'Bend forward, hips over your feet'], ['踮', 'Rise', '腳踭推到最高', 'Push the heels up'],
+      ['頂部', 'Top', '停一秒夾緊', 'Hold and squeeze'], ['放', 'Lower', '放到最低，感受拉伸', 'Lower into a full stretch']),
+    mistakes: [M('屈膝借力', 'Bending the knees to help'), M('幅度太細', 'Half reps')]
+  },
+  sissy: {
+    period: 3.6, cam: { view: 'side', target: [0, 0.75, 0], dist: 3.3 },
+    props: [{ type: 'post', x: 0.45, z: 0.25, h: 1.3 }],
+    keys: loop([
+      { ...STAND, t: 0, hL: [0.42, 1.0, 0.25], epL: [0.5, -0.5, -0.3], htR: [-0.1, 0.36, 0.16], fp: 0, kp: [0.1, 0, 1] },
+      { t: 0.12, pel: [0.96, 0], trunk: 0, fp: 0, f: [0.13, 0.08, 0] },
+      { t: 0.47, pel: [0.56, 0.04], trunk: -42, fp: 50, f: [0.13, 0.16, 0.0] },
+      { t: 0.57, pel: [0.56, 0.04], trunk: -42, fp: 50, f: [0.13, 0.16, 0.0] }
+    ]),
+    phases: PH4(['準備', 'Set up', '一隻手扶住，踮起腳', 'Hold a support, rise onto your toes'], ['落', 'Lower', '膝蓋向前，身體向後瞓成一直線', 'Knees forward, lean back in a straight line'],
+      ['最低點', 'Bottom', '膝到腰保持一直線', 'Keep a straight line from knees to shoulders'], ['起', 'Rise', '用大腿前側推返上', 'Drive up with the quads']),
+    mistakes: [M('屈髖坐落去', 'Bending at the hips'), M('落得太快', 'Dropping too fast')]
+  },
+  nordic: {
+    period: 4.6, cam: { view: 'side', target: [0, 0.4, 0.3], dist: 3.2 },
+    props: [{ type: 'mat' }, { type: 'kneepad', y: 0.15, z: -0.42 }],
+    keys: loop([
+      { t: 0, pel: [0.52, 0.0], trunk: 0, f: [0.12, 0.1, -0.42], fp: 82, kp: [0, -0.6, 1], ht: [-0.1, 0.36, 0.15], ep: [1, -0.5, 0] },
+      { t: 0.1, pel: [0.52, 0.0], trunk: 0 },
+      { t: 0.5, pel: [0.25, 0.4], trunk: 68, h: [0.22, 0.12, 0.92], ep: [0.3, -1, -0.5] },
+      { t: 0.6, pel: [0.25, 0.4], trunk: 68, h: [0.22, 0.12, 0.92] },
+      { t: 0.75, pel: [0.4, 0.3], trunk: 45, h: [0.2, 0.6, 0.6] }
+    ]),
+    phases: [P([0, 0.1], '跪定', 'Kneel', '腳踝固定，身體一直線', 'Ankles anchored, body straight'),
+      P([0.1, 0.5], '慢慢落', 'Lower slowly', '用大腿後側煞住，越慢越好', 'Brake with your hamstrings, as slowly as you can'),
+      P([0.5, 0.6], '撐地', 'Catch', '用手接住', 'Catch yourself with your hands'),
+      P([0.6, 1], '推返', 'Return', '輕推地面，用腿後肌拉返上', 'Push off lightly and pull back up with the hamstrings')],
+    mistakes: [M('屈髖坐落', 'Bending at the hips'), M('一下跌落', 'Dropping straight down')]
+  },
+  rev_fly_machine: {
+    period: 3.2, cam: { view: 'q', target: [0, 1.0, 0], dist: 3.3, phi: 0.35 },
+    props: [{ type: 'seat', y: 0.45, z: -0.05 }, { type: 'pad', at: [0, 0.95, 0.27], len: 0.08, rx: 0, w: 0.36 }],
+    keys: loop([
+      { t: 0, pel: [0.55, -0.05], trunk: 8, f: [0.2, 0.08, 0.42], kp: [0.3, 0.4, 1], h: [0.1, 1.08, 0.56], ep: [0.3, 1, 0], pn: [-1, 0, 0] },
+      { t: 0.1, h: [0.1, 1.08, 0.56] }, { t: 0.45, h: [0.64, 1.06, -0.04] }, { t: 0.55, h: [0.64, 1.06, -0.04] }
+    ]),
+    phases: PH4(['準備', 'Set up', '心口貼墊，手伸向前', 'Chest on the pad, arms forward'], ['張開', 'Open', '手臂微曲向後張開', 'Open the arms back with soft elbows'],
+      ['夾', 'Squeeze', '夾緊後三角', 'Squeeze the rear delts'], ['返', 'Return', '慢慢返前', 'Return slowly']),
+    mistakes: [M('聳膊頭', 'Shrugging'), M('心口離開墊', 'Chest leaving the pad')]
+  },
+  arnold: {
+    period: 4, cam: { view: 'q', target: [0, 1.1, 0], dist: 3.3, phi: 0.15 },
+    props: [{ type: 'seat', y: 0.45, z: -0.05, back: 0.7 }, { type: 'dumbbells' }],
+    keys: loop([
+      { t: 0, pel: [0.55, -0.05], trunk: -4, f: [0.2, 0.08, 0.45], kp: [0.3, 0.4, 1], h: [0.19, 1.12, 0.15], ep: [0.4, -1, 0.5], pn: [0, 0, -1] },
+      { t: 0.1, h: [0.19, 1.12, 0.15], pn: [0, 0, -1] },
+      { t: 0.28, h: [0.34, 1.3, 0.07], ep: [1, -0.4, 0], pn: [-1, 0, 0.2] },
+      { t: 0.45, h: [0.16, 1.61, 0.0], ep: [1, 0, 0], pn: [0, 0, 1] },
+      { t: 0.55, h: [0.16, 1.61, 0.0], ep: [1, 0, 0], pn: [0, 0, 1] },
+      { t: 0.75, h: [0.34, 1.3, 0.07], ep: [1, -0.4, 0], pn: [-1, 0, 0.2] }
+    ]),
+    phases: PH4(['準備', 'Set up', '啞鈴喺下巴前，掌心向自己', 'Dumbbells at chin height, palms facing you'], ['轉推', 'Rotate & press', '一路推一路轉手腕向前', 'Turn the palms forward as you press'],
+      ['頂部', 'Top', '掌心向前，手接近伸直', 'Palms forward, arms nearly straight'], ['轉返落', 'Rotate down', '落返時轉返向自己', 'Turn the palms back toward you on the way down']),
+    mistakes: [M('轉得太早或太遲', 'Rotating too early or too late'), M('腰離開靠墊', 'Arching off the pad')]
+  },
+  lateral_cable: {
+    period: 3.2, cam: { view: 'front', target: [0, 1.1, 0], dist: 3.4 },
+    props: [{ type: 'cable', anchor: [-0.45, 0.12, 0.15], to: 'L', handle: 'd', towerDz: 0, towerDx: -0.15 }],
+    keys: loop([
+      { ...STAND, t: 0, hL: [-0.04, 0.86, 0.2], epL: [0.3, 0.3, -1], pnL: [0, 0, -1], htR: [-0.22, 0.04, 0.06], epR: [-1, 0, -0.5] },
+      { t: 0.1, hL: [-0.04, 0.86, 0.2] }, { t: 0.45, hL: [0.74, 1.40, 0.1], epL: [0, 1, -0.6], pnL: [0, -1, 0] }, { t: 0.55, hL: [0.74, 1.40, 0.1], epL: [0, 1, -0.6], pnL: [0, -1, 0] }
+    ]),
+    phases: PH4(['準備', 'Set up', '側身企，滑輪喺另一邊低位', 'Stand side-on, low pulley on the far side'], ['舉', 'Raise', '手肘帶頭向外舉', 'Lead with the elbow out to the side'],
+      ['頂部', 'Top', '舉到膊頭高度', 'Stop at shoulder height'], ['放', 'Lower', '慢慢返到身前', 'Lower slowly across your body']),
+    mistakes: [M('身體側彎借力', 'Leaning to swing it up'), M('聳膊頭', 'Shrugging')]
+  },
+  lateral_lean: {
+    period: 3.2, cam: { view: 'front', target: [0, 1.1, 0], dist: 3.5 },
+    props: [{ type: 'post', x: -0.6, z: 0.05, h: 1.6 }, { type: 'dumbbells', hand: 'L' }],
+    keys: loop([
+      { ...STAND, t: 0, roll: -14, fL: [0.06, 0.08, 0], fR: [-0.2, 0.08, 0], hL: [0.36, 0.84, 0.08], epL: [0.3, 0.3, -1], pnL: [-1, 0, 0], hR: [-0.56, 1.06, 0.05], epR: [0, -1, -0.5] },
+      { t: 0.1, hL: [0.36, 0.84, 0.08] }, { t: 0.45, hL: [0.86, 1.22, 0.1], epL: [0, 1, -0.6], pnL: [0, -1, 0] }, { t: 0.55, hL: [0.86, 1.22, 0.1], epL: [0, 1, -0.6], pnL: [0, -1, 0] }
+    ]),
+    phases: PH4(['準備', 'Set up', '揸住支架，身體向外斜', 'Hold a post and lean away'], ['舉', 'Raise', '手肘帶頭向外舉', 'Lead with the elbow'],
+      ['頂部', 'Top', '手臂大約平行地面', 'Arm about parallel to the floor'], ['放', 'Lower', '慢慢放', 'Lower slowly']),
+    mistakes: [M('靠扯支架借力', 'Pulling on the post to help'), M('聳膊頭', 'Shrugging')]
+  },
+  y_raise: {
+    period: 3.2, cam: { view: 'side', target: [0, 0.85, 0.1], dist: 3.4 },
+    props: [{ type: 'pad', at: [0, 0.82, -0.06], len: 0.85, rx: -0.61 }, { type: 'dumbbells' }],
+    keys: loop([
+      { t: 0, pel: [0.78, -0.40], trunk: 55, f: [0.13, 0.08, -0.6], kp: [0.15, 0, 1], hs: [0.03, -0.6, 0.04], ep: [0, 1, 0], pn: [-1, 0, 0] },
+      { t: 0.1, hs: [0.03, -0.6, 0.04] }, { t: 0.45, ht: [0.36, 0.98, 0.04], pn: [-1, 0.5, 0] }, { t: 0.55, ht: [0.36, 0.98, 0.04], pn: [-1, 0.5, 0] }
+    ]),
+    phases: PH4(['準備', 'Set up', '俯臥斜板，手垂直落', 'Lie face down on the incline, arms hanging'], ['舉', 'Raise', '拇指向上，手臂舉成 Y 字', 'Thumbs up, raise the arms into a Y'],
+      ['頂部', 'Top', '夾緊下斜方肌', 'Squeeze the lower traps'], ['放', 'Lower', '慢慢放', 'Lower slowly']),
+    mistakes: [M('聳膊頭', 'Shrugging'), M('頭向上抬', 'Craning the neck up')]
+  },
+  lu: {
+    period: 3.8, cam: { view: 'q', target: [0, 1.2, 0], dist: 3.6, phi: 0.12 },
+    props: [{ type: 'dumbbells' }],
+    keys: loop([
+      { ...STAND, t: 0, h: [0.22, 0.84, 0.1], ep: [0.4, 0.2, -1], pn: [0, -1, 0] },
+      { t: 0.1, h: [0.22, 0.84, 0.1] }, { t: 0.28, h: [0.56, 1.4, 0.4], ep: [0.3, 1, -0.5] },
+      { t: 0.45, h: [0.3, 2.02, 0.08], ep: [1, 0.3, 0] }, { t: 0.55, h: [0.3, 2.02, 0.08], ep: [1, 0.3, 0] }, { t: 0.75, h: [0.56, 1.4, 0.4], ep: [0.3, 1, -0.5] }
+    ]),
+    phases: PH4(['準備', 'Set up', '輕重量，手臂伸直', 'Light weight, straight arms'], ['舉', 'Raise', '斜向前舉，一直舉過頭', 'Raise out at an angle all the way overhead'],
+      ['頂部', 'Top', '頭頂正上方停一停', 'Pause directly overhead'], ['放', 'Lower', '原路慢慢放', 'Lower the same way, slowly']),
+    mistakes: [M('腰向後彎', 'Arching the back'), M('用重量太重', 'Going too heavy')]
+  },
+  preacher: {
+    period: 3.2, cam: { view: 'side', target: [0, 0.85, 0.15], dist: 3.0 },
+    props: [{ type: 'preacher', y: 0.86, z: 0.28 }, { type: 'ezbar' }],
+    keys: withPn(loop([
+      { t: 0, pel: [0.62, -0.14], trunk: 18, f: [0.2, 0.08, 0.3], kp: [0.3, 0.3, 1], h: [0.19, 0.6, 0.46], ep: [0, -1, 0.6] },
+      { t: 0.1, h: [0.19, 0.6, 0.46] }, { t: 0.27, h: [0.19, 0.86, 0.56] }, { t: 0.42, h: [0.19, 1.13, 0.28] }, { t: 0.52, h: [0.19, 1.13, 0.28] }, { t: 0.75, h: [0.19, 0.86, 0.56] }
+    ]), SUP),
+    phases: CURL_PH,
+    mistakes: [M('上臂離開墊', 'Upper arms lifting off the pad'), M('落到最低鎖死手肘', 'Locking out hard at the bottom')]
+  },
+  concentration: {
+    period: 3.2, cam: { view: 'q', target: [0, 0.65, 0.2], dist: 3.0 },
+    props: [{ type: 'bench', y: 0.45, z0: -0.6, z1: 0.2 }, { type: 'dumbbells', hand: 'L' }],
+    keys: withPn(loop([
+      { t: 0, pel: [0.55, -0.02], trunk: 35, f: [0.32, 0.08, 0.45], kp: [0.6, 0, 1], hL: [0.1, 0.36, 0.38], epL: [0.6, -0.4, 0], hR: [-0.2, 0.6, 0.32], epR: [-0.5, -0.5, -1] },
+      { t: 0.1, hL: [0.1, 0.36, 0.38] }, { t: 0.27, hL: [0.06, 0.62, 0.62] }, { t: 0.42, hL: [0.05, 0.9, 0.36] }, { t: 0.52, hL: [0.05, 0.9, 0.36] }, { t: 0.75, hL: [0.06, 0.62, 0.62] }
+    ]), [[-0.4, 0, 1], [-0.4, 0, 1], [-0.3, 1, 0], [0, 0.4, -1], [0, 0.4, -1], [-0.3, 1, 0], [-0.4, 0, 1]].map(v => v)),
+    phases: CURL_PH,
+    mistakes: [M('用上身擺', 'Swinging the torso'), M('手肘離開大腿', 'Elbow leaving the thigh')]
+  },
+  curl_cable: {
+    period: 3, cam: { view: 'side', target: [0, 1.0, 0.2], dist: 3.2 },
+    props: [{ type: 'cable', anchor: [0, 0.15, 0.6], handle: 'bar', handleLen: 0.5 }],
+    keys: withPn(curlKeys([0.21, 0.82, 0.08], [0.21, 1.14, 0.33], [0.21, 1.4, 0.19], { ep: [0.1, -0.6, -1] }), SUP),
+    phases: CURL_PH,
+    mistakes: [M('身體向後瞓', 'Leaning back'), M('手肘向前郁', 'Elbows drifting forward')]
+  },
+  curl_incline: {
+    period: 3.2, cam: { view: 'side', target: [0, 0.7, 0], dist: 3.0 },
+    props: [{ type: 'incline', y: 0.45, angle: 45, z: 0.12 }, { type: 'dumbbells' }],
+    keys: withPn(loop([
+      { t: 0, pel: [0.55, 0.12], trunk: -45, f: [0.22, 0.08, 0.55], kp: [0.4, 0.5, 1], h: [0.22, 0.31, -0.22], ep: [0.1, 0, -1] },
+      { t: 0.1, h: [0.22, 0.31, -0.22] }, { t: 0.27, h: [0.22, 0.6, 0.11] }, { t: 0.42, h: [0.22, 0.86, 0.0] }, { t: 0.52, h: [0.22, 0.86, 0.0] }, { t: 0.75, h: [0.22, 0.6, 0.11] }
+    ]), SUP),
+    phases: CURL_PH,
+    mistakes: [M('手肘向前帶', 'Elbows swinging forward'), M('頭離開靠墊', 'Head coming off the pad')]
+  },
+  curl_spider: {
+    period: 3, cam: { view: 'side', target: [0, 0.75, 0], dist: 3.0 },
+    props: [{ type: 'pad', at: [0, 0.82, -0.06], len: 0.85, rx: -0.61 }, { type: 'ezbar' }],
+    keys: withPn(loop([
+      { t: 0, pel: [0.78, -0.40], trunk: 55, f: [0.13, 0.08, -0.6], kp: [0.15, 0, 1], h: [0.19, 0.45, 0.02], ep: [0, -0.2, -1] },
+      { t: 0.1, h: [0.19, 0.45, 0.02] }, { t: 0.27, h: [0.19, 0.77, 0.32] }, { t: 0.42, h: [0.19, 1.0, 0.2] }, { t: 0.52, h: [0.19, 1.0, 0.2] }, { t: 0.75, h: [0.19, 0.77, 0.32] }
+    ]), [[0, 0, 1], [0, 0, 1], [0, 1, 0], [0, 0.6, -0.8], [0, 0.6, -0.8], [0, 1, 0], [0, 0, 1]]),
+    phases: CURL_PH,
+    mistakes: [M('上臂跟住郁', 'Upper arms moving'), M('身體離開墊', 'Body leaving the pad')]
+  },
+  curl_drag: {
+    period: 3, cam: { view: 'side', target: [0, 1.0, 0], dist: 3.0 },
+    props: [{ type: 'barbell', len: 1.5, plate: 0.15, noPlatform: true }],
+    keys: loop([
+      { ...STAND, t: 0, h: [0.21, 0.82, 0.11], ep: [0.15, 0, -1], pn: [0, 0, 1] },
+      { t: 0.1, h: [0.21, 0.82, 0.11] }, { t: 0.42, h: [0.21, 1.2, 0.15], pn: [0, 0.6, 0.6] }, { t: 0.52, h: [0.21, 1.2, 0.15], pn: [0, 0.6, 0.6] }
+    ]),
+    phases: PH4(['準備', 'Set up', '槓貼住大腿', 'Bar against your thighs'], ['拖', 'Drag', '手肘向後，槓沿住身體拖上', 'Elbows go back, drag the bar up your body'],
+      ['夾', 'Squeeze', '頂部夾緊', 'Squeeze at the top'], ['放', 'Lower', '沿住身體放返落', 'Slide it back down your body']),
+    mistakes: [M('槓離開身體', 'Bar drifting away from the body'), M('甩身', 'Swinging')]
+  },
+  curl_reverse: {
+    period: 3, cam: { view: 'q', target: [0, 1.0, 0], dist: 3.0 },
+    props: [{ type: 'barbell', len: 1.5, plate: 0.15, noPlatform: true }],
+    keys: withPn(curlKeys([0.21, 0.82, 0.07], [0.21, 1.14, 0.33], [0.21, 1.38, 0.2], { ep: [0.1, -0.6, -1] }), [[0, 0, -1], [0, 0, -1], [0, -1, 0], [0, -0.6, 0.8], [0, -0.6, 0.8], [0, -1, 0], [0, 0, -1]]),
+    phases: PH4(['準備', 'Set up', '正握（手背向上）', 'Overhand grip'], ['捲', 'Curl', '手腕保持平直', 'Keep the wrists straight'],
+      ['夾', 'Squeeze', '頂部停一停', 'Pause at the top'], ['放', 'Lower', '慢慢放', 'Lower slowly']),
+    mistakes: [M('手腕向下屈', 'Wrists bending down'), M('甩身', 'Swinging')]
+  },
+  wrist_curl: {
+    period: 2.4, cam: { view: 'side', target: [0, 0.6, 0.25], dist: 2.4, phi: 0.3 },
+    props: [{ type: 'bench', y: 0.45, z0: -0.6, z1: 0.2 }, { type: 'ezbar', len: 1.0 }],
+    keys: loop([
+      { t: 0, pel: [0.55, -0.1], trunk: 32, f: [0.2, 0.08, 0.42], kp: [0.3, 0.3, 1], h: [0.14, 0.6, 0.44], ep: [0.2, -0.6, -1], pn: [0, 1, 0], wr: -35 },
+      { t: 0.12, wr: -35 }, { t: 0.45, wr: 40 }, { t: 0.56, wr: 40 }
+    ]),
+    phases: PH4(['準備', 'Set up', '前臂放喺大腿，手腕伸出膝外', 'Forearms on your thighs, wrists past the knees'], ['捲', 'Curl', '只郁手腕向上捲', 'Curl up with the wrists only'],
+      ['夾', 'Squeeze', '頂部夾緊前臂', 'Squeeze the forearms'], ['放', 'Lower', '慢慢放低手腕', 'Lower the wrists slowly']),
+    mistakes: [M('前臂離開大腿', 'Forearms lifting off the thighs'), M('用手臂拉', 'Pulling with the arms')]
+  },
+  jm: {
+    period: 3.4, cam: { view: 'side', target: [0, 0.75, -0.25], dist: 3.0, phi: 0.3 },
+    props: [{ type: 'bench' }, { type: 'barbell', len: 1.6, plate: 0.18, noPlatform: true }],
+    keys: loop([
+      { t: 0, pel: [0.55, 0.12], trunk: -90, f: [0.28, 0.08, 0.52], kp: [0.5, 1, 0.4], h: [0.14, 1.15, -0.28], ep: [0.2, -0.4, 1], pn: [0, 0, 1] },
+      { t: 0.1, h: [0.14, 1.15, -0.28] }, { t: 0.45, h: [0.14, 0.8, -0.42] }, { t: 0.53, h: [0.14, 0.8, -0.42] }
+    ]),
+    phases: PH4(['準備', 'Set up', '窄握，手臂垂直', 'Close grip, arms vertical'], ['落', 'Lower', '手肘向腳方向屈，槓落向上胸', 'Elbows toward your feet, bar to the upper chest'],
+      ['最低點', 'Bottom', '前臂貼近上臂', 'Forearms close to the upper arms'], ['推', 'Press', '用三頭肌推返', 'Press back with the triceps']),
+    mistakes: [M('手肘向外張', 'Elbows flaring'), M('變咗普通臥推', 'Turning it into a bench press')]
+  },
+  landmine_rot: {
+    period: 3.6, cam: { view: 'front', target: [0, 1.0, 0.3], dist: 3.8 },
+    props: [{ type: 'landmine', z: 1.75 }],
+    keys: loop([
+      { t: 0, pel: [0.94, 0], trunk: 4, f: [0.22, 0.08, 0], kp: [0.4, 0, 1], yaw: 0, hL: [0.04, 1.28, 0.48], hR: [-0.04, 1.28, 0.48], ep: [0.6, -0.8, 0] },
+      { t: 0.25, yaw: 32, hL: [0.6, 1.0, 0.32], hR: [0.52, 1.0, 0.36] },
+      { t: 0.5, yaw: 0, hL: [0.04, 1.28, 0.48], hR: [-0.04, 1.28, 0.48] },
+      { t: 0.75, yaw: -32, hL: [-0.52, 1.0, 0.36], hR: [-0.6, 1.0, 0.32] }
+    ]),
+    phases: [P([0, 0.25], '轉左', 'Rotate left', '手臂伸直，用核心帶動', 'Arms straight, rotate from the core'), P([0.25, 0.5], '返中', 'Centre', '控制住返中間', 'Come back to centre with control'),
+      P([0.5, 0.75], '轉右', 'Rotate right', '後腳跟住轉', 'Let the back foot pivot'), P([0.75, 1], '返中', 'Centre', '保持呼吸', 'Keep breathing')],
+    mistakes: [M('只用手臂甩', 'Swinging with the arms only'), M('腰椎扭轉過度', 'Twisting the lower back')]
+  },
+  burpee: {
+    period: 3.4, cam: { view: 'side', target: [0, 0.7, 0.2], dist: 3.6 },
+    props: [{ type: 'mat' }],
+    keys: loop([
+      { ...STAND, t: 0, hs: [0.02, -0.6, 0.04], ep: [0.3, -0.3, -1], fp: 0, kp: [0.15, 0, 1] },
+      { t: 0.14, pel: [0.45, -0.15], trunk: 50, h: [0.22, 0.05, 0.4], ep: [0.4, 0.3, -1], f: [0.13, 0.08, 0], fp: 0 },
+      { t: 0.28, ...line(0.66, 0.4), fp: 72, kp: [0, -1, 0], h: [0.24, 0.04, 0.42] },
+      { t: 0.42, ...line(0.28, 0.46), h: [0.24, 0.04, 0.42], ep: [0.5, 0.5, -0.8] },
+      { t: 0.54, ...line(0.66, 0.4), h: [0.24, 0.04, 0.42] },
+      { t: 0.66, pel: [0.45, -0.15], trunk: 50, h: [0.22, 0.05, 0.4], f: [0.13, 0.08, 0], fp: 0, kp: [0.15, 0, 1] },
+      { t: 0.8, pel: [1.2, 0.02], trunk: -2, h: [0.22, 2.1, 0.05], ep: [1, 0, 0], f: [0.13, 0.3, 0.02], fp: 30 },
+      { t: 0.9, pel: [0.92, 0], trunk: 4, hs: [0.02, -0.6, 0.04], f: [0.13, 0.08, 0], fp: 0 }
+    ]),
+    phases: [P([0, 0.14], '蹲低', 'Squat down', '手按地', 'Hands to the floor'), P([0.14, 0.28], '跳後', 'Jump back', '雙腳向後跳成平板', 'Jump the feet back to a plank'),
+      P([0.28, 0.54], '掌上壓', 'Push-up', '身體一直線', 'Body in one line'), P([0.54, 0.8], '跳起', 'Jump up', '收腳再向上跳，手舉高', 'Feet in, then jump with arms overhead'), P([0.8, 1], '落地', 'Land', '輕輕落地', 'Land softly')],
+    mistakes: [M('平板時腰塌', 'Hips sagging in the plank'), M('落地太重', 'Landing heavily')]
+  },
+  stairs: {
+    period: 1.3, cam: { view: 'side', target: [0, 1.05, 0.25], dist: 3.8 },
+    props: [{ type: 'stairs' }],
+    fn(t) {
+      const a = t * Math.PI * 2, s = Math.sin(a);
+      const up = q => Math.max(0, q);
+      return {
+        pel: [1.08 + 0.03 * Math.cos(2 * a), 0.18], trunk: 8,
+        fL: [0.12, 0.33 + 0.22 * up(s), 0.42 + 0.06 * s], fR: [-0.12, 0.33 + 0.22 * up(-s), 0.42 - 0.06 * s], fp: 0,
+        hsL: [0.02, -0.6, -0.12 * s], hsR: [-0.02, -0.6, 0.12 * s], ep: [0.2, -0.3, -1], kp: [0.1, 0, 1]
+      };
+    },
+    phases: [P([0, 1], '踏', 'Climb', '企直，成隻腳踩實每級，唔好倚扶手', 'Stand tall, whole foot on each step, hands off the rails')],
+    mistakes: [M('挨住扶手', 'Leaning on the rails'), M('只用腳尖', 'Only using your toes')]
+  }
+});
+
+// ── palm direction per move (left hand, world; the right hand is mirrored) ──
+const PN = {
+  squat_bb: [0, 0, 1], good_morning: [0, 0, 1], deadlift: [0, 0, -1], rdl: [0, 0, -1], sumo_dl: [0, 0, -1], shrug: [0, 0, -1],
+  row_bb: [0, 0, -1], upright_row: [0, 0, -1], bench: [0, 0, 1], bench_close: [0, 0, 1], skull: [0, 0, 1], incline_press: [0, 0, 1],
+  pushup: [0, -1, 0], plank: [0, -1, 0], ohp: [0, 0, 1], db_press: [0, 0, 1], lateral: [0, -1, 0.2], front_raise: [0, -1, 0],
+  pushdown: [0, -0.6, -1], pulldown: [0, 0, 1], pullup: [0, 0, 1], pullover: [0, -1, 0.2], hip_thrust: [0, -1, 0], leg_raise: [0, -1, 0],
+  ab_wheel: [0, -1, 0.4], bike: [0, -1, 0], rower: [0, -1, -0.3], sled: [0, 0, 1], fly_cable: [0, 0, 1], pec_deck: [0, 0, 1], dip: [-1, 0, 0]
+};
+for (const [id, v] of Object.entries(PN)) { const m = MOVES[id]; if (m && m.keys && !m.keys[0].pn) m.keys[0].pn = v; }
+// supinated curls: palm forward at the bottom, up when level, toward the shoulder at the top
+for (const id of ['curl_bb', 'curl_db']) {
+  const k = MOVES[id].keys; const sup = [[0, 0, 1], [0, 0, 1], [0, 1, 0], [0, 0.6, -0.8], [0, 0.6, -0.8], [0, 1, 0], [0, 0, 1]];
+  k.forEach((key, i) => { key.pn = sup[i]; });
+}
+// fly: palms forward when open, facing each other when closed
+MOVES.fly_cable.keys[2].pn = [-1, 0, 0.2]; MOVES.fly_cable.keys[3].pn = [-1, 0, 0.2];
+
+// ── mistake demos: overrides applied to key indexes ('*' = every key) ──
+const L0 = (y, z) => line(y, z);
+const PATCH = {
+  squat_bb: [{ 2: { kp: [-0.55, 0, 1] }, 3: { kp: [-0.55, 0, 1] } }, { 2: { fp: 28, f: [0.17, 0.15, 0.02] }, 3: { fp: 28, f: [0.17, 0.15, 0.02] } }, { 2: { lumbar: 30, trunk: 48 }, 3: { lumbar: 30, trunk: 48 } }],
+  squat_goblet: [{ 2: { trunk: 52, pel: [0.45, -0.2] }, 3: { trunk: 52, pel: [0.45, -0.2] } }, { 2: { kp: [-0.6, 0, 1] }, 3: { kp: [-0.6, 0, 1] } }],
+  deadlift: [{ 0: { lumbar: 30, trunk: 48 }, 1: { lumbar: 30, trunk: 48 }, 2: { lumbar: 18 } }, { 2: { h: [0.24, 0.55, 0.3] }, 5: { h: [0.24, 0.55, 0.3] } }, { 2: { pel: [0.9, -0.34], trunk: 64, h: [0.24, 0.44, 0.1] } }],
+  rdl: [{ 2: { pel: [0.62, -0.22], trunk: 55 }, 3: { pel: [0.62, -0.22], trunk: 55 } }, { 2: { lumbar: 30, h: [0.22, 0.24, 0.14] }, 3: { lumbar: 30, h: [0.22, 0.24, 0.14] } }],
+  good_morning: [{ 2: { lumbar: 30 }, 3: { lumbar: 30 } }, null],
+  sumo_dl: [{ 0: { kp: [0, 0, 1] }, 1: { kp: [0, 0, 1] } }, { 2: { pel: [0.72, -0.3], trunk: 60 } }],
+  lunge: [{ 2: { pel: [0.52, 0.14] }, 3: { pel: [0.52, 0.14] } }, { 2: { trunk: 32 }, 3: { trunk: 32 } }],
+  bulgarian: [null, { '*': { fL: [0.12, 0.08, 0.06] } }],
+  step_up: [{ 1: { kpL: [-0.5, 0, 1] }, 2: { kpL: [-0.5, 0, 1] } }, { 1: { kpL: [-0.5, 0, 1] } }],
+  leg_press: [{ 0: { f: [0.15, 1.04, 0.71] }, 1: { f: [0.15, 1.04, 0.71] } }, { 2: { f: [0.15, 0.66, 0.26], pel: [0.56, 0.07] }, 3: { f: [0.15, 0.66, 0.26], pel: [0.56, 0.07] } }],
+  leg_curl: [{ 2: { pel: [0.78, -0.02], trunk: 78 }, 3: { pel: [0.78, -0.02], trunk: 78 } }, null],
+  calf: [null, { 2: { pel: [1.0, 0.01], f: [0.12, 0.12, 0], fp: 16 }, 3: { pel: [1.0, 0.01], f: [0.12, 0.12, 0], fp: 16 } }],
+  hip_thrust: [{ 2: { trunk: -102, head: 65 }, 3: { trunk: -102, head: 65 } }, { '*': { f: [0.18, 0.08, 0.68] } }],
+  adductor: [null, { '*': { trunk: 16 } }],
+  bench: [{ 2: { ep: [1, 0, 0], h: [0.42, 0.72, -0.33] }, 3: { ep: [1, 0, 0], h: [0.42, 0.72, -0.33] } }, null, { 2: { pel: [0.7, 0.12] }, 3: { pel: [0.7, 0.12] } }],
+  bench_close: [null, { 2: { ep: [1, -0.15, 0] }, 3: { ep: [1, -0.15, 0] } }],
+  incline_press: [null, { 2: { ht: [0.34, 0.5, 0.26] }, 3: { ht: [0.34, 0.5, 0.26] } }],
+  pushup: [{ 0: sag(L0(0.66, 0.4), -0.12), 1: sag(L0(0.66, 0.4), -0.12), 2: sag(L0(0.25, 0.46), -0.08), 3: sag(L0(0.25, 0.46), -0.08) }, { 2: { ep: [1, 0.3, 0] }, 3: { ep: [1, 0.3, 0] } }, { 2: { ...L0(0.5, 0.42), head: 30 }, 3: { ...L0(0.5, 0.42), head: 30 } }],
+  fly_cable: [{ 2: { h: [0.12, 1.3, 0.36], ep: [0.6, -0.3, -1] }, 3: { h: [0.12, 1.3, 0.36], ep: [0.6, -0.3, -1] } }, { 2: { sh: 0.06 }, 3: { sh: 0.06 } }],
+  fly_low: [{ 2: { h: [0.1, 1.08, 0.3] }, 3: { h: [0.1, 1.08, 0.3] } }, { 1: { trunk: -12 }, 2: { trunk: 18 } }],
+  pec_deck: [null, { 2: { trunk: 16 }, 3: { trunk: 16 } }],
+  dip: [{ 2: { pel: [0.9, -0.17], trunk: 22 }, 3: { pel: [0.9, -0.17], trunk: 22 } }, { '*': { sh: 0.05 } }],
+  dip_chest: [{ '*': { trunk: 4 } }, { 2: { pel: [0.9, -0.24], trunk: 38 }, 3: { pel: [0.9, -0.24], trunk: 38 } }],
+  svend: [null],
+  row_bb: [{ 2: { trunk: 32, pel: [0.92, -0.18] }, 3: { trunk: 32, pel: [0.92, -0.18] } }, { '*': { lumbar: 26 } }],
+  seated_row: [{ 0: { trunk: 40 }, 1: { trunk: 40 }, 2: { trunk: -26 }, 3: { trunk: -26 } }, { 2: { sh: 0.06 }, 3: { sh: 0.06 } }],
+  pulldown: [{ 2: { trunk: -40 }, 3: { trunk: -40 } }, { 2: { trunk: 6, h: [0.4, 1.3, -0.16] }, 3: { trunk: 6, h: [0.4, 1.3, -0.16] } }],
+  pulldown_close: [{ 2: { h: [0.06, 1.3, 0.3], ep: [0.4, -0.2, 1] }, 3: { h: [0.06, 1.3, 0.3], ep: [0.4, -0.2, 1] } }, { 2: { trunk: -36 }, 3: { trunk: -36 } }],
+  pullup: [{ 2: { trunk: 18, fo: [0.08, -0.62, 0.3] }, 3: { trunk: 18, fo: [0.08, -0.62, 0.3] } }, { 0: { pel: [1.46, -0.04] }, 1: { pel: [1.46, -0.04] } }],
+  pullover: [{ 2: { h: [0.14, 1.2, 0.22], ep: [0.2, -0.6, -1] }, 3: { h: [0.14, 1.2, 0.22], ep: [0.2, -0.6, -1] } }],
+  shrug: [null, { 2: { hs: [0.04, -0.45, 0.14] }, 3: { hs: [0.04, -0.45, 0.14] } }],
+  ohp: [{ 2: { trunk: -16 }, 3: { trunk: -13 }, 4: { trunk: -13 }, 5: { trunk: -16 } }, { 3: { h: [0.24, 1.94, 0.26] }, 4: { h: [0.24, 1.94, 0.26] } }],
+  db_press: [{ '*': { trunk: -18, pel: [0.55, 0.03] } }, { 0: { h: [0.33, 1.24, 0.03] }, 1: { h: [0.33, 1.24, 0.03] } }],
+  lateral: [{ 2: { sh: 0.065 }, 3: { sh: 0.065 } }, { 1: { trunk: 14 }, 2: { trunk: -12 }, 3: { trunk: -12 } }, { 2: { h: [0.6, 1.7, 0.1] }, 3: { h: [0.6, 1.7, 0.1] } }],
+  front_raise: [{ 2: { trunk: -16 }, 3: { trunk: -16 } }],
+  rear_fly: [{ 2: { trunk: 42, pel: [0.92, -0.2] }, 3: { trunk: 42, pel: [0.92, -0.2] } }, { 2: { ht: [0.3, 0.32, -0.06] }, 3: { ht: [0.3, 0.32, -0.06] } }],
+  face_pull: [{ 2: { ep: [1, -0.8, -0.4], h: [0.3, 1.45, 0.1] }, 3: { ep: [1, -0.8, -0.4], h: [0.3, 1.45, 0.1] } }, { 2: { trunk: -18 }, 3: { trunk: -18 } }],
+  upright_row: [{ 2: { h: [0.14, 1.5, 0.16] }, 3: { h: [0.14, 1.5, 0.16] } }],
+  curl_bb: [{ 3: { trunk: -16 }, 4: { trunk: -16 }, 2: { trunk: -8 } }, { 3: { h: [0.21, 1.38, 0.38], ep: [0.1, -1, 0.3] }, 4: { h: [0.21, 1.38, 0.38], ep: [0.1, -1, 0.3] } }],
+  curl_db: [{ 3: { trunk: -16 }, 4: { trunk: -16 }, 2: { trunk: -8 } }, { 0: { h: [0.22, 1.0, 0.24] }, 1: { h: [0.22, 1.0, 0.24] }, 6: { h: [0.22, 1.0, 0.24] } }],
+  hammer: [{ 3: { h: [0.22, 1.38, 0.38], ep: [0.15, -1, 0.3] }, 4: { h: [0.22, 1.38, 0.38], ep: [0.15, -1, 0.3] } }],
+  pushdown: [{ '*': { ep: [1, -0.2, -0.3] } }, { '*': { trunk: 32, pel: [0.92, -0.12] } }],
+  skull: [{ '*': { ep: [1, 0.4, 0.2] } }, { 2: { h: [0.13, 0.62, -0.72], ep: [0.15, 0.3, 1] }, 3: { h: [0.13, 0.62, -0.72], ep: [0.15, 0.3, 1] } }],
+  overhead_tri: [{ '*': { ep: [1, 0.3, 0.1] } }, { '*': { trunk: -12 } }],
+  kickback: [{ '*': { ep: [0.1, -1, 0.3] }, 2: { h: [0.2, 0.62, -0.3] }, 3: { h: [0.2, 0.62, -0.3] } }, { 2: { trunk: 50 }, 3: { trunk: 50 } }],
+  plank: [{ 0: sag(L0(0.36, 0.3), -0.12), 1: sag(L0(0.375, 0.3), -0.12) }, { 0: sag(L0(0.36, 0.3), 0.18), 1: sag(L0(0.375, 0.3), 0.18) }, null],
+  crunch: [{ 2: { lumbar: 30, head: 38 }, 3: { lumbar: 30, head: 38 } }, { 2: { lumbar: 40, trunk: -38 }, 3: { lumbar: 40, trunk: -38 } }],
+  leg_raise: [{ '*': { lumbar: -14 } }, { 1: { f: [0.1, 0.6, 0.66] }, 2: { f: [0.1, 0.96, 0.02] } }],
+  cable_crunch: [{ 2: { pel: [0.32, -0.25], trunk: 42, lumbar: 18 }, 3: { pel: [0.32, -0.25], trunk: 42, lumbar: 18 } }, null],
+  russian_twist: [{ '*': { yaw: 0 }, 0: { htL: [0.34, 0.26, 0.26], htR: [0.26, 0.3, 0.3] }, 1: { htL: [-0.26, 0.3, 0.3], htR: [-0.34, 0.26, 0.26] } }, { '*': { lumbar: 26 } }],
+  dead_bug: [{ '*': { lumbar: -16 } }, null],
+  hollow: [{ '*': { trunk: -60, lumbar: -14 } }, null],
+  pallof: [{ 2: { yaw: -26 }, 3: { yaw: -26 } }],
+  woodchop: [{ '*': { yaw: 0 } }, { '*': { lumbar: 24 } }],
+  ab_wheel: [{ 2: { pel: [0.17, 0.36], trunk: 88, lumbar: -16 }, 3: { pel: [0.17, 0.36], trunk: 88, lumbar: -16 } }, { 2: { h: [0.12, 0.17, 1.55], pel: [0.16, 0.42], trunk: 90, lumbar: -20 }, 3: { h: [0.12, 0.17, 1.55], pel: [0.16, 0.42], trunk: 90, lumbar: -20 } }],
+  box_jump: [{ 3: { kp: [-0.6, 0, 1] }, 4: { kp: [-0.6, 0, 1] } }, null],
+  machine_press: [{ 2: { trunk: 4 }, 3: { trunk: 4 } }, { '*': { ep: [1, 0.3, 0] } }],
+  decline: [{ 2: { ht: [0.3, 0.46, 0.18] }, 3: { ht: [0.3, 0.46, 0.18] } }, null],
+  row_db: [{ 2: { yaw: -28 }, 3: { yaw: -28 } }, { 2: { htR: [-0.22, 0.36, 0.2] }, 3: { htR: [-0.22, 0.36, 0.2] } }],
+  tbar: [{ 2: { trunk: 28, pel: [0.9, -0.15] }, 3: { trunk: 28, pel: [0.9, -0.15] } }, { '*': { lumbar: 26 } }],
+  row_chest: [{ 2: { trunk: 35, pel: [0.84, -0.32] }, 3: { trunk: 35, pel: [0.84, -0.32] } }, { 2: { sh: 0.06 }, 3: { sh: 0.06 } }],
+  back_ext: [{ 0: { trunk: 25 }, 1: { trunk: 25 } }, null],
+  hack: [{ 2: { kp: [-0.6, 0, 1] }, 3: { kp: [-0.6, 0, 1] } }, { 2: { fp: 25, f: [0.17, 0.17, 0.29] }, 3: { fp: 25, f: [0.17, 0.17, 0.29] } }],
+  sissy: [{ 2: { pel: [0.5, -0.2], trunk: 20 }, 3: { pel: [0.5, -0.2], trunk: 20 } }, null],
+  nordic: [{ 2: { pel: [0.3, 0.12], trunk: 75 }, 3: { pel: [0.3, 0.12], trunk: 75 } }, null],
+  rev_fly_machine: [{ 2: { sh: 0.06 }, 3: { sh: 0.06 } }, { 2: { trunk: -14 }, 3: { trunk: -14 } }],
+  lateral_cable: [{ 2: { roll: -18 }, 3: { roll: -18 } }, { 2: { sh: 0.065 }, 3: { sh: 0.065 } }],
+  y_raise: [{ 2: { sh: 0.06 }, 3: { sh: 0.06 } }, { 2: { head: -40 }, 3: { head: -40 } }],
+  lu: [{ 3: { trunk: -16 }, 4: { trunk: -16 } }, null],
+  curl_cable: [{ 3: { trunk: -16 }, 4: { trunk: -16 } }, { 3: { h: [0.21, 1.38, 0.38], ep: [0.1, -1, 0.3] }, 4: { h: [0.21, 1.38, 0.38], ep: [0.1, -1, 0.3] } }],
+  curl_drag: [{ 2: { h: [0.21, 1.2, 0.36] }, 3: { h: [0.21, 1.2, 0.36] } }, { 2: { trunk: -15 }, 3: { trunk: -15 } }],
+  curl_reverse: [null, { 3: { trunk: -15 }, 4: { trunk: -15 } }],
+  jm: [{ '*': { ep: [1, 0, 0.3] } }, { 2: { h: [0.14, 0.72, -0.2], ep: [1, -0.6, 0.3] }, 3: { h: [0.14, 0.72, -0.2], ep: [1, -0.6, 0.3] } }],
+  burpee: [{ 2: sag(line(0.66, 0.4), -0.12), 3: sag(line(0.28, 0.46), -0.08), 4: sag(line(0.66, 0.4), -0.12) }, null]
+};
+for (const [id, list] of Object.entries(PATCH)) {
+  const m = MOVES[id]; if (!m || !m.mistakes) continue;
+  list.forEach((p, i) => { if (p && m.mistakes[i]) m.mistakes[i].patch = p; });
+}
 
 export const MOVE_IDS = Object.keys(MOVES);
