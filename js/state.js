@@ -28,7 +28,9 @@ export const S = {
   bodyLog: DB.get('bodyLog', []),
   restSec: DB.get('restSec', 90),
   lastBackup: DB.get('lastBackup', null),
-  logsWeek: DB.get('logsWeek', null)
+  logsWeek: DB.get('logsWeek', null),
+  lastDay: DB.get('lastDay', null),
+  logDates: DB.get('logDates', {})
 };
 export function save(...keys) { for (const k of keys) DB.set(k, S[k]); }
 export const t = (zh, en) => (S.lang === 'zh' ? zh : en);
@@ -66,22 +68,40 @@ export function syncSets(day, id) {
   while (arr.length < e.sets) arr.push({ weight: last.weight, reps: last.reps, done: false });
   while (arr.length > e.sets && arr.length > 1) arr.pop();
 }
-// a new week clears the ticks but keeps the weights you typed
-function rolloverLogs() {
-  const wk = weekStart();
-  if (S.logsWeek === null) { S.logsWeek = wk; save('logsWeek'); return; }
-  if (S.logsWeek === wk) return;
+// Record the ticked sets of a plan day into history, live (one entry per date + plan day).
+export function upsertSession(day, date = isoToday()) {
+  const L = S.logs[day] || {}, sets = {};
+  Object.entries(L).forEach(([n, arr]) => { if (Array.isArray(arr) && arr.some(x => x.done)) sets[n] = arr.map(x => ({ weight: x.weight, reps: x.reps, done: !!x.done })); });
+  const cardio = Object.keys(L).filter(k => k.startsWith('__cardio__') && L[k]).map(k => k.slice(10));
+  const old = S.history.find(h => h.date === date && h.day === day);
+  S.history = S.history.filter(h => h !== old);
+  if (Object.keys(sets).length || cardio.length) S.history.push({ ...(old || {}), date, day, sets, ...(cardio.length ? { cardio } : {}) });
+  S.history.sort((a, b) => a.date.localeCompare(b.date));
+  S.logDates = { ...(S.logDates || {}), [day]: date };
+  save('history', 'logDates');
+}
+// the most recent date (today or earlier) that fell on this plan day
+function lastDateFor(day) { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7 - WD.indexOf(day) + 7) % 7); return d.toISOString().slice(0, 10); }
+// A new day clears the ticks (weights you typed stay). Anything ticked is already in history;
+// ticks from before this version (never recorded) are saved under the day they belong to first.
+export function rolloverDay() {
+  const today = isoToday();
+  if (S.lastDay === today) return false;
   for (const d of WD) {
-    const day = S.logs[d] || {};
-    for (const k of Object.keys(day)) {
-      if (k.startsWith('__cardio__')) day[k] = false;
-      else if (k.startsWith('__cardioAw__')) delete day[k];
-      else if (Array.isArray(day[k])) day[k].forEach(s => { s.done = false; delete s.awarded; });
+    const L = S.logs[d] || {};
+    const any = Object.keys(L).some(k => (k.startsWith('__cardio__') && L[k]) || (Array.isArray(L[k]) && L[k].some(x => x.done)));
+    if (!any) continue;
+    const date = (S.logDates && S.logDates[d]) || lastDateFor(d);
+    if (!S.history.some(h => h.date === date && h.day === d)) upsertSession(d, date);
+    for (const k of Object.keys(L)) {
+      if (k.startsWith('__cardio__')) L[k] = false;
+      else if (k.startsWith('__cardioAw__')) delete L[k];
+      else if (Array.isArray(L[k])) L[k].forEach(x => { x.done = false; delete x.awarded; });
     }
   }
-  // habits and goal tasks are per weekday, so they start fresh each week too
-  S.completedTasks = {};
-  S.logsWeek = wk; save('logs', 'logsWeek', 'completedTasks');
+  S.completedTasks = {};   // habits are daily
+  S.lastDay = today; save('logs', 'lastDay', 'completedTasks');
+  return true;
 }
 
 // ---------- scoring ----------
@@ -158,8 +178,9 @@ export function prSeries(id) {
 }
 export const bestWeight = id => Math.max(0, ...prSeries(id).map(p => p.weight));
 export function lastSession(id) {
+  const today = isoToday();
   for (let i = S.history.length - 1; i >= 0; i--) {
-    const s = S.history[i]; const sets = s.sets && s.sets[id];
+    const s = S.history[i]; if (s.date === today) continue; const sets = s.sets && s.sets[id];
     if (Array.isArray(sets) && sets.some(x => x.done)) return { date: s.date, sets };
   }
   return null;
@@ -269,7 +290,7 @@ export function boot() {
   if (!S.customPlan || typeof S.customPlan !== 'object') S.customPlan = clone(DEFAULT_PLAN);
   for (const d of WD) if (!Array.isArray(S.customPlan[d])) S.customPlan[d] = [];
   ensLogs();
-  rolloverLogs();
+  rolloverDay();
   chkWeek();
   save('logs');
 }
