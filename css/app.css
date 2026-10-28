@@ -312,3 +312,9 @@ input[type=range] { width: 100%; accent-color: var(--acc); height: 32px; }
 .rvlist .i { flex-shrink: 0; width: 16px; text-align: center; font-weight: 700; color: var(--tx3, var(--tx2)); }
 .rvlist .hit .i { color: var(--acc); } .rvlist .miss .i { color: var(--bad, #e5484d); } .rvlist .now .i { color: var(--gold, #e8b04b); }
 .guide .rvlist .n { font-weight: 500; color: var(--tx2); }
+
+/* in-app update banner */
+#update-bar { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 10px); z-index: 60; width: min(448px, calc(100% - 32px)); display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--acc); color: #1a1208; font-weight: 700; font-size: 14px; box-shadow: 0 10px 26px rgba(0,0,0,.4); }
+#update-bar span { display: inline-flex; align-items: center; gap: 8px; }
+#update-bar svg { width: 18px; height: 18px; }
+#update-bar button { height: 38px; padding: 0 16px; border-radius: 10px; background: #1a1208; color: #fff; font-weight: 700; }

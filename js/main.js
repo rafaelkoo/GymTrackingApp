@@ -1,5 +1,5 @@
 import { boot } from './state.js';
-import { render, bindEvents } from './ui.js';
+import { render, bindEvents, checkUpdate } from './ui.js';
 
 boot();
 bindEvents();
@@ -14,7 +14,8 @@ if ('serviceWorker' in navigator && (host.endsWith('github.io') || host === 'loc
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
   navigator.serviceWorker.register('./sw.js').then(reg => {
     // check for a new version whenever the app comes back to the foreground
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => { }); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { reg.update().catch(() => { }); checkUpdate(); } });
+    checkUpdate();
   }).catch(() => { });
 }
 // Warm the 3D engine in the background so the first demo opens fast (and is cached for offline use).

@@ -2,7 +2,7 @@
 import { EX, EX_LIST, CATS, WD, WD_ZH, WD_LONG, GOALS, GQS, LEVEL_XP, SCORE_CFG, DEFAULT_PLAN, bodyParts, muscleZh, equipZh, levelZh } from './data.js';
 import { MOVES } from './moves.js';
 import {
-  S, save, t, todayKey, todayIdx, isoToday, weekStart, ensLogs, syncSets, chkWeek, addPts, grade, levelXP,
+  S, save, t, APP_VERSION, todayKey, todayIdx, isoToday, weekStart, ensLogs, syncSets, chkWeek, addPts, grade, levelXP,
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
@@ -407,7 +407,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 3.7</p>`;
+    <div class="row" style="justify-content:center;gap:10px;margin-top:18px"><span class="sub">FitTrack ${APP_VERSION}</span><button class="btn btn-g" data-a="checkUpdate" style="min-height:36px;padding:0 12px">${I('reset')}${t('檢查更新', 'Check for updates')}</button></div>`;
   return h;
 }
 
@@ -799,6 +799,34 @@ document.addEventListener('pointermove', e => { if (e.buttons) chartPick(e); });
 
 // ---------- render ----------
 let lastTab = null;
+// ---------- in-app update ----------
+// Reads the live sw.js version; if it differs from the running one, offers a one-tap update.
+let latest = null;
+export async function checkUpdate(manual) {
+  try {
+    const txt = await fetch('./sw.js?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text());
+    const m = /VERSION\s*=\s*'fittrack-v([\d.]+)'/.exec(txt); if (!m) return;
+    latest = m[1] !== APP_VERSION ? m[1] : null;
+    drawUpdate();
+    if (manual) toast(latest ? t(`有新版本 ${latest}`, `Version ${latest} is available`) : t('已經係最新版本', 'You have the latest version'));
+  } catch { if (manual) toast(t('檢查唔到，請確認有網絡', 'Could not check. Are you online?')); }
+}
+async function applyUpdate() {
+  toast(t('更新緊…', 'Updating…'));
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update().catch(() => { });
+    if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+  } catch { }
+  location.reload();
+}
+function drawUpdate() {
+  let el = document.getElementById('update-bar');
+  if (!latest) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'update-bar'; document.body.appendChild(el); }
+  el.innerHTML = `<span>${I('download')}${t(`有新版本 ${latest}`, `New version ${latest}`)}</span><button data-a="applyUpdate">${t('更新', 'Update')}</button>`;
+}
+
 export function render() {
   if (!S.goalId && !ui.ob) ui.ob = { step: 0, goal: null, ans: {}, qi: 0 };
   nav();
@@ -918,6 +946,8 @@ const A = {
   guideAsk() { ui.guideConfirm = true; render(); },
   guideCancel() { ui.guideConfirm = false; render(); },
   guideApply() { const n = applyScheme(); ui.guideConfirm = false; toast(t(`已更新 ${n} 個動作`, `Updated ${n} exercises`)); render(); },
+  checkUpdate() { checkUpdate(true); },
+  applyUpdate() { applyUpdate(); },
   tgFromGoal(el) {
     const g = liftGoal(el.dataset.id); if (!g) return;
     setTarget(g.id, g.kg, g.reps, g.by); toast(t(`已設目標：${g.kg} kg × ${g.reps}`, `Target set: ${g.kg} kg × ${g.reps}`)); render();
