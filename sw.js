@@ -1,6 +1,6 @@
 // FitTrack service worker: app files network-first (updates show up right away),
 // fonts and the 3D engine cache-first (they never change for a given URL).
-const VERSION = 'fittrack-v3.8.0';
+const VERSION = 'fittrack-v3.8.1';
 const CORE = ['./', './index.html', './manifest.json', './css/app.css', './js/main.js', './js/ui.js', './js/state.js',
   './js/data.js', './js/moves.js', './js/viewer3d.js', './js/body3d.js', './js/coach.js', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 
@@ -16,7 +16,8 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
-    e.respondWith(fetch(req).then(res => {
+    // revalidate with the server every time (GitHub Pages sends max-age=600, which kept old files for 10 minutes)
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
