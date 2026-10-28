@@ -287,7 +287,34 @@ export function importPayload(p) {
   keep.forEach(([k, v]) => localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)));
 }
 
+// Rebuild points from the workout history (sets, cardio, PRs, finished workouts).
+// Used once to undo points inflated by the first version's untick/retick bug.
+export function recomputeScores() {
+  const wk = weekStart(), sc = { total: 0, weekly: 0, weekStart: wk, breakdown: {}, history: [] }, weeks = {};
+  const add = (date, pts, muscle) => {
+    sc.total += pts;
+    if (date >= wk) { sc.weekly += pts; if (muscle) sc.breakdown[muscle] = (sc.breakdown[muscle] || 0) + pts; const d = WD[(new Date(date + 'T12:00:00').getDay() + 6) % 7]; sc.breakdown[d] = (sc.breakdown[d] || 0) + pts; }
+    else { const w = weekStart(new Date(date + 'T12:00:00')); weeks[w] = (weeks[w] || 0) + pts; }
+  };
+  const best = {};
+  [...S.history].sort((a, b) => a.date.localeCompare(b.date)).forEach(h => {
+    Object.entries(h.sets || {}).forEach(([id, arr]) => {
+      if (!Array.isArray(arr)) return; const ex = EX[id]; const done = arr.filter(x => x.done !== false);
+      done.forEach(() => add(h.date, SCORE_CFG.set_done, ex ? ex.cat : null));
+      const top = Math.max(0, ...done.map(x => parseFloat(x.weight) || 0));
+      if (top > 0 && best[id] > 0 && top > best[id]) add(h.date, SCORE_CFG.pr_broken, ex ? ex.cat : null);
+      if (top > (best[id] || 0)) best[id] = top;
+    });
+    (h.cardio || []).forEach(() => add(h.date, SCORE_CFG.set_done, 'cardio'));
+  });
+  Object.keys(S.savedWorkouts || {}).forEach(k => { const m = /^saved_(\d{4}-\d{2}-\d{2})_/.exec(k); if (m) add(m[1], SCORE_CFG.workout_saved, null); });
+  sc.history = Object.entries(weeks).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12).map(([week, score]) => ({ week, score, breakdown: {} }));
+  S.scores = sc; save('scores');
+  return sc;
+}
+
 export function boot() {
+  if (!DB.get('scoreFix1', false)) { recomputeScores(); DB.set('scoreFix1', true); }
   if (!S.customPlan || typeof S.customPlan !== 'object') S.customPlan = clone(DEFAULT_PLAN);
   for (const d of WD) if (!Array.isArray(S.customPlan[d])) S.customPlan[d] = [];
   ensLogs();
