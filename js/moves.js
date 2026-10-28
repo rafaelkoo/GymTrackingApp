@@ -1232,9 +1232,9 @@ Object.assign(MOVES, {
   },
   calf_donkey: {
     period: 2.8, cam: { view: 'side', target: [0, 0.6, 0.2], dist: 3.0 },
-    props: [{ type: 'box', w: 0.5, h: 0.08, d: 0.18, z: 0.1 }, { type: 'box', w: 0.6, h: 0.72, d: 0.3, z: 0.95 }],
+    props: [{ type: 'box', w: 0.5, h: 0.08, d: 0.18, z: 0.1 }, { type: 'box', w: 0.6, h: 0.72, d: 0.3, z: 1.1 }],
     keys: loop([
-      { t: 0, pel: [0.92, -0.02], trunk: 86, f: [0.12, 0.16, 0.0], fp: 0, kp: [0.1, 0, 1], h: [0.22, 0.74, 0.84], ep: [0.3, -0.5, -1] },
+      { t: 0, pel: [0.92, -0.02], trunk: 84, head: -38, f: [0.12, 0.16, 0.0], fp: 0, kp: [0.1, 0, 1], h: [0.2, 0.74, 1.03], ep: [0.6, 0.2, -1] },
       { t: 0.12, pel: [0.92, -0.02], f: [0.12, 0.16, 0.0], fp: 0 }, { t: 0.42, pel: [1.0, -0.01], f: [0.12, 0.25, 0.0], fp: 36 }, { t: 0.55, pel: [1.0, -0.01], f: [0.12, 0.25, 0.0], fp: 36 }
     ]),
     phases: PH4(['屈髖', 'Hinge', '上身向前，臀部喺腳上面', 'Bend forward, hips over your feet'], ['踮', 'Rise', '腳踭推到最高', 'Push the heels up'],
@@ -1262,7 +1262,7 @@ Object.assign(MOVES, {
       { t: 0.1, pel: [0.52, 0.0], trunk: 0 },
       { t: 0.5, pel: [0.25, 0.4], trunk: 68, h: [0.22, 0.12, 0.92], ep: [0.3, -1, -0.5] },
       { t: 0.6, pel: [0.25, 0.4], trunk: 68, h: [0.22, 0.12, 0.92] },
-      { t: 0.75, pel: [0.4, 0.3], trunk: 45, h: [0.2, 0.6, 0.6] }
+      { t: 0.75, pel: [0.4, 0.3], trunk: 45, ht: [0.0, 0.32, 0.2], ep: [1, -0.6, 0] }
     ]),
     phases: [P([0, 0.1], '跪定', 'Kneel', '腳踝固定，身體一直線', 'Ankles anchored, body straight'),
       P([0.1, 0.5], '慢慢落', 'Lower slowly', '用大腿後側煞住，越慢越好', 'Brake with your hamstrings, as slowly as you can'),
@@ -1272,10 +1272,12 @@ Object.assign(MOVES, {
   },
   rev_fly_machine: {
     period: 3.2, cam: { view: 'q', target: [0, 1.0, 0], dist: 3.3, phi: 0.35 },
-    props: [{ type: 'seat', y: 0.45, z: -0.05 }, { type: 'pad', at: [0, 0.95, 0.27], len: 0.08, rx: 0, w: 0.36 }],
+    props: [{ type: 'seat', y: 0.45, z: -0.05 }, { type: 'pad', at: [0, 0.92, 0.2], len: 0.08, rx: 0, w: 0.36 }],
     keys: loop([
-      { t: 0, pel: [0.55, -0.05], trunk: 8, f: [0.2, 0.08, 0.42], kp: [0.3, 0.4, 1], h: [0.1, 1.08, 0.56], ep: [0.3, 1, 0], pn: [-1, 0, 0] },
-      { t: 0.1, h: [0.1, 1.08, 0.56] }, { t: 0.45, h: [0.64, 1.06, -0.04] }, { t: 0.55, h: [0.64, 1.06, -0.04] }
+      { t: 0, pel: [0.55, -0.05], trunk: 8, f: [0.2, 0.08, 0.42], kp: [0.3, 0.4, 1], h: [0.17, 1.03, 0.64], ep: [1, 0.2, -0.2], pn: [-1, 0, 0] },
+      { t: 0.1, h: [0.17, 1.03, 0.64] }, { t: 0.27, h: [0.62, 1.03, 0.46], ep: [0.7, 0.3, -0.6], pn: [-0.6, 0, 0.6] },
+      { t: 0.45, h: [0.8, 1.02, -0.04], ep: [0.2, 0.3, -1], pn: [0, 0, 1] }, { t: 0.55, h: [0.8, 1.02, -0.04], ep: [0.2, 0.3, -1], pn: [0, 0, 1] },
+      { t: 0.75, h: [0.62, 1.03, 0.46], ep: [0.7, 0.3, -0.6], pn: [-0.6, 0, 0.6] }
     ]),
     phases: PH4(['準備', 'Set up', '心口貼墊，手伸向前', 'Chest on the pad, arms forward'], ['張開', 'Open', '手臂微曲向後張開', 'Open the arms back with soft elbows'],
       ['夾', 'Squeeze', '夾緊後三角', 'Squeeze the rear delts'], ['返', 'Return', '慢慢返前', 'Return slowly']),
@@ -1301,7 +1303,7 @@ Object.assign(MOVES, {
     props: [{ type: 'cable', anchor: [-0.45, 0.12, 0.15], to: 'L', handle: 'd', towerDz: 0, towerDx: -0.15 }],
     keys: loop([
       { ...STAND, t: 0, hL: [-0.04, 0.86, 0.2], epL: [0.3, 0.3, -1], pnL: [0, 0, -1], htR: [-0.22, 0.04, 0.06], epR: [-1, 0, -0.5] },
-      { t: 0.1, hL: [-0.04, 0.86, 0.2] }, { t: 0.45, hL: [0.74, 1.40, 0.1], epL: [0, 1, -0.6], pnL: [0, -1, 0] }, { t: 0.55, hL: [0.74, 1.40, 0.1], epL: [0, 1, -0.6], pnL: [0, -1, 0] }
+      { t: 0.1, hL: [-0.04, 0.86, 0.2] }, { t: 0.45, hL: [0.79, 1.35, 0.07], epL: [0, 0.5, -0.4], pnL: [0, -1, 0] }, { t: 0.55, hL: [0.79, 1.35, 0.07], epL: [0, 0.5, -0.4], pnL: [0, -1, 0] }
     ]),
     phases: PH4(['準備', 'Set up', '側身企，滑輪喺另一邊低位', 'Stand side-on, low pulley on the far side'], ['舉', 'Raise', '手肘帶頭向外舉', 'Lead with the elbow out to the side'],
       ['頂部', 'Top', '舉到膊頭高度', 'Stop at shoulder height'], ['放', 'Lower', '慢慢返到身前', 'Lower slowly across your body']),
@@ -1323,7 +1325,8 @@ Object.assign(MOVES, {
     props: [{ type: 'pad', at: [0, 0.82, -0.06], len: 0.85, rx: -0.61 }, { type: 'dumbbells' }],
     keys: loop([
       { t: 0, pel: [0.78, -0.40], trunk: 55, f: [0.13, 0.08, -0.6], kp: [0.15, 0, 1], hs: [0.03, -0.6, 0.04], ep: [0, 1, 0], pn: [-1, 0, 0] },
-      { t: 0.1, hs: [0.03, -0.6, 0.04] }, { t: 0.45, ht: [0.36, 0.98, 0.04], pn: [-1, 0.5, 0] }, { t: 0.55, ht: [0.36, 0.98, 0.04], pn: [-1, 0.5, 0] }
+      { t: 0.1, hs: [0.03, -0.6, 0.04] }, { t: 0.27, hs: [0.23, -0.3, 0.5], pn: [-1, 0.2, 0] },
+      { t: 0.45, ht: [0.43, 1.07, 0.05], pn: [-1, 0.5, 0] }, { t: 0.55, ht: [0.43, 1.07, 0.05], pn: [-1, 0.5, 0] }, { t: 0.75, hs: [0.23, -0.3, 0.5], pn: [-1, 0.2, 0] }
     ]),
     phases: PH4(['準備', 'Set up', '俯臥斜板，手垂直落', 'Lie face down on the incline, arms hanging'], ['舉', 'Raise', '拇指向上，手臂舉成 Y 字', 'Thumbs up, raise the arms into a Y'],
       ['頂部', 'Top', '夾緊下斜方肌', 'Squeeze the lower traps'], ['放', 'Lower', '慢慢放', 'Lower slowly']),
@@ -1561,9 +1564,9 @@ const PATCH = {
   hack: [{ 2: { kp: [-0.6, 0, 1] }, 3: { kp: [-0.6, 0, 1] } }, { 2: { fp: 25, f: [0.17, 0.17, 0.29] }, 3: { fp: 25, f: [0.17, 0.17, 0.29] } }],
   sissy: [{ 2: { pel: [0.5, -0.2], trunk: 20 }, 3: { pel: [0.5, -0.2], trunk: 20 } }, null],
   nordic: [{ 2: { pel: [0.3, 0.12], trunk: 75 }, 3: { pel: [0.3, 0.12], trunk: 75 } }, null],
-  rev_fly_machine: [{ 2: { sh: 0.06 }, 3: { sh: 0.06 } }, { 2: { trunk: -14 }, 3: { trunk: -14 } }],
+  rev_fly_machine: [{ 3: { sh: 0.06 }, 4: { sh: 0.06 } }, { 3: { trunk: -14 }, 4: { trunk: -14 } }],
   lateral_cable: [{ 2: { roll: -18 }, 3: { roll: -18 } }, { 2: { sh: 0.065 }, 3: { sh: 0.065 } }],
-  y_raise: [{ 2: { sh: 0.06 }, 3: { sh: 0.06 } }, { 2: { head: -40 }, 3: { head: -40 } }],
+  y_raise: [{ 3: { sh: 0.06 }, 4: { sh: 0.06 } }, { 3: { head: -40 }, 4: { head: -40 } }],
   lu: [{ 3: { trunk: -16 }, 4: { trunk: -16 } }, null],
   curl_cable: [{ 3: { trunk: -16 }, 4: { trunk: -16 } }, { 3: { h: [0.21, 1.38, 0.38], ep: [0.1, -1, 0.3] }, 4: { h: [0.21, 1.38, 0.38], ep: [0.1, -1, 0.3] } }],
   curl_drag: [{ 2: { h: [0.21, 1.2, 0.36] }, 3: { h: [0.21, 1.2, 0.36] } }, { 2: { trunk: -15 }, 3: { trunk: -15 } }],
