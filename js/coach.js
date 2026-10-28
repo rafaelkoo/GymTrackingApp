@@ -264,3 +264,45 @@ export function strengthReport(id, prefer) {
   const daysOff = days(run[run.length - 1].date, today);
   return { id, start, weekNo, sessions: run.length, base, expE, should, you, gap, state, ahead, comeback: a > 0, daysOff };
 }
+
+// ── weekly review ──
+// Due from the most recent review day until you mark it done.
+export function lastReviewDate() {
+  const want = WD.indexOf(S.reviewDay || 'Sun'), d = new Date(isoToday() + 'T12:00:00');
+  const back = ((d.getDay() + 6) % 7 - want + 7) % 7; d.setDate(d.getDate() - back);
+  return d.toISOString().slice(0, 10);
+}
+export function reviewDue() {
+  const since = lastReviewDate();
+  return !(S.reviews || []).some(r => r.date >= since);
+}
+export function weeklyReview() {
+  const today = isoToday(), from = addDays(today, -6);
+  const inWeek = S.history.filter(h => h.date >= from && h.date <= today && (Object.keys(h.sets || {}).length || (h.cardio || []).length));
+  const dates = [...new Set(inWeek.map(h => h.date))];
+  const planned = WD.filter(d => (S.customPlan[d] || []).length).length;
+  // lifts trained this week
+  const ids = [...new Set(inWeek.flatMap(h => Object.keys(h.sets || {})))].filter(id => EX[id] && !EX[id].isCardio);
+  const lifts = ids.map(id => {
+    if (S.targets[id]) { const r = targetReport(id); return r ? { id, kind: 'target', ok: r.hitThisWeek || r.gap >= 0, r } : null; }
+    const r = strengthReport(id); return r ? { id, kind: 'lift', base: r.state === 'start', ok: r.state === 'ontrack', close: r.state === 'close', r } : null;
+  }).filter(Boolean);
+  // personal bests this week (est. 1RM above everything before)
+  const prs = ids.filter(id => { const ses = sessions(id, false), old = ses.filter(s => s.date < from), now = ses.filter(s => s.date >= from);
+    return old.length && now.length && Math.max(...now.map(s => s.e1)) > Math.max(...old.map(s => s.e1)); });
+  const bp = bodyPlan(), log = S.bodyLog || [], weighed = log.some(x => x.date >= from && x.date <= today);
+  const nextBody = bp ? bp.weeks.find(w => w.date > today) : null;
+  // next week: what to lift on each planned exercise
+  const next = [...new Set(WD.flatMap(d => (S.customPlan[d] || []).map(e => e.id)))].filter(id => EX[id] && !EX[id].isCardio)
+    .map(id => ({ id, s: nextLoad(id) })).filter(x => x.s && x.s.kg).slice(0, 8);
+  const judged = lifts.filter(l => !l.base), behind = judged.filter(l => !l.ok && !l.close).length;
+  const score = (planned ? Math.min(1, dates.length / planned) : 1) * 60 + (judged.length ? (judged.filter(l => l.ok).length / judged.length) * 25 : 12) + (weighed ? 15 : 0);
+  return { from, to: today, judged, done: dates.length, planned, lifts, prs, bp, weighed, nextBody, next, behind, score: Math.round(score) };
+}
+export function saveReview(rv) {
+  if (!Array.isArray(S.reviews)) S.reviews = [];
+  const lastKg = (S.bodyLog || []).filter(x => x.date <= rv.to).pop();
+  S.reviews = S.reviews.filter(r => r.date !== rv.to);
+  S.reviews.push({ date: rv.to, done: rv.done, planned: rv.planned, ok: rv.judged.filter(l => l.ok).length, lifts: rv.judged.length, prs: rv.prs.length, kg: lastKg ? lastKg.kg : null, score: rv.score });
+  S.reviews.sort((a, b) => a.date.localeCompare(b.date)); save('reviews');
+}

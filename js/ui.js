@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -132,6 +132,7 @@ function renderToday() {
     const pl = (S.customPlan[d] || []).length, ds = dSets(d), done = ds.done > 0 || Object.keys(S.logs[d] || {}).some(k => k.startsWith('__cardio__') && S.logs[d][k]);
     return `<button data-a="day" data-v="${d}" aria-pressed="${d === day}" class="${pl ? '' : 'rest'} ${done ? 'done' : ''} ${d === todayKey() ? 'today' : ''}" aria-label="${dayLong(d)} · ${dayTitle(d)}"><span class="d">${dayShort(d)}</span><span class="dot"></span></button>`;
   }).join('')}</nav>`;
+  if (isToday && reviewDue()) h += reviewHTML(weeklyReview());
   if (!plan.length) {
     h += `<div class="card empty">${I('moon')}<div class="h2" style="color:var(--tx)">${t('休息日', 'Rest day')}</div><div>${t('好好恢復，聽日繼續！', 'Recover well, back at it tomorrow!')}</div>
       <button class="btn btn-g" data-a="goPlan" data-v="${day}">${I('plus')}${t('加動作入呢日', 'Add exercises to this day')}</button></div>`;
@@ -228,6 +229,7 @@ function renderProgress() {
     <div class="tile"><span class="k">${t('新紀錄', 'New PRs')}</span><span class="v">${prsThisMonth()}</span><span class="s">${t('今個月', 'this month')}</span></div></div>`;
   h += targetsCard();
   h += liftProgressCard();
+  h += reviewLogCard();
   // exercise chart
   const ids = trainedIds();
   if (!ui.progEx || !ids.includes(ui.progEx)) ui.progEx = ids[0] || null;
@@ -365,6 +367,8 @@ function renderMe() {
     <p style="font-size:15px;line-height:1.5">${esc(t(ba.zh, ba.en))}</p>${bodyPlanHTML()}</section>`; }
   h += `<section class="card"><div class="card-h"><h2 class="h2">${t('身體數據', 'Body stats')}</h2></div><div class="grid3">
     ${[['height', '身高 (cm)', 'Height (cm)'], ['age', '年齡', 'Age'], ['goalWeight', '目標體重', 'Goal (kg)']].map(([f, zh, en]) => `<div class="field"><label for="pf-${f}">${t(zh, en)}</label><input id="pf-${f}" class="input" inputmode="decimal" value="${p[f]}" data-c="prof" data-f="${f}"></div>`).join('')}</div></section>`;
+  h += `<section class="card"><div class="card-h"><h2 class="h2">${t('檢討日', 'Review day')}</h2><span class="sub">${t('每星期睇一次進度', 'Check progress once a week')}</span></div>
+    <div class="days7">${WD.map(d => `<button data-a="reviewDay" data-v="${d}" aria-pressed="${(S.reviewDay || 'Sun') === d}" aria-label="${dayLong(d)}">${dayShort(d)}</button>`).join('')}</div></section>`;
   h += `<section class="card"><div class="card-h"><h2 class="h2">${t('休息時間', 'Rest timer')}</h2><span class="sub">${t('完成一組自動開始', 'Starts when you tick a set')}</span></div>
     <div class="chips">${[30, 60, 90, 120, 180].map(s => `<button class="chip" data-a="rest" data-v="${s}" aria-pressed="${S.restSec === s}">${s < 60 ? s + 's' : s / 60 + (S.lang === 'zh' ? ' 分' : ' min')}</button>`).join('')}</div></section>`;
   h += `<section class="card row" style="justify-content:space-between"><div><div class="eyebrow">${t('目標', 'Goal')}</div><div class="h2">${gd ? t(gd.zh, gd.en) : '—'}</div></div><button class="btn btn-g" data-a="changeGoal">${t('更改', 'Change')}</button></section>`;
@@ -375,7 +379,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.8</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.9</p>`;
   return h;
 }
 
@@ -501,6 +505,42 @@ function strengthReportHTML(r) {
       : t(`落後 ${-pct}%。檢查吓每星期有冇練夠呢個動作、瞓得夠唔夠、蛋白質夠唔夠；連續做唔足就減 10% 再加返上去。`, `${-pct}% behind. Check you train it every week, sleep and protein; if you keep missing reps, drop 10% and build back up.`);
   }
   return `<div class="report ${cls}"><span class="rk">${wk}</span><div><b class="num">${main}</b><span>${msg}</span><span class="num">${t('之後', 'Next')}：${r.ahead.map(a => t(`${a.k} 週後 ${set(a)}`, `in ${a.k} wk ${set(a)}`)).join(' · ')}</span></div></div>`;
+}
+function reviewHTML(rv) {
+  const md = d => d.slice(5).replace('-', '/');
+  const g = grade(rv.score);
+  const tips = [];
+  if (rv.planned && rv.done < rv.planned) tips.push(t(`今個星期練咗 ${rv.done} 日，計劃係 ${rv.planned} 日。下星期預先揀定時間，或者將計劃改少一日都得。`, `You trained ${rv.done} of ${rv.planned} planned days. Book the times ahead, or plan one day fewer.`));
+  rv.judged.filter(l => !l.ok && !l.close).forEach(l => tips.push(t(`${exName(EX[l.id])} 落後：下星期每次都做足先加重；連續兩次做唔足就減 10%。`, `${exName(EX[l.id])} is behind: add weight only after hitting every rep; drop 10% after two misses.`)));
+  if (!rv.weighed) tips.push(t('今個星期未記體重，記低先比較到減重進度。', 'No weigh-in this week; log one so the weight plan can compare.'));
+  if (rv.bp && rv.bp.ahead !== null && rv.bp.ahead < -0.5) tips.push(t('體重落後計劃：檢查食量同步數。', 'Weight is behind plan: check food and steps.'));
+  if (!tips.length) tips.push(t('全部跟上計劃，下星期照做！', 'Everything on plan. Same again next week!'));
+  const liftRow = l => {
+    const icon = l.base ? '●' : l.ok ? '✓' : l.close ? '≈' : '✗', cls = l.base ? 'next' : l.ok ? 'hit' : l.close ? 'now' : 'miss';
+    const r = l.r, txt = l.kind === 'target' ? t(`目標週：${r.wk.kg} kg × ${r.wk.reps}`, `Target week: ${r.wk.kg} kg × ${r.wk.reps}`)
+      : r.state === 'start' ? t(`起點 ${r.you ? r.you.kg + ' kg × ' + r.you.reps : ''}`, `Baseline ${r.you ? r.you.kg + ' kg × ' + r.you.reps : ''}`)
+      : `${t('應該', 'Plan')} ${r.should.kg} kg × ${r.should.reps}${r.you ? ` · ${t('你', 'you')} ${r.you.kg} kg × ${r.you.reps}` : ''}`;
+    return `<li class="${cls}"><span class="n">${esc(exName(EX[l.id]))}</span><span class="v num">${txt}</span><span class="i">${icon}</span></li>`;
+  };
+  return `<section class="card hot review"><div class="card-h"><h2 class="h2">${t('每週檢討', 'Weekly review')}</h2><span class="sub small num">${md(rv.from)} – ${md(rv.to)}</span></div>
+    <div class="grid3" style="margin-bottom:10px">
+      <div class="tile"><span class="k">${t('訓練', 'Workouts')}</span><span class="v">${rv.done}<small style="font-size:14px;color:var(--tx2)">/${rv.planned}</small></span><span class="s">${t('日', 'days')}</span></div>
+      <div class="tile"><span class="k">${t('動作跟上', 'Lifts on plan')}</span><span class="v">${rv.judged.length ? `${rv.judged.filter(l => l.ok).length}<small style="font-size:14px;color:var(--tx2)">/${rv.judged.length}</small>` : '—'}</span><span class="s">${rv.lifts.length - rv.judged.length ? t(`${rv.lifts.length - rv.judged.length} 個新起點`, `${rv.lifts.length - rv.judged.length} new baselines`) : rv.prs.length ? t(`${rv.prs.length} 個新紀錄`, `${rv.prs.length} PRs`) : t('個動作', 'lifts')}</span></div>
+      <div class="tile"><span class="k">${t('評級', 'Grade')}</span><span class="v" style="color:var(--acc)">${g}</span><span class="s">${rv.score} / 100</span></div></div>
+    ${rv.bp ? bodyReportHTML(rv.bp) : ''}
+    ${!rv.weighed ? `<div class="row" style="margin-bottom:10px"><label class="sr" for="rvW">${t('今日體重', 'Today\'s weight')}</label><input id="rvW" class="input" inputmode="decimal" placeholder="${t('今日體重 kg', 'Today\'s weight kg')}" style="flex:1"><button class="btn btn-g" data-a="rvLogW">${t('記錄', 'Log')}</button></div>` : ''}
+    ${rv.lifts.length ? `<h3 class="h3" style="margin:6px 0">${t('今個星期嘅動作', 'This week\'s lifts')}</h3><ul class="rvlist">${rv.lifts.map(liftRow).join('')}</ul>` : ''}
+    <h3 class="h3" style="margin:12px 0 6px">${t('要改進', 'To work on')}</h3><ul class="rvtips">${tips.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    ${rv.next.length || rv.nextBody ? `<h3 class="h3" style="margin:12px 0 6px">${t('下星期目標', 'Next week')}</h3><ul class="rvlist">${rv.nextBody ? `<li class="next"><span class="n">${t('體重', 'Body weight')}</span><b class="v num">${rv.nextBody.kg} kg</b></li>` : ''}${rv.next.map(x => `<li class="next"><span class="n">${esc(exName(EX[x.id]))}</span><b class="v num">${x.s.kg} kg × ${x.s.reps}</b></li>`).join('')}</ul>` : ''}
+    <button class="btn btn-p btn-w" data-a="reviewDone" style="margin-top:12px">${I('check')}${t('完成檢討', 'Finish review')}</button></section>`;
+}
+function reviewLogCard() {
+  const list = (S.reviews || []).slice(-8).reverse();
+  let h = `<section class="card"><div class="card-h"><h2 class="h2">${t('每週檢討', 'Weekly reviews')}</h2><button class="btn btn-g" data-a="reviewOpen" style="min-height:36px;padding:0 12px">${t('睇今週', 'This week')}</button></div>`;
+  if (ui.reviewOpen) h += '</section>' + reviewHTML(weeklyReview()) + '<section class="card">';
+  h += list.length ? `<ol class="weeks">${list.map(r => `<li class="wk ${r.score >= 70 ? 'hit' : r.score >= 45 ? 'now' : 'miss'}"><span class="wd num" style="width:52px">${r.date.slice(5).replace('-', '/')}</span><span class="num" style="flex:1;font-size:13px">${r.lifts ? t(`練 ${r.done}/${r.planned} 日 · 動作 ${r.ok}/${r.lifts}`, `${r.done}/${r.planned} days · lifts ${r.ok}/${r.lifts}`) : t(`練 ${r.done}/${r.planned} 日`, `${r.done}/${r.planned} days`)}${r.kg ? ` · ${r.kg} kg` : ''}</span><b class="num">${grade(r.score)}</b><span class="ws"></span></li>`).join('')}</ol>`
+    : `<p class="sub small">${t(`每逢${dayLong(S.reviewDay || 'Sun')}，「今日」頁會出檢討。完成之後會記低喺度。`, `Every ${dayLong(S.reviewDay || 'Sun')} a review appears on Today. Finished reviews are listed here.`)}</p>`;
+  return h + '</section>';
 }
 function liftProgressCard() {
   const list = trainedIds().filter(id => !S.targets[id]).map(id => strengthReport(id)).filter(r => r && r.daysOff <= 42)
@@ -821,6 +861,13 @@ const A = {
     (S.logs[d][id] || []).forEach(s => { if (!s.done) { s.weight = kg; s.reps = r; } }); save('logs'); toast(t(`已套用 ${kg} kg`, `Set to ${kg} kg`)); render();
   },
   tgPick() { ui.tgPick = !ui.tgPick; render(); },
+  reviewDone() { saveReview(weeklyReview()); ui.reviewOpen = false; toast(t('檢討完成，下星期見！', 'Review saved. See you next week!')); render(); },
+  reviewOpen() { ui.reviewOpen = !ui.reviewOpen; render(); },
+  reviewDay(el) { S.reviewDay = el.dataset.v; save('reviewDay'); render(); },
+  rvLogW() {
+    const v = num($('#rvW').value); if (!v || v < 25 || v > 300) { toast(t('請輸入正確體重', 'Enter a valid weight')); return; }
+    S.profile.weight = v; save('profile'); logWeight(v); toast(t('已記錄', 'Logged')); render();
+  },
   bodyRestart() { ensureBodyStart(true); toast(t('體重計劃由今日重新計', 'Weight plan restarted from today')); render(); },
   tgEdit(el) { ui.tgEdit = el.dataset.id; const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },
   tgCancel(el) { ui.tgEdit = null; const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },

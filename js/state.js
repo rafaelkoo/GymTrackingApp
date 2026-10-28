@@ -31,7 +31,9 @@ export const S = {
   logsWeek: DB.get('logsWeek', null),
   lastDay: DB.get('lastDay', null),
   targets: DB.get('targets', {}),
-  logDates: DB.get('logDates', {})
+  logDates: DB.get('logDates', {}),
+  reviewDay: DB.get('reviewDay', 'Sun'),
+  reviews: DB.get('reviews', [])
 };
 export function save(...keys) { for (const k of keys) DB.set(k, S[k]); }
 export const t = (zh, en) => (S.lang === 'zh' ? zh : en);
