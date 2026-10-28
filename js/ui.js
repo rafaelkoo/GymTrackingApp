@@ -122,6 +122,7 @@ function exDone(day, e) {
 function isOpen(day, e, firstOpen) {
   const k = day + '__' + e.id, v = S.collapsedEx[k];
   if (v === true) return false; if (v === false) return true;
+  if (exDone(day, e)) return false;   // finished exercises fold away until you tap them
   return e.id === firstOpen;
 }
 function renderToday() {
@@ -862,6 +863,9 @@ const A = {
       }
       startTimer(S.restSec || 90);
     }
+    // the last set of an exercise ticked: fold it (and let the next one open)
+    const pe = (S.customPlan[d] || []).find(x => x.id === id);
+    if (s.done && pe && exDone(d, pe)) { delete S.collapsedEx[d + '__' + id]; save('collapsedEx'); }
     save('logs'); upsertSession(d); render();
   },
   setCount(el) {

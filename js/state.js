@@ -38,7 +38,7 @@ export const S = {
 export function save(...keys) { for (const k of keys) DB.set(k, S[k]); }
 export const t = (zh, en) => (S.lang === 'zh' ? zh : en);
 // running app version; sw.js VERSION is 'fittrack-v' + this (keep the two in step)
-export const APP_VERSION = '3.8.1';
+export const APP_VERSION = '3.9.0';
 
 // ---------- dates ----------
 export function todayKey() { return WD[(new Date().getDay() + 6) % 7]; }
@@ -105,7 +105,8 @@ export function rolloverDay() {
     }
   }
   S.completedTasks = {};   // habits are daily
-  S.lastDay = today; save('logs', 'lastDay', 'completedTasks');
+  S.collapsedEx = {};      // ticks are cleared, so every card goes back to its default open/folded state
+  S.lastDay = today; save('logs', 'lastDay', 'completedTasks', 'collapsedEx');
   return true;
 }
 
