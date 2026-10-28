@@ -6,6 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -170,6 +171,7 @@ function strengthCard(day, e, idx, firstOpen) {
       ${sl ? `<span class="tag">${t('力量', 'Strength')}: ${t(sl.l[0], sl.l[1])}</span>` : ''}
       ${last ? `<span class="tag">${t('上次', 'Last')} ${last.date.slice(5).replace('-', '/')}</span>` : ''}
       <button class="tag acc" data-a="openEx" data-id="${e.id}" data-tab="how" style="margin-left:auto;height:32px">${I('cube')}&nbsp;${t('3D 示範', '3D demo')}</button></div>
+      ${(() => { const sg = nextLoad(e.id, day); if (!sg || nDone) return ''; return `<div class="sugg"><span class="sugg-i ${sg.kind}">${I(sg.kind === 'up' ? 'chart' : sg.kind === 'down' ? 'reset' : 'target')}</span><div style="flex:1;min-width:0"><b class="num">${t('建議', 'Try')} ${sg.kg ? sg.kg + ' kg × ' : ''}${sg.reps} ${t('次', 'reps')}</b><span>${esc(t(sg.zh, sg.en))}</span></div>${sg.kg ? `<button class="btn btn-g" data-a="applySugg" data-d="${day}" data-id="${e.id}" data-v="${sg.kg}" data-r="${sg.reps}">${t('套用', 'Use')}</button>` : ''}</div>`; })()}
       <div class="sets-h"><span>${t('組', 'SET')}</span><span>${t('上次', 'LAST')}</span><span>KG</span><span>${t('次數', 'REPS')}</span><span></span></div>`;
     sets.forEach((s, i) => {
       const p = last && last.sets[i] ? `${num(last.sets[i].weight)}×${esc(last.sets[i].reps)}` : '—';
@@ -223,6 +225,7 @@ function renderProgress() {
     <div class="tile"><span class="k">${t('連續', 'Streak')}</span><span class="v" style="color:var(--acc)">${streak()}</span><span class="s">${t('日', 'days')}</span></div>
     <div class="tile"><span class="k">${t('本週', 'This week')}</span><span class="v">${weekly}</span><span class="s">${t('分 · 評級 ', 'pts · grade ')}${g}</span></div>
     <div class="tile"><span class="k">${t('新紀錄', 'New PRs')}</span><span class="v">${prsThisMonth()}</span><span class="s">${t('今個月', 'this month')}</span></div></div>`;
+  h += targetsCard();
   // exercise chart
   const ids = trainedIds();
   if (!ui.progEx || !ids.includes(ui.progEx)) ui.progEx = ids[0] || null;
@@ -355,6 +358,9 @@ function renderMe() {
     <div class="tile"><span class="k">TDEE</span><span class="v">${tdee(p.weight, p.height, p.age).toLocaleString()}</span><span class="s">kcal / ${t('日', 'day')}</span></div>
     <div class="tile"><span class="k">${t('蛋白質', 'Protein')}</span><span class="v">${Math.round(p.weight * 1.8)}</span><span class="s">g / ${t('日', 'day')}</span></div>
     <div class="tile"><span class="k">${t('飲水', 'Water')}</span><span class="v">${(p.weight * 0.033).toFixed(1)}</span><span class="s">L / ${t('日', 'day')}</span></div></div>`;
+  { const ba = bodyAdvice(); h += `<section class="card"><div class="card-h"><h2 class="h2">${t('體重目標建議', 'Weight goal advice')}</h2>${stateChip(ba.state)}</div>
+    <div class="row" style="gap:8px;margin-bottom:10px"><div class="field" style="flex:1"><label for="pf-goalDate">${t('目標日期（可選）', 'Goal date (optional)')}</label><input id="pf-goalDate" type="date" class="input" style="font-size:16px" value="${p.goalDate || ''}" data-c="goalDate"></div></div>
+    <p style="font-size:15px;line-height:1.5">${esc(t(ba.zh, ba.en))}</p></section>`; }
   h += `<section class="card"><div class="card-h"><h2 class="h2">${t('身體數據', 'Body stats')}</h2></div><div class="grid3">
     ${[['height', '身高 (cm)', 'Height (cm)'], ['age', '年齡', 'Age'], ['goalWeight', '目標體重', 'Goal (kg)']].map(([f, zh, en]) => `<div class="field"><label for="pf-${f}">${t(zh, en)}</label><input id="pf-${f}" class="input" inputmode="decimal" value="${p[f]}" data-c="prof" data-f="${f}"></div>`).join('')}</div></section>`;
   h += `<section class="card"><div class="card-h"><h2 class="h2">${t('休息時間', 'Rest timer')}</h2><span class="sub">${t('完成一組自動開始', 'Starts when you tick a set')}</span></div>
@@ -367,7 +373,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.3</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.4</p>`;
   return h;
 }
 
@@ -394,6 +400,59 @@ function renderOb() {
       <div class="grow"></div><div class="row"><button class="btn btn-g" data-a="obBack">${I('back')}</button><button class="btn btn-p" style="flex:1" data-a="obFinish">${o.edit ? t('儲存', 'Save') : t('開始訓練', 'Start training')}</button></div>`;
   }
   return h + '</div>';
+}
+
+// ---------- TARGETS ----------
+function stateChip(st) {
+  const M = { done: ['已達標', 'Reached', 'gold'], ontrack: ['進度良好', 'On track', 'acc'], improving: ['有進步', 'Improving', 'acc'], behind: ['落後', 'Behind', 'bad'], late: ['過咗期限', 'Past date', 'bad'], flat: ['停滯', 'Stalled', 'bad'], nodata: ['未有記錄', 'No data', ''], nopace: ['計算中', 'Measuring', ''] }[st] || ['', '', ''];
+  return M[0] ? `<span class="tag ${M[2]}">${t(M[0], M[1])}</span>` : '';
+}
+function targetForm(ex) {
+  const tg = S.targets[ex.id] || {}, sg = nextLoad(ex.id), ses = exSessions(ex.id), best = ses.length ? Math.max(...ses.map(s => s.heaviest)) : 0;
+  const defKg = tg.kg || (best ? Math.ceil(best * 1.1 / 2.5) * 2.5 : ''), defReps = tg.reps || planReps(ex.id);
+  const d = new Date(); d.setDate(d.getDate() + 56); const defBy = tg.by || d.toISOString().slice(0, 10);
+  return `<form class="tform" data-id="${ex.id}" onsubmit="return false">
+    <div class="grid3"><div class="field"><label for="tg-kg">${t('重量 (kg)', 'Weight (kg)')}</label><input id="tg-kg" class="input" inputmode="decimal" value="${defKg}" required></div>
+    <div class="field"><label for="tg-reps">${t('次數', 'Reps')}</label><input id="tg-reps" class="input" inputmode="numeric" value="${defReps}"></div>
+    <div class="field"><label for="tg-by">${t('期限', 'By')}</label><input id="tg-by" type="date" class="input" style="font-size:14px;padding:0 6px" value="${defBy}"></div></div>
+    <div class="row" style="margin-top:10px"><button type="button" class="btn btn-p" style="flex:1" data-a="tgSave" data-id="${ex.id}">${t('儲存目標', 'Save target')}</button><button type="button" class="btn btn-g" data-a="tgCancel" data-id="${ex.id}">${t('取消', 'Cancel')}</button></div></form>`;
+}
+function targetBlock(ex, editing) {
+  const st = targetStatus(ex.id), sg = nextLoad(ex.id);
+  let h = '';
+  if (sg) h += `<section class="card" style="margin-top:12px"><div class="card-h"><h2 class="h3">${t('下次建議', 'Next session')}</h2></div><div class="sugg" style="margin:0"><span class="sugg-i ${sg.kind}">${I(sg.kind === 'up' ? 'chart' : sg.kind === 'down' ? 'reset' : 'target')}</span><div style="flex:1;min-width:0"><b class="num">${sg.kg ? sg.kg + ' kg × ' : ''}${sg.reps} ${t('次', 'reps')}</b><span>${esc(t(sg.zh, sg.en))}</span></div></div></section>`;
+  h += `<section class="card" style="margin-top:${sg ? 0 : 12}px"><div class="card-h"><h2 class="h3">${t('目標', 'Target')}</h2>${st ? stateChip(st.state) : ''}</div>`;
+  if (editing || ui.tgEdit === ex.id) h += targetForm(ex);
+  else if (!st) h += `<p class="sub" style="margin-bottom:10px">${t('設定一個目標，例如喺某日之前做到某個重量，App 會話你進度同點樣調整。', 'Set a target weight and date and the app tracks your pace and tells you how to adjust.')}</p><button class="btn btn-g btn-w" data-a="tgEdit" data-id="${ex.id}">${I('target')}${t('設定目標', 'Set a target')}</button>`;
+  else {
+    const adv = targetAdvice(ex.id, st), tg = st.tg;
+    h += `<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:6px"><b class="num" style="font-size:22px">${tg.kg} kg × ${tg.reps}</b><span class="sub">${tg.by ? t('期限 ', 'by ') + fmtDate(tg.by) : t('冇期限', 'no deadline')}</span></div>
+      <div class="bar" style="margin-bottom:6px"><i style="width:${st.pct}%"></i></div>
+      <div class="row sub small" style="justify-content:space-between;margin-bottom:10px"><span>${t('估算 1RM', 'Est. 1RM')} <b class="num" style="color:var(--tx)">${Math.round(st.cur)}</b> / ${Math.round(st.goal)} kg</span><span class="num">${st.pct}%</span></div>
+      <p style="font-size:15px;line-height:1.5;margin-bottom:10px">${esc(t(adv.zh, adv.en))}</p>
+      <div class="row"><button class="btn btn-g" style="flex:1" data-a="tgEdit" data-id="${ex.id}">${t('修改', 'Edit')}</button><button class="btn btn-g btn-danger" data-a="tgDel" data-id="${ex.id}">${t('刪除', 'Remove')}</button></div>`;
+  }
+  return h + '</section>';
+}
+function targetsCard() {
+  const ids = Object.keys(S.targets || {}).filter(id => EX[id]);
+  let h = `<section class="card hot"><div class="card-h"><h2 class="h2">${t('我嘅目標', 'My targets')}</h2><button class="btn btn-g" data-a="tgPick" style="min-height:36px;padding:0 12px">${I('plus')}${t('新增', 'Add')}</button></div>`;
+  if (ui.tgPick) {
+    const opts = EX_LIST.filter(e => !e.isCardio && !S.targets[e.id]);
+    const tr = trainedIds();
+    opts.sort((a, b) => (tr.includes(b.id) - tr.includes(a.id)) || a.zh.localeCompare(b.zh));
+    h += `<div class="field" style="margin-bottom:10px"><label for="tgPickSel">${t('揀動作', 'Choose an exercise')}</label><select id="tgPickSel" class="input" style="font-size:16px" data-c="tgPick"><option value="">—</option>${opts.map(e => `<option value="${e.id}">${esc(exName(e))}${tr.includes(e.id) ? ' ●' : ''}</option>`).join('')}</select></div>`;
+  }
+  if (!ids.length && !ui.tgPick) h += `<p class="sub">${t('撳「新增」揀一個動作設目標，例如「深蹲 100 kg × 5，12 月前」。', 'Tap Add to set one, e.g. “Squat 100 kg × 5 by December”.')}</p>`;
+  ids.forEach(id => {
+    const st = targetStatus(id), adv = targetAdvice(id, st);
+    h += `<button class="tgrow" data-a="openEx" data-id="${id}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(exName(EX[id]))}</b>${stateChip(st.state)}</div>
+      <div class="row sub small" style="justify-content:space-between;margin:4px 0 6px"><span class="num">${st.tg.kg} kg × ${st.tg.reps}${st.tg.by ? ' · ' + fmtDate(st.tg.by) : ''}</span><span class="num">${st.pct}%</span></div>
+      <div class="bar"><i style="width:${st.pct}%"></i></div><span class="sub small" style="display:block;margin-top:6px">${esc(t(adv.zh, adv.en))}</span></button>`;
+  });
+  const ba = bodyAdvice();
+  h += `<button class="tgrow" data-a="tab" data-v="me"><div class="row" style="justify-content:space-between"><b>${t('體重', 'Body weight')} → ${S.profile.goalWeight} kg</b>${stateChip(ba.state)}</div><span class="sub small" style="display:block;margin-top:6px">${esc(t(ba.zh, ba.en))}</span></button>`;
+  return h + '</section>';
 }
 
 // ---------- EXERCISE SHEET (Summary / History / How to) ----------
@@ -475,6 +534,7 @@ function summaryHTML(ex) {
     <h2 class="h2" style="font-size:24px;margin-top:4px">${esc(exName(ex))}</h2>
     <p class="sub" style="margin-bottom:12px">${t('主要', 'Primary')}：${esc(prim.join('、'))}${sec.length ? ` · ${t('次要', 'Secondary')}：${esc(sec.join('、'))}` : ''}</p>
     <div id="exStats">${summaryStats(ex)}</div>
+    ${ex.isCardio ? '' : `<div id="exTarget">${targetBlock(ex)}</div>`}
     <section class="card" style="margin-top:12px"><h2 class="h3" style="margin-bottom:10px">${t('加入計劃', 'Add to plan')}</h2><div class="days7">${WD.map(d => { const on = (S.customPlan[d] || []).some(x => x.id === ex.id); return `<button data-a="togPlan" data-id="${ex.id}" data-v="${d}" aria-pressed="${on}" aria-label="${dayLong(d)}">${dayShort(d)}<small>${on ? '✓' : '+'}</small></button>`; }).join('')}</div></section>`;
 }
 function historyHTML(ex) {
@@ -680,6 +740,21 @@ const A = {
   },
   v3play(el) { if (!ui.viewer) return; const p = ui.viewer.toggle(); el.innerHTML = I(p ? 'pause' : 'play'); el.setAttribute('aria-label', p ? t('暫停', 'Pause') : t('播放', 'Play')); },
   v3view(el) { ui.viewer && ui.viewer.setView(el.dataset.v); el.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); },
+  applySugg(el) {
+    const { d, id } = el.dataset, kg = num(el.dataset.v), r = +el.dataset.r;
+    (S.logs[d][id] || []).forEach(s => { if (!s.done) { s.weight = kg; s.reps = r; } }); save('logs'); toast(t(`已套用 ${kg} kg`, `Set to ${kg} kg`)); render();
+  },
+  tgPick() { ui.tgPick = !ui.tgPick; render(); },
+  tgEdit(el) { ui.tgEdit = el.dataset.id; const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },
+  tgCancel(el) { ui.tgEdit = null; const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },
+  tgSave(el) {
+    const id = el.dataset.id, kg = num(document.getElementById('tg-kg').value), reps = Math.max(1, Math.round(num(document.getElementById('tg-reps').value) || 1)), by = document.getElementById('tg-by').value || null;
+    if (!kg && EX[id].equip !== 'Bodyweight') { toast(t('請輸入目標重量', 'Enter a target weight')); return; }
+    if (by && by <= isoToday()) { toast(t('期限要喺今日之後', 'Pick a date after today')); return; }
+    setTarget(id, kg, reps, by); ui.tgEdit = null; toast(t('目標已儲存', 'Target saved'));
+    const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[id]); else render();
+  },
+  tgDel(el) { clearTarget(el.dataset.id); toast(t('已刪除目標', 'Target removed')); const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },
   exTab(el) { ui.exv.tab = el.dataset.v; drawSheet(); },
   exMetric(el) { ui.exv.metric = el.dataset.v; ui.exv.sel = null; redrawStats(); },
   v3slow(el) { const on = el.getAttribute('aria-pressed') !== 'true'; el.setAttribute('aria-pressed', on); ui.viewer && ui.viewer.setSlowmo(on); },
@@ -761,6 +836,8 @@ const C = {
   w(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.weight = num(el.value); save('logs'); if (s.done) upsertSession(d); },
   r(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.reps = Math.max(0, Math.round(num(el.value))); save('logs'); if (s.done) upsertSession(d); },
   progEx(el) { ui.progEx = el.value; render(); },
+  tgPick(el) { if (!el.value) return; ui.tgPick = false; ui.tgEdit = el.value; openSheet(el.value, 'sum'); },
+  goalDate(el) { S.profile.goalDate = el.value || null; save('profile'); render(); },
   exRange(el) { ui.exv.range = el.value; ui.exv.sel = null; redrawStats(); },
   prof(el) { const f = el.dataset.f, v = num(el.value); if (v > 0) { S.profile[f] = v; save('profile'); render(); } },
   obNum(el) { ui.ob.ans[el.dataset.q] = +el.value; const o = document.getElementById('obNumV'); if (o) o.textContent = el.value; }

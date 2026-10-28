@@ -30,6 +30,7 @@ export const S = {
   lastBackup: DB.get('lastBackup', null),
   logsWeek: DB.get('logsWeek', null),
   lastDay: DB.get('lastDay', null),
+  targets: DB.get('targets', {}),
   logDates: DB.get('logDates', {})
 };
 export function save(...keys) { for (const k of keys) DB.set(k, S[k]); }
