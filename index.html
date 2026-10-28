@@ -290,7 +290,6 @@ const LIB=[
   {id:'dip',name:'Dip',zh:'雙槓臂屈伸',cat:'arms',muscle:['Triceps','Chest'],equip:'Bodyweight',level:'Intermediate',dEn:'Lower until elbows at 90°, press up fully.',dZh:'下沉至手肘90度，完全推起。',lib3d:'ohp'},
   {id:'plank',name:'Plank',zh:'平板支撐',cat:'core',muscle:['Core','Shoulders'],equip:'Bodyweight',level:'Beginner',dEn:'Forearms on floor, body straight head to heels. Brace abs.',dZh:'前臂撐地，身體從頭至腳保持一直線，收緊腹肌。',lib3d:'lunge'},
   {id:'treadmill',name:'Treadmill Run',zh:'跑步機',cat:'cardio',muscle:['Full Body'],equip:'Machine',level:'Beginner',dEn:'Build pace gradually, land midfoot, slight forward lean.',dZh:'逐漸加速，以腳掌中部著地，輕微前傾。',lib3d:'lunge'},
-,
   // ── Chest ──
   {id:'cable_fly',name:'Cable Fly',zh:'滑輪飛鳥',cat:'chest',muscle:['Chest','Front Deltoid'],equip:'Cable',level:'Beginner',dEn:'Stand between cables, arms slightly bent, bring handles together in front of chest.',dZh:'站於滑輪中間，手臂略彎，將把手在胸前合攏。',lib3d:'curl'},
   {id:'pushup',name:'Push-up',zh:'掌上壓',cat:'chest',muscle:['Chest','Triceps','Shoulders'],equip:'Bodyweight',level:'Beginner',dEn:'Hands shoulder-width, lower chest to floor then press up. Keep body straight.',dZh:'手掌與肩同寬，胸部貼近地板後推起，保持身體成直線。',lib3d:'curl'},
@@ -1232,14 +1231,41 @@ function rProfile(){
     <div style="display:flex;justify-content:space-between"><div style="font-size:10px;color:var(--text3)">${t('仍需減','Still to lose')} <span style="color:#f87171;font-weight:700">${wl}kg</span></div><div style="font-size:10px;color:#4ade80;font-weight:700">${pct}% ${t('達標','done')}</div></div>
   </div>`;
   if(gd)h+=`<div class="card" style="padding:12px;margin-bottom:9px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:7px">${t('當前目標','Current Goal')}</div><div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:9px"><div style="width:34px;height:34px;border-radius:8px;background:${gd.bg};display:flex;align-items:center;justify-content:center"><i class="ti ${gd.icon}" style="font-size:17px;color:${gd.color}"></i></div><div style="font-size:13px;font-weight:700;color:${gd.color}">${t(gd.zh,gd.en)}</div></div><button onclick="resetGoal()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text3);cursor:pointer">${t('更改','Change')}</button></div></div>`;
-  h+=`<button class="btn-ghost" onclick="exportData()" style="margin-bottom:6px"><i class="ti ti-download" style="font-size:14px;margin-right:4px;vertical-align:-2px"></i>${t('匯出資料 (JSON)','Export data (JSON)')}</button>`;
+  h+=`<button class="btn-ghost" onclick="exportData()" style="margin-bottom:6px"><i class="ti ti-download" style="font-size:14px;margin-right:4px;vertical-align:-2px"></i>${t('匯出備份','Export backup')}</button>`;
+  h+=`<button class="btn-ghost" onclick="importData()" style="margin-bottom:6px"><i class="ti ti-upload" style="font-size:14px;margin-right:4px;vertical-align:-2px"></i>${t('匯入備份','Import backup')}</button>`;
   h+=`<button class="btn-ghost" onclick="if(confirm('${t('重置本週積分？','Reset weekly scores?')}'))resetScores()" style="margin-bottom:14px;color:#f87171;border-color:rgba(248,113,113,.25)"><i class="ti ti-refresh" style="font-size:14px;margin-right:4px;vertical-align:-2px"></i>${t('重置本週積分','Reset weekly scores')}</button>`;
   return h;
 }
 function upProfile(f,v){S.profile[f]=parseFloat(v)||S.profile[f];sv('profile');rHdr();}
 function resetGoal(){if(!confirm(t('確定要重新設定目標？','Reset your goal?')))return;S.goalId=null;S.goalAnswers={};S.weekTasks=null;sv('goalId','goalAnswers','weekTasks');document.getElementById('onboard').classList.remove('hidden');const app=document.getElementById('app');app.style.display='none';S.obStep=1;S.obGoal=null;S.obAnswers={};S.obQIdx=0;showOb();}
 function resetScores(){S.scores.weekly=0;S.scores.breakdown={};sv('scores');renderApp();toast(t('積分已重置','Scores reset'));}
-function exportData(){const d={profile:S.profile,goalId:S.goalId,logs:S.logs,history:S.history,scores:S.scores,weekTasks:S.weekTasks,customPlan:S.customPlan,exportedAt:new Date().toISOString()};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='fittrack-data.json';a.click();toast(t('資料已匯出','Data exported'));}
+function exportData(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ft_'))data[k]=localStorage.getItem(k);}
+  const payload={app:'FitTrack',version:1,exportedAt:new Date().toISOString(),data};
+  const name='fittrack-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const file=(typeof File==='function')?new File([blob],name,{type:'application/json'}):null;
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:name}).then(()=>toast(t('已匯出','Exported'))).catch(err=>{if(err&&err.name!=='AbortError')dlBlob(blob,name);});
+  }else dlBlob(blob,name);
+}
+function dlBlob(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast(t('已匯出','Exported'));}
+function importData(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{
+      const p=JSON.parse(r.result);let entries;
+      if(p&&p.data&&typeof p.data==='object')entries=Object.entries(p.data);
+      else if(p&&p.logs)entries=Object.entries(p).filter(([k])=>k!=='exportedAt').map(([k,v])=>['ft_'+k,JSON.stringify(v)]);
+      else throw new Error('Not a FitTrack backup');
+      if(!confirm(t('會用備份覆蓋現有資料，確定？','This will replace your current data with the backup. Continue?')))return;
+      entries.forEach(([k,v])=>{if(k.startsWith('ft_'))localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));});
+      location.reload();
+    }catch(e){toast(t('匯入失敗：','Import failed: ')+e.message);}};
+    r.readAsText(f);};
+  inp.click();
+}
 function toggleLang(){S.lang=S.lang==='zh'?'en':'zh';DB.set('lang',S.lang);renderApp();}
 function toggleBMI(){S.bmiOpen=!S.bmiOpen;rHdr();}
 
