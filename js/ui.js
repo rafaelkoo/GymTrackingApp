@@ -168,7 +168,7 @@ function strengthCard(day, e, idx, firstOpen) {
       ${maxNow > best && best > 0 ? `<span class="tag acc">${t('新紀錄！', 'New PR!')}</span>` : ''}
       ${sl ? `<span class="tag">${t('力量', 'Strength')}: ${t(sl.l[0], sl.l[1])}</span>` : ''}
       ${last ? `<span class="tag">${t('上次', 'Last')} ${last.date.slice(5).replace('-', '/')}</span>` : ''}
-      <button class="tag acc" data-a="openEx" data-id="${e.id}" style="margin-left:auto;height:32px">${I('cube')}&nbsp;${t('3D 示範', '3D demo')}</button></div>
+      <button class="tag acc" data-a="openEx" data-id="${e.id}" data-tab="how" style="margin-left:auto;height:32px">${I('cube')}&nbsp;${t('3D 示範', '3D demo')}</button></div>
       <div class="sets-h"><span>${t('組', 'SET')}</span><span>${t('上次', 'LAST')}</span><span>KG</span><span>${t('次數', 'REPS')}</span><span></span></div>`;
     sets.forEach((s, i) => {
       const p = last && last.sets[i] ? `${num(last.sets[i].weight)}×${esc(last.sets[i].reps)}` : '—';
@@ -236,6 +236,7 @@ function renderProgress() {
     h += `<div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px">
       <div class="field" style="flex:1;min-width:0"><label for="progEx">${t('動作', 'Exercise')}</label>
       <select id="progEx" data-c="progEx" class="input" style="font-size:18px">${ids.map(id => `<option value="${id}" ${id === ui.progEx ? 'selected' : ''}>${esc(exName(EX[id]))}</option>`).join('')}</select></div>
+      <button class="ibtn" data-a="openEx" data-id="${ui.progEx}" aria-label="${t('睇動作詳情', 'Open exercise details')}" style="align-self:flex-end">${I('right')}</button>
       <div style="text-align:right;flex-shrink:0"><div class="num" style="font-size:26px;font-weight:800;color:var(--acc)">${lastP ? lastP.weight : best} kg</div>
       <div class="sub">${first && lastP && ser.length > 1 ? `${lastP.weight - first.weight >= 0 ? '+' : ''}${+(lastP.weight - first.weight).toFixed(1)} kg` : `PR ${best} kg`}</div></div></div>`;
     h += ser.length >= 2 ? lineChart(ser.map(p => ({ v: p.weight, pr: p.isPR })), { label: t(`${exName(EX[ui.progEx])} 最高重量走勢`, `${exName(EX[ui.progEx])} top weight trend`) }) + `<div class="axis"><span>${ser[0].date.slice(5).replace('-', '/')}</span><span>● ${t('黃點 = 新紀錄', 'gold = PR')}</span><span>${lastP.date.slice(5).replace('-', '/')}</span></div>`
@@ -378,13 +379,98 @@ function renderOb() {
   return h + '</div>';
 }
 
-// ---------- EXERCISE SHEET ----------
-function sheetHTML(ex) {
+// ---------- EXERCISE SHEET (Summary / History / How to) ----------
+const METRICS = [
+  { id: 'heaviest', zh: '最重重量', en: 'Heaviest weight', u: 'kg' },
+  { id: 'e1rm', zh: '估算 1RM', en: 'Est. 1RM', u: 'kg' },
+  { id: 'bestSet', zh: '最佳一組容量', en: 'Best set volume', u: 'kg' },
+  { id: 'volume', zh: '單次總容量', en: 'Session volume', u: 'kg' },
+  { id: 'reps', zh: '總次數', en: 'Total reps', u: 'reps' }
+];
+const RANGES = [['1m', '1 個月', '1 month', 31], ['3m', '3 個月', '3 months', 92], ['1y', '1 年', '1 year', 366], ['all', '全部', 'All time', 0]];
+function exSessions(id) {
+  const out = [];
+  for (const h of S.history) {
+    const sets = h.sets && h.sets[id]; if (!Array.isArray(sets)) continue;
+    const ds = sets.filter(x => x.done !== false && num(x.reps) > 0); if (!ds.length) continue;
+    const w = x => num(x.weight), r = x => num(x.reps);
+    out.push({
+      date: h.date, sets: ds,
+      heaviest: Math.max(...ds.map(w)),
+      e1rm: Math.max(...ds.map(x => (r(x) === 1 ? w(x) : w(x) * (1 + r(x) / 30)))),   // Epley
+      bestSet: Math.max(...ds.map(x => w(x) * r(x))),
+      volume: ds.reduce((a, x) => a + w(x) * r(x), 0),
+      reps: ds.reduce((a, x) => a + r(x), 0)
+    });
+  }
+  out.sort((a, b) => a.date.localeCompare(b.date));
+  let run = 0; out.forEach(o => { o.pr = o.heaviest > run && run > 0; if (o.heaviest > run) run = o.heaviest; });
+  return out;
+}
+const fmtVal = (v, u) => u === 'reps' ? `${Math.round(v)} ${t('次', 'reps')}` : `${(Math.round(v * 10) / 10).toLocaleString()} kg`;
+const fmtDate = (iso, long) => new Date(iso + 'T12:00:00').toLocaleDateString(S.lang === 'zh' ? 'zh-HK' : 'en-GB', long ? { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' } : { month: 'short', day: 'numeric' });
+function niceStep(span) { const raw = span / 3, p = Math.pow(10, Math.floor(Math.log10(raw || 1))), n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
+function metricChart(pts, metric, sel) {
+  const W = 340, H = 176, L = 46, R = 10, Tp = 10, B = 26, u = METRICS.find(m => m.id === metric).u;
+  const vs = pts.map(p => p.v); let lo = Math.min(...vs), hi = Math.max(...vs); if (hi === lo) { hi += 1; lo = Math.max(0, lo - 1); }
+  const st = niceStep(hi - lo); lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st;
+  const t0 = new Date(pts[0].date).getTime(), t1 = new Date(pts[pts.length - 1].date).getTime(), span = Math.max(1, t1 - t0);
+  const x = p => pts.length === 1 ? (L + W - R) / 2 : L + (new Date(p.date).getTime() - t0) / span * (W - L - R);
+  const y = v => Tp + (1 - (v - lo) / (hi - lo)) * (H - Tp - B);
+  let g = '';
+  for (let v = lo; v <= hi + 1e-9; v += st) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--s2)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="ax">${u === 'reps' ? Math.round(v) : (+v.toFixed(1)).toLocaleString()}${u === 'kg' ? ' kg' : ''}</text>`;
+  const ticks = pts.length < 3 ? [0, pts.length - 1] : [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
+  [...new Set(ticks)].forEach((k, n, arr) => { g += `<text x="${x(pts[k])}" y="${H - 6}" text-anchor="${arr.length > 1 && n === 0 ? 'start' : n === arr.length - 1 && arr.length > 1 ? 'end' : 'middle'}" class="ax">${fmtDate(pts[k].date)}</text>`; });
+  const line = pts.map(p => `${x(p).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+  const sp = pts[sel];
+  return `<svg class="mchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t('走勢圖', 'Trend chart'))}" data-n="${pts.length}" data-l="${L}" data-r="${R}" data-w="${W}">
+    ${g}${sp ? `<line x1="${x(sp)}" x2="${x(sp)}" y1="${Tp}" y2="${H - B}" stroke="var(--line2)" stroke-dasharray="3 3"/>` : ''}
+    <polyline points="${line}" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>
+    ${pts.map((p, k) => `<circle cx="${x(p)}" cy="${y(p.v)}" r="${k === sel ? 5.5 : 3.2}" fill="${k === sel ? 'var(--acc)' : 'var(--s1)'}" stroke="var(--acc)" stroke-width="2"/>`).join('')}
+    ${pts.map(p => `<i data-x="${x(p)}"></i>`).join('')}</svg>`;
+}
+function summaryStats(ex) {
+  if (ex.isCardio) return `<div class="empty" style="padding:18px">${I('run')}<div>${t('有氧動作記錄嘅係完成與否，冇重量走勢。', 'Cardio is logged as done or not, so there is no weight trend.')}</div></div>`;
+  const all = exSessions(ex.id);
+  if (!all.length) return `<div class="empty" style="padding:18px">${I('chart')}<div>${t('完成並儲存一次有呢個動作嘅訓練，呢度就會見到走勢。', 'Finish and save a workout with this exercise to see your trend here.')}</div></div>`;
+  const E = ui.exv;
+  const days = RANGES.find(r => r[0] === E.range)[3];
+  const cut = days ? new Date(Date.now() - days * 864e5).toISOString().slice(0, 10) : '';
+  let ses = all.filter(s => s.date >= cut); if (!ses.length) ses = all.slice(-1);
+  const hasW = all.some(s => s.heaviest > 0);
+  if (!hasW && E.metric !== 'reps') E.metric = 'reps';
+  const m = METRICS.find(x => x.id === E.metric);
+  const pts = ses.map(s => ({ date: s.date, v: s[m.id] }));
+  if (E.sel == null || E.sel >= pts.length) E.sel = pts.length - 1;
+  const cur = pts[E.sel];
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:6px">
+      <div><span class="num" style="font-size:30px;font-weight:800">${fmtVal(cur.v, m.u)}</span> <span class="sub" style="color:var(--acc);font-weight:600">${fmtDate(cur.date)}</span></div>
+      <label class="sr" for="exRange">${t('時間範圍', 'Range')}</label>
+      <select id="exRange" class="rsel" data-c="exRange">${RANGES.map(r => `<option value="${r[0]}" ${r[0] === E.range ? 'selected' : ''}>${t(r[1], r[2])}</option>`).join('')}</select></div>
+    ${metricChart(pts, m.id, E.sel)}
+    <div class="chips" style="margin-top:8px">${METRICS.filter(x => hasW || x.id === 'reps').map(x => `<button class="chip" data-a="exMetric" data-v="${x.id}" aria-pressed="${x.id === m.id}">${t(x.zh, x.en)}</button>`).join('')}</div>
+    <p class="sub small" style="margin-top:8px">${t(`共 ${all.length} 次訓練記錄${E.metric === 'e1rm' ? '。1RM 用 Epley 公式由重量同次數估算。' : '。撳圖上嘅點睇嗰日數字。'}`, `${all.length} sessions logged.${E.metric === 'e1rm' ? ' 1RM is estimated from weight and reps (Epley).' : ' Tap a dot to see that day.'}`)}</p>`;
+}
+function summaryHTML(ex) {
+  const prim = ex.muscles.slice(0, 1).map(m => t(muscleZh(m), m)), sec = ex.muscles.slice(1).map(m => t(muscleZh(m), m));
+  return `<div class="stage studio"><div class="cv" id="cv"></div><div class="load" id="cvLoad">${t('載入 3D 模型…', 'Loading 3D model…')}</div>
+      <div class="ov" style="justify-content:flex-end"><button class="ibtn round" data-a="v3play" id="v3play" aria-label="${t('暫停', 'Pause')}">${I('pause')}</button></div></div>
+    <h2 class="h2" style="font-size:24px;margin-top:4px">${esc(exName(ex))}</h2>
+    <p class="sub" style="margin-bottom:12px">${t('主要', 'Primary')}：${esc(prim.join('、'))}${sec.length ? ` · ${t('次要', 'Secondary')}：${esc(sec.join('、'))}` : ''}</p>
+    <div id="exStats">${summaryStats(ex)}</div>
+    <section class="card" style="margin-top:12px"><h2 class="h3" style="margin-bottom:10px">${t('加入計劃', 'Add to plan')}</h2><div class="days7">${WD.map(d => { const on = (S.customPlan[d] || []).some(x => x.id === ex.id); return `<button data-a="togPlan" data-id="${ex.id}" data-v="${d}" aria-pressed="${on}" aria-label="${dayLong(d)}">${dayShort(d)}<small>${on ? '✓' : '+'}</small></button>`; }).join('')}</div></section>`;
+}
+function historyHTML(ex) {
+  if (ex.isCardio) return `<div class="empty">${I('run')}<div>${t('有氧動作冇逐組記錄。', 'Cardio has no set-by-set log.')}</div></div>`;
+  const all = exSessions(ex.id).reverse();
+  if (!all.length) return `<div class="empty">${I('book')}<div>${t('未有記錄。喺「今日」完成並儲存訓練就會出現喺度。', 'Nothing logged yet. Finish and save a workout in Today and it shows up here.')}</div></div>`;
+  return all.map(s => `<section class="card"><div class="card-h" style="margin-bottom:8px"><h3 class="h3">${fmtDate(s.date, true)}</h3>${s.pr ? `<span class="tag gold">${I('trophy')}&nbsp;PR</span>` : ''}</div>
+    ${s.sets.map((x, k) => `<div class="hrow"><span class="n num">${k + 1}</span><span class="num">${num(x.weight)} kg × ${esc(x.reps)}</span><span class="muted small num">1RM ${Math.round(num(x.reps) === 1 ? num(x.weight) : num(x.weight) * (1 + num(x.reps) / 30))}</span></div>`).join('')}
+    <div class="row sub small" style="justify-content:space-between;margin-top:8px"><span>${t('總容量', 'Volume')} <b class="num" style="color:var(--tx)">${Math.round(s.volume).toLocaleString()} kg</b></span><span>${t('總次數', 'Reps')} <b class="num" style="color:var(--tx)">${s.reps}</b></span></div></section>`).join('');
+}
+function howtoHTML(ex) {
   const mv = MOVES[ex.move] || {}, phases = mv.phases || [];
-  return `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(exName(ex))}"><div class="sheet-in">
-    <div class="row" style="margin-bottom:12px"><button class="ibtn" data-a="closeEx" aria-label="${t('返回', 'Back')}">${I('back')}</button>
-      <div style="flex:1;min-width:0"><h1 class="h2" style="font-size:26px">${esc(exName(ex))}</h1><div class="sub">${esc(S.lang === 'zh' ? ex.en : ex.zh)}</div></div></div>
-    <div class="stage"><div class="cv" id="cv"></div><div class="load" id="cvLoad">${t('載入 3D 模型…', 'Loading 3D model…')}</div>
+  return `<div class="stage"><div class="cv" id="cv"></div><div class="load" id="cvLoad">${t('載入 3D 模型…', 'Loading 3D model…')}</div>
       <div class="ov"><span class="pill acc" id="phName">${esc(phases[0] ? t(phases[0].zh, phases[0].en) : '')}</span><span class="pill" id="ovR">${t('拖動旋轉', 'Drag to rotate')}</span></div>
       <div class="ov-b" id="badTag" hidden><span class="pill bad">${t('紅色 = 錯誤動作', 'Red = wrong form')}</span></div></div>
     <div class="ctrls"><button class="ibtn" data-a="v3play" id="v3play" aria-label="${t('暫停', 'Pause')}">${I('pause')}</button>
@@ -394,27 +480,27 @@ function sheetHTML(ex) {
       <div class="seg" role="group" aria-label="${t('速度', 'Speed')}"><button data-a="v3speed" data-v="0.5" aria-pressed="false">0.5×</button><button data-a="v3speed" data-v="1" aria-pressed="true">1×</button></div></div>
     <button class="chip" data-a="v3slow" aria-pressed="true" style="margin-bottom:12px">${I('timer')}${t('重點位置自動慢鏡', 'Slow down at key moments')}</button>
     <div class="cue" aria-live="polite"><span class="ph-n" id="cueN">1</span><p id="cueT"><b>${esc(phases[0] ? t(phases[0].zh, phases[0].en) : '')}</b>${esc(phases[0] ? t(phases[0].czh, phases[0].cen) : '')}</p></div>
-    ${ex.approx ? `<p class="note" style="margin:-4px 0 12px">${I('info')}${t('示範用咗動作模式相近嘅動畫，細節（例如器械）可能唔同。', 'The demo uses a closely related movement; details such as the machine may differ.')}</p>` : ''}
-    <section class="card"><h2 class="h3" style="margin-bottom:8px">${t('練到嘅肌肉', 'Muscles worked')}</h2><div class="row" style="flex-wrap:wrap;gap:6px">${ex.muscles.map((m, i) => `<span class="tag ${i === 0 ? 'acc' : ''}">${esc(t(muscleZh(m), m))}</span>`).join('')}
-      <span class="tag">${t(equipZh(ex.equip), ex.equip)}</span><span class="tag">${t(levelZh(ex.level), ex.level)}</span></div>
-      <p class="sub" style="margin-top:10px">${t('3D 模型上橙色部分就係主要發力位置。', 'Orange on the model marks the main working muscles.')}</p></section>
-    <section class="card"><h2 class="h3" style="margin-bottom:6px">${t('要點', 'How to')}</h2><p style="font-size:15px;line-height:1.5">${esc(t(ex.dZh, ex.dEn))}</p></section>
-    ${mv.mistakes ? `<section class="card"><h2 class="h3" style="margin-bottom:4px">${t('常見錯誤', 'Common mistakes')}</h2><p class="sub" style="margin-bottom:6px">${t('撳「睇錯誤」，紅色公仔會重疊示範錯誤做法。', 'Tap “Show me” to overlay the wrong form in red.')}</p>${mv.mistakes.map((m, i) => `<div class="mist">${I('alert')}<span style="flex:1">${esc(t(m.zh, m.en))}</span>${m.patch ? `<button class="chip" data-a="v3bad" data-v="${i}" aria-pressed="false" style="height:36px">${t('睇錯誤', 'Show me')}</button>` : ''}</div>`).join('')}</section>` : ''}
-    <section class="card"><h2 class="h3" style="margin-bottom:10px">${t('加入計劃', 'Add to plan')}</h2><div class="days7">${WD.map(d => { const on = (S.customPlan[d] || []).some(x => x.id === ex.id); return `<button data-a="togPlan" data-id="${ex.id}" data-v="${d}" aria-pressed="${on}" aria-label="${dayLong(d)}">${dayShort(d)}<small>${on ? '✓' : '+'}</small></button>`; }).join('')}</div></section>
-  </div></div>`;
+    ${ex.approx ? `<p class="note" style="margin:-4px 0 12px">${I('info')}${t('示範用咗代表性嘅動作。', 'The demo shows a representative movement.')}</p>` : ''}
+    <section class="card"><h2 class="h3" style="margin-bottom:6px">${t('要點', 'Key points')}</h2><p style="font-size:15px;line-height:1.5">${esc(t(ex.dZh, ex.dEn))}</p>
+      <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:10px">${ex.muscles.map((m, i) => `<span class="tag ${i === 0 ? 'acc' : ''}">${esc(t(muscleZh(m), m))}</span>`).join('')}<span class="tag">${t(equipZh(ex.equip), ex.equip)}</span><span class="tag">${t(levelZh(ex.level), ex.level)}</span></div></section>
+    ${mv.mistakes ? `<section class="card"><h2 class="h3" style="margin-bottom:4px">${t('常見錯誤', 'Common mistakes')}</h2><p class="sub" style="margin-bottom:6px">${t('撳「睇錯誤」，紅色公仔會重疊示範錯誤做法。', 'Tap “Show me” to overlay the wrong form in red.')}</p>${mv.mistakes.map((m, i) => `<div class="mist">${I('alert')}<span style="flex:1">${esc(t(m.zh, m.en))}</span>${m.patch ? `<button class="chip" data-a="v3bad" data-v="${i}" aria-pressed="false" style="height:36px">${t('睇錯誤', 'Show me')}</button>` : ''}</div>`).join('')}</section>` : ''}`;
 }
-async function openSheet(id) {
-  const ex = EX[id]; if (!ex) return;
-  closeSheet(true);
-  ui.sheet = id;
-  const wrap = document.createElement('div'); wrap.id = 'sheetWrap'; wrap.innerHTML = sheetHTML(ex); document.body.appendChild(wrap);
-  document.body.style.overflow = 'hidden'; drawTimer();
-  try { history.pushState({ sheet: id }, ''); } catch { }
+function sheetHTML(ex) {
+  const tabs = [['sum', '概覽', 'Summary'], ['hist', '記錄', 'History'], ['how', '教學', 'How to']];
+  return `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(exName(ex))}"><div class="sheet-in">
+    <div class="row" style="margin-bottom:6px"><button class="ibtn ghost" data-a="closeEx" aria-label="${t('返回', 'Back')}">${I('back')}</button>
+      <div style="flex:1;min-width:0;text-align:center" class="h3">${esc(exName(ex))}</div><span style="width:44px"></span></div>
+    <div class="tabs" role="tablist">${tabs.map(([v, zh, en]) => `<button role="tab" data-a="exTab" data-v="${v}" aria-selected="${ui.exv.tab === v}">${t(zh, en)}</button>`).join('')}</div>
+    <div id="sheetBody"></div></div></div>`;
+}
+async function mountViewer(ex, studio) {
+  const id = ex.id, tab = ui.exv.tab;
+  if (ui.viewer) { ui.viewer.dispose(); ui.viewer = null; }
   try {
     const { createViewer } = await import('./viewer3d.js');
-    if (ui.sheet !== id) return;
-    const v = await createViewer(document.getElementById('cv'), { accent: '#FF7A2F' });
-    if (ui.sheet !== id) { v.dispose(); return; }
+    const el = document.getElementById('cv'); if (!el || ui.sheet !== id || ui.exv.tab !== tab) return;
+    const v = await createViewer(el, studio ? { studio: true, accent: '#D9412F' } : { accent: '#FF7A2F' });
+    if (ui.sheet !== id || ui.exv.tab !== tab || !document.body.contains(el)) { v.dispose(); return; }
     ui.viewer = v; document.getElementById('cvLoad')?.remove();
     const mv = MOVES[ex.move] || {};
     v.onPhase((i, p) => {
@@ -425,11 +511,31 @@ async function openSheet(id) {
       document.querySelectorAll('#phBar > div').forEach((d, j) => d.classList.toggle('on', j <= i));
     });
     v.setMove(ex.move, bodyParts(ex));
-    if (!mv.phases) document.getElementById('phBar').innerHTML = '';
+    if (studio) v.setSlowmo(false);
+    if (!mv.phases && document.getElementById('phBar')) document.getElementById('phBar').innerHTML = '';
   } catch (err) {
     console.error(err);
     const l = document.getElementById('cvLoad'); if (l) l.textContent = t('呢部機顯示唔到 3D（需要 WebGL）。', 'This device can\'t show 3D (WebGL needed).');
   }
+}
+function drawSheet() {
+  const ex = EX[ui.sheet]; if (!ex) return;
+  if (ui.viewer) { ui.viewer.dispose(); ui.viewer = null; }
+  const tab = ui.exv.tab, body = document.getElementById('sheetBody'); if (!body) return;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === tab));
+  body.innerHTML = tab === 'sum' ? summaryHTML(ex) : tab === 'hist' ? historyHTML(ex) : howtoHTML(ex);
+  document.querySelector('.sheet').scrollTop = 0;
+  if (tab !== 'hist') mountViewer(ex, tab === 'sum');
+}
+function redrawStats() { const ex = EX[ui.sheet], el = document.getElementById('exStats'); if (ex && el) el.innerHTML = summaryStats(ex); }
+function openSheet(id, tab) {
+  const ex = EX[id]; if (!ex) return;
+  closeSheet(true);
+  ui.sheet = id; ui.exv = { tab: tab || 'sum', metric: ui.exv?.metric || 'heaviest', range: ui.exv?.range || '1y', sel: null };
+  const wrap = document.createElement('div'); wrap.id = 'sheetWrap'; wrap.innerHTML = sheetHTML(ex); document.body.appendChild(wrap);
+  document.body.style.overflow = 'hidden'; drawTimer();
+  try { history.pushState({ sheet: id }, ''); } catch { }
+  drawSheet();
 }
 function closeSheet(silent) {
   if (ui.viewer) { ui.viewer.dispose(); ui.viewer = null; }
@@ -438,6 +544,16 @@ function closeSheet(silent) {
   ui.sheet = null; document.body.style.overflow = ''; drawTimer();
 }
 window.addEventListener('popstate', () => { if (ui.sheet) closeSheet(); });
+// tap / drag on the chart picks the nearest session
+function chartPick(e) {
+  const svg = e.target.closest && e.target.closest('svg.mchart'); if (!svg) return;
+  const r = svg.getBoundingClientRect(), W = +svg.dataset.w, xs = [...svg.querySelectorAll('i')].map(n => +n.dataset.x);
+  const vx = (e.clientX - r.left) / r.width * W; let best = 0;
+  xs.forEach((x, k) => { if (Math.abs(x - vx) < Math.abs(xs[best] - vx)) best = k; });
+  if (ui.exv.sel !== best) { ui.exv.sel = best; redrawStats(); }
+}
+document.addEventListener('pointerdown', chartPick);
+document.addEventListener('pointermove', e => { if (e.buttons) chartPick(e); });
 
 // ---------- render ----------
 let lastTab = null;
@@ -536,7 +652,7 @@ const A = {
   addFromLib() { ui.addTo = ui.planDay; ui.tab = 'library'; render(); },
   addDone() { ui.planDay = ui.addTo; ui.addTo = null; ui.tab = 'plan'; render(); },
   libCat(el) { ui.libCat = el.dataset.v; render(); },
-  openEx(el) { openSheet(el.dataset.id); },
+  openEx(el) { openSheet(el.dataset.id, el.dataset.tab); },
   closeEx() { if (history.state && history.state.sheet) history.back(); else closeSheet(); },
   togPlan(el) {
     const id = el.dataset.id, d = el.dataset.v, plan = S.customPlan[d] = S.customPlan[d] || [], i = plan.findIndex(x => x.id === id), ex = EX[id];
@@ -548,6 +664,8 @@ const A = {
   },
   v3play(el) { if (!ui.viewer) return; const p = ui.viewer.toggle(); el.innerHTML = I(p ? 'pause' : 'play'); el.setAttribute('aria-label', p ? t('暫停', 'Pause') : t('播放', 'Play')); },
   v3view(el) { ui.viewer && ui.viewer.setView(el.dataset.v); el.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); },
+  exTab(el) { ui.exv.tab = el.dataset.v; drawSheet(); },
+  exMetric(el) { ui.exv.metric = el.dataset.v; ui.exv.sel = null; redrawStats(); },
   v3slow(el) { const on = el.getAttribute('aria-pressed') !== 'true'; el.setAttribute('aria-pressed', on); ui.viewer && ui.viewer.setSlowmo(on); },
   v3bad(el) {
     if (!ui.viewer) return;
@@ -627,6 +745,7 @@ const C = {
   w(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.weight = num(el.value); save('logs'); },
   r(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.reps = Math.max(0, Math.round(num(el.value))); save('logs'); },
   progEx(el) { ui.progEx = el.value; render(); },
+  exRange(el) { ui.exv.range = el.value; ui.exv.sel = null; redrawStats(); },
   prof(el) { const f = el.dataset.f, v = num(el.value); if (v > 0) { S.profile[f] = v; save('profile'); render(); } },
   obNum(el) { ui.ob.ans[el.dataset.q] = +el.value; const o = document.getElementById('obNumV'); if (o) o.textContent = el.value; }
 };

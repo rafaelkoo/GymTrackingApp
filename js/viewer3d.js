@@ -226,7 +226,7 @@ export async function createViewer(container, opts = {}) {
   });
   wallTex.repeat.set(3, 1);
   const wall = new T.Mesh(new T.CylinderGeometry(7.5, 7.5, 6, 64, 1, true), new T.MeshStandardMaterial({ map: wallTex, side: T.BackSide, roughness: 1 }));
-  wall.position.y = 3; scene.add(wall);
+  wall.position.y = 3; const gym = new T.Group(); scene.add(gym); gym.add(wall);
   const decoMat = new T.MeshStandardMaterial({ color: 0x24211e, roughness: 0.8 });
   for (let i = 0; i < 7; i++) { // silhouettes of racks around the room
     const a = (i / 7) * Math.PI * 2 + 0.3, r = 6.3;
@@ -234,14 +234,22 @@ export async function createViewer(container, opts = {}) {
     for (const x of [-0.6, 0.6]) for (const z of [-0.35, 0.35]) { const p = new T.Mesh(new T.BoxGeometry(0.07, 2.3, 0.07), decoMat); p.position.set(x, 1.15, z); g.add(p); }
     const top = new T.Mesh(new T.BoxGeometry(1.3, 0.07, 0.8), decoMat); top.position.y = 2.3; g.add(top);
     for (const y of [0.5, 1.0]) { const sh = new T.Mesh(new T.BoxGeometry(1.25, 0.05, 0.6), decoMat); sh.position.y = y; g.add(sh); }
-    scene.add(g);
+    gym.add(g);
   }
-  scene.add(new T.HemisphereLight(0xFFF1E0, 0x1A1512, 1.25));
+  const hemi = new T.HemisphereLight(0xFFF1E0, 0x1A1512, 1.25); scene.add(hemi);
   const key = new T.SpotLight(0xFFF6EA, 60, 16, 0.62, 0.55, 1.6);
   key.position.set(2.2, 5.2, 3.2); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -0.0004; key.shadow.radius = 4;
   scene.add(key); scene.add(key.target);
   const rim = new T.DirectionalLight(0xFF9A5A, 1.1); rim.position.set(-3, 3, -3.5); scene.add(rim);
   const fill = new T.DirectionalLight(0xCAD6FF, 0.35); fill.position.set(-3, 2, 3); scene.add(fill);
+  // studio look: plain light backdrop like an anatomy illustration
+  if (opts.studio) {
+    gym.visible = false;
+    scene.background = new T.Color(0xEFEBE5); scene.fog = new T.Fog(0xEFEBE5, 5, 11);
+    floor.material.map = null; floor.material.color.set(0xE6E1D9); floor.material.needsUpdate = true;
+    hemi.intensity = 2.1; hemi.groundColor.set(0x8F877C); key.intensity = 38; rim.color.set(0xFFFFFF); rim.intensity = 0.6;
+    renderer.toneMappingExposure = 1.0;
+  }
 
   // ----- figures -----
   const F = buildFigure(); scene.add(F.root);
@@ -301,7 +309,7 @@ export async function createViewer(container, opts = {}) {
           }
         } else { for (const s of [-1, 1]) { const end = rod(0.02, 0.08, mFrame); end.rotation.z = Math.PI / 2; end.position.x = s * len / 2; g.add(end); } }
         dyn.push(c => { g.position.copy(c.hand.L).add(c.hand.R).multiplyScalar(0.5); const d = new T.Vector3().subVectors(c.hand.L, c.hand.R); if (d.lengthSq() > 1e-6) g.quaternion.setFromUnitVectors(XA, d.normalize()); });
-        if (k === 'barbell' && !p.noPlatform) { box(2.4, 0.03, 1.6, mWood, 0, 0.015, 0); }
+        if (k === 'barbell' && !p.noPlatform && !opts.studio) { box(2.4, 0.03, 1.6, mWood, 0, 0.015, 0); }
       } else if (k === 'dumbbells' || k === 'dumbbell1') {
         const mkd = () => {
           const g = new T.Group(); const h = rod(0.017, 0.14, mMetal); h.rotation.z = Math.PI / 2; g.add(h);
