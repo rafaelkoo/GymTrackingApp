@@ -76,12 +76,19 @@ export function buildBody(T, data) {
       const b = by[`${f}_0${j}_${s}`], c = by[`${f}_0${j + 1}_${s}`] || by[`${f}_04_leaf_${s}`]; if (!b || !c) continue;
       const d = restP.get(c).clone().sub(restP.get(b)).normalize();
       const ax = new T.Vector3().crossVectors(d, palm).normalize();
-      const ang = f === 'thumb' ? (j === 1 ? 0.15 : 0.45) : [0, 1.0, 1.25, 0.8][j];
+      const ang = f === 'thumb' ? [0, 0.55, 0.6, 0.5][j] : [0, 1.0, 1.25, 0.8][j];
       const axL = ax.applyQuaternion(restQ.get(b).clone().invert());
       b.quaternion.copy(restLocalQ.get(b)).multiply(new T.Quaternion().setFromAxisAngle(axL, ang));
     }
   }
   group.updateMatrixWorld(true);
+  // centre of the closed fist in the hand bone's frame: the handle goes here
+  const gripLocal = {};
+  for (const s of ['l', 'r']) {
+    const pts = ['index_01', 'pinky_01', 'index_03', 'pinky_03', 'middle_01', 'middle_03'].map(n => by[`${n}_${s}`].getWorldPosition(new T.Vector3()));
+    const c = pts.reduce((a, p) => a.add(p), new T.Vector3()).multiplyScalar(1 / pts.length);
+    gripLocal[s] = by['hand_' + s].worldToLocal(c);
+  }
 
   // ── rest frames for driven bones: down = toward the child joint, front = facing ──
   const FWD = new T.Vector3(0, 0, 1);
@@ -105,11 +112,11 @@ export function buildBody(T, data) {
   const qa = new T.Quaternion(), qb = new T.Quaternion(), m4 = new T.Matrix4(), v1 = new T.Vector3(), v2 = new T.Vector3();
   function setWorldQ(bone, q) { bone.parent.getWorldQuaternion(qa); bone.quaternion.copy(qa.invert().multiply(q)); bone.updateMatrixWorld(true); }
   function setWorldP(bone, p) { bone.parent.updateMatrixWorld(true); bone.position.copy(bone.parent.worldToLocal(p.clone())); bone.updateMatrixWorld(true); }
-  function aim(bone, down, front) { // world rotation that takes the rest frame onto (down, front)
+  function aimQ(bone, down, front) { // world rotation that takes the rest frame onto (down, front)
     const now = frame(down, front), rf = restFrame[bone.name];
-    const R = new T.Quaternion().setFromRotationMatrix(m4.copy(now).multiply(new T.Matrix4().copy(rf).transpose()));
-    setWorldQ(bone, R.multiply(restQ.get(bone)));
+    return new T.Quaternion().setFromRotationMatrix(m4.copy(now).multiply(new T.Matrix4().copy(rf).transpose())).multiply(restQ.get(bone));
   }
+  function aim(bone, down, front) { setWorldQ(bone, aimQ(bone, down, front)); }
   const axisOf = (obj, x, y, z) => new T.Vector3(x, y, z).applyQuaternion(obj.getWorldQuaternion(qb));
   const posOf = obj => obj.getWorldPosition(new T.Vector3());
   function ik(A, Tg, a, b, pole) {
@@ -122,7 +129,7 @@ export function buildBody(T, data) {
   const slerpI = (q, f) => new T.Quaternion().slerp(q, f);   // identity -> q
 
   // ── drive from the procedural figure ──
-  function drive(F, sh = 0) {
+  function drive(F, sh = 0, cur = null) {
     const qPel = F.pelvis.getWorldQuaternion(new T.Quaternion()), qSp = F.spine.getWorldQuaternion(new T.Quaternion()), qNk = F.neck.getWorldQuaternion(new T.Quaternion());
     // pelvis position + rotation
     setWorldQ(by.pelvis, qPel.clone().multiply(restQ.get(by.pelvis)));
@@ -135,16 +142,20 @@ export function buildBody(T, data) {
     setWorldQ(by.Head, qSp.clone().multiply(relN).multiply(restQ.get(by.Head)));
     for (const [S, s, sg] of [[F.L, 'l', 1], [F.R, 'r', -1]]) {
       // shrug: lift the clavicle so the shoulder rises by `sh`
-      const cl = by['clavicle_' + s], ang = Math.asin(Math.max(-0.6, Math.min(0.6, sh / L.clav))) * sg;
+      const cl = by['clavicle_' + s], ang = Math.asin(Math.max(-0.4, Math.min(0.4, sh * 0.6 / L.clav))) * sg;
       const axL = FWD.clone().applyQuaternion(restQ.get(cl).clone().invert());
       cl.quaternion.copy(restLocalQ.get(cl)).multiply(new T.Quaternion().setFromAxisAngle(axL, ang)); cl.updateMatrixWorld(true);
       // arm: IK from the body's shoulder to the figure's wrist, elbow on the figure's side
-      const shM = posOf(by['upperarm_' + s]), wrF = posOf(S.hand), elF = posOf(S.fore);
-      const pole = elF.clone().sub(posOf(S.upper).add(wrF).multiplyScalar(0.5));
-      const arm = ik(shM, wrF, L.up, L.fo, pole);
+      // the hand's orientation comes from the figure; the wrist sits back from the grip point so the handle is in the fist
+      const qHand = aimQ(by['hand_' + s], axisOf(S.hand, 0, -1, 0), axisOf(S.hand, 0, 0, 1));
+      const grip = cur && cur.hand ? cur.hand[s === 'l' ? 'L' : 'R'] : posOf(S.hand);
+      const wrT = grip.clone().sub(gripLocal[s].clone().applyQuaternion(qHand));
+      const shM = posOf(by['upperarm_' + s]), elF = posOf(S.fore);
+      const pole = elF.clone().sub(posOf(S.upper).add(posOf(S.hand)).multiplyScalar(0.5));
+      const arm = ik(shM, wrT, L.up, L.fo, pole);
       aim(by['upperarm_' + s], arm.E.clone().sub(shM), axisOf(S.upper, 0, 0, 1));
       aim(by['lowerarm_' + s], arm.End.clone().sub(arm.E), axisOf(S.fore, 0, 0, 1));
-      aim(by['hand_' + s], axisOf(S.hand, 0, -1, 0), axisOf(S.hand, 0, 0, 1));
+      setWorldQ(by['hand_' + s], qHand);
       // leg: IK from the body's hip to the figure's ankle (lifted for the taller ankle), knee on the figure's side
       const hipM = posOf(by['thigh_' + s]), anF = posOf(S.foot).addScaledVector(axisOf(S.foot, 0, 1, 0), ankleLift), knF = posOf(S.shin);
       const kpole = knF.clone().sub(posOf(S.thigh).add(anF).multiplyScalar(0.5));

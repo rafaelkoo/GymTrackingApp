@@ -615,7 +615,7 @@ export async function createViewer(container, opts = {}) {
   function apply(t) {
     if (!move) return;
     pose(F, move._keys || null, t, cur);
-    if (body) body.drive(F, cur.sh);
+    if (body) body.drive(F, cur.sh, cur);
     for (const f of dyn) f(cur);
     if (G.root.visible && ghostKeys) pose(G, ghostKeys, t, scratch);
     const pi = phaseAt(t);
