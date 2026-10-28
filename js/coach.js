@@ -186,16 +186,42 @@ export function targetPlan(id, prefer) {
   return { tg, base, goal, weeks: out, perWeek, pct, aggressive, suggestBy, steadyWeeks, cur };
 }
 
-// ── week-by-week body-weight plan (from today to the goal date) ──
-export function bodyPlan() {
+// ── week-by-week body-weight plan, anchored where it started ──
+// The plan starts on the day the goal (weight or date) was set, so "week 3" always means the same week.
+export function ensureBodyStart(reset) {
   const p = S.profile, log = S.bodyLog || [];
-  const cur = log.length ? log[log.length - 1].kg : p.weight, goal = p.goalWeight, diff = goal - cur;
+  if (!reset && p.goalStart && p.goalStart.date && p.goalStart.kg) return p.goalStart;
+  const today = isoToday(), last = log.filter(x => x.date <= today).pop();
+  p.goalStart = { date: today, kg: last ? last.kg : p.weight }; save('profile');
+  return p.goalStart;
+}
+export function bodyPlan() {
+  const p = S.profile, log = S.bodyLog || [], st = ensureBodyStart();
+  const goal = p.goalWeight, diff = goal - st.kg;
   if (Math.abs(diff) < 0.3) return null;
-  const losing = diff < 0, cap = losing ? cur * 0.01 : 0.5, today = isoToday();
-  const wantWeeks = p.goalDate ? Math.max(1, Math.ceil(days(today, p.goalDate) / 7)) : null;
+  const losing = diff < 0, cap = losing ? st.kg * 0.01 : 0.5, today = isoToday();
+  const wantWeeks = p.goalDate ? Math.max(1, Math.ceil(days(st.date, p.goalDate) / 7)) : null;
   const minWeeks = Math.ceil(Math.abs(diff) / cap);
   const weeks = Math.min(52, Math.max(wantWeeks || Math.ceil(Math.abs(diff) / (losing ? 0.5 : 0.25)), minWeeks));
   const per = diff / weeks, out = [];
-  for (let i = 1; i <= weeks; i++) out.push({ n: i, date: addDays(today, i * 7), kg: Math.round((cur + per * i) * 10) / 10 });
-  return { weeks: out, per, cur, goal, capped: wantWeeks !== null && minWeeks > wantWeeks, safeDate: addDays(today, minWeeks * 7) };
+  for (let i = 1; i <= weeks; i++) out.push({ n: i, date: addDays(st.date, i * 7), kg: Math.round((st.kg + per * i) * 10) / 10 });
+  // where you should be today, and where you are
+  const elapsed = Math.max(0, days(st.date, today)), weekNo = Math.min(weeks, Math.floor(elapsed / 7) + 1);
+  const expected = Math.round((st.kg + per * Math.min(weeks, elapsed / 7)) * 10) / 10;
+  const lastLog = log.filter(x => x.date <= today).pop();
+  const actual = lastLog ? lastLog.kg : null;
+  const ahead = actual === null ? null : Math.round((losing ? expected - actual : actual - expected) * 10) / 10; // + = ahead of plan
+  const done = actual !== null && (losing ? actual <= goal : actual >= goal);
+  return { weeks: out, per, start: st, goal, losing, weekNo, total: weeks, expected, actual, lastLog, ahead, done,
+    capped: wantWeeks !== null && minWeeks > wantWeeks, safeDate: addDays(st.date, minWeeks * 7), endDate: addDays(st.date, weeks * 7) };
+}
+
+// one-line weekly report for an exercise target
+export function targetReport(id) {
+  const pl = targetPlan(id); if (!pl || pl.empty) return null;
+  const today = isoToday(), wk = pl.weeks.find(w => w.ws <= today && today < w.we) || (today >= pl.weeks[pl.weeks.length - 1].we ? pl.weeks[pl.weeks.length - 1] : pl.weeks[0]);
+  const ses = sessions(id, false), recent = ses.filter(x => days(x.date, today) < 14);
+  const bestNow = recent.length ? Math.max(...recent.map(x => x.e1)) : (ses.length ? ses[ses.length - 1].e1 : 0);
+  const shouldE1 = e1rm(wk.kg, wk.reps), gap = bestNow - shouldE1;   // + = ahead
+  return { pl, wk, bestNow, shouldE1, gap, hitThisWeek: wk.status === 'hit' };
 }

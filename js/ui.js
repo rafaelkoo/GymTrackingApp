@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -374,7 +374,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.6</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.7</p>`;
   return h;
 }
 
@@ -442,19 +442,43 @@ function planHTML(id) {
   const hit = pl.weeks.filter(w => w.status === 'hit').length, past = pl.weeks.filter(w => w.status === 'hit' || w.status === 'miss' || w.status === 'skip').length;
   let h = `<div class="plan"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 class="h3">${t('達標計劃', 'Plan to target')}</h3><span class="sub small">${t(`${pl.weeks.length} 星期 · 已達 ${hit}/${past}`, `${pl.weeks.length} weeks · hit ${hit}/${past}`)}</span></div>
     <p class="sub small" style="margin-bottom:8px">${t(`由 ${fmtDate(pl.tg.set)} 起，每星期估算 1RM 要加約 ${pl.perWeek.toFixed(1)} kg（${pl.pct.toFixed(1)}%）。每個星期做到一組就當達標。`, `From ${fmtDate(pl.tg.set)}: about +${pl.perWeek.toFixed(1)} kg est. 1RM a week (${pl.pct.toFixed(1)}%). One set at the weekly number counts.`)}</p>`;
+  h += targetReportHTML(id);
   if (pl.aggressive) h += `<p class="warn">${I('alert')}<span>${t(`呢個期限要每星期進步 ${pl.pct.toFixed(1)}%，比一般穩定速度（約 1.5%）快好多，容易受傷或者停滯。建議將期限延到 ${fmtDate(pl.suggestBy)}。`, `This deadline needs ${pl.pct.toFixed(1)}% a week, much faster than a steady 1.5%. Consider moving it to ${fmtDate(pl.suggestBy)}.`)}</span></p>`;
   h += `<ol class="weeks">${pl.weeks.map(w => `<li class="wk ${WK[w.status][1]}"><span class="wn">${t('第', 'W')}${w.n}${t('週', '')}</span><span class="wd">${fmtDate(w.ws)}</span><b class="num">${w.kg ? w.kg + ' kg × ' : ''}${w.reps}</b><span class="ws" aria-label="${w.status}">${WK[w.status][0]}</span></li>`).join('')}</ol></div>`;
   return h;
 }
+function bodyReportHTML(bp) {
+  if (!bp) return '';
+  if (bp.done) return `<div class="report good">${I('trophy')}<div><b>${t('已經達到目標體重！', 'Goal weight reached!')}</b></div></div>`;
+  const wkTxt = t(`第 ${bp.weekNo} 週（共 ${bp.total} 週）`, `Week ${bp.weekNo} of ${bp.total}`);
+  if (bp.actual === null || !bp.lastLog || bp.lastLog.date < bp.start.date) return `<div class="report"><span class="rk">${wkTxt}</span><div><b class="num">${t(`而家應該約 ${bp.expected} kg`, `You should be about ${bp.expected} kg now`)}</b><span>${t('記錄今日體重就知你有冇跟上。', 'Log today\'s weight to see if you are on track.')}</span></div></div>`;
+  const cls = bp.ahead >= 0 ? 'good' : bp.ahead >= -0.5 ? '' : 'bad';
+  const msg = bp.ahead >= 0.1 ? t(`比計劃快 ${bp.ahead} kg，做得好！`, `${bp.ahead} kg ahead of plan. Nice work!`)
+    : bp.ahead > -0.1 ? t('啱啱好跟住計劃。', 'Right on plan.')
+    : bp.ahead >= -0.5 ? t(`比計劃慢 ${-bp.ahead} kg，仲追得返。`, `${-bp.ahead} kg behind, easy to catch up.`)
+    : t(`比計劃慢 ${-bp.ahead} kg。檢查吓食量同步數，或者考慮延長期限。`, `${-bp.ahead} kg behind. Check your food and steps, or consider a later date.`);
+  return `<div class="report ${cls}"><span class="rk">${wkTxt}</span><div><b class="num">${t(`應該 ${bp.expected} kg · 你 ${bp.actual} kg`, `Plan ${bp.expected} kg · you ${bp.actual} kg`)}</b><span>${msg}${bp.lastLog.date !== isoToday() ? t(`（最近記錄：${fmtDate(bp.lastLog.date)}）`, ` (last logged ${fmtDate(bp.lastLog.date)})`) : ''}</span></div></div>`;
+}
+function targetReportHTML(id) {
+  const r = targetReport(id); if (!r) return '';
+  const w = r.wk, n = r.pl.weeks.length;
+  const msg = r.hitThisWeek ? t('今個星期已經達標 ✓', 'Done for this week ✓')
+    : r.bestNow === 0 ? t('最近兩星期未有記錄。', 'Nothing logged in the last two weeks.')
+    : r.gap >= 0 ? t('你嘅水平已經夠，做一組就達標。', 'You are strong enough; one set at this weight does it.')
+    : t(`差約 ${Math.round(-r.gap)} kg（估算 1RM）。`, `About ${Math.round(-r.gap)} kg (est. 1RM) short.`);
+  return `<div class="report ${r.hitThisWeek || r.gap >= 0 ? 'good' : r.gap > -r.shouldE1 * 0.05 ? '' : 'bad'}"><span class="rk">${t(`第 ${w.n} 週（共 ${n} 週）`, `Week ${w.n} of ${n}`)}</span><div><b class="num">${t(`應該做到 ${w.kg} kg × ${w.reps}`, `Should hit ${w.kg} kg × ${w.reps}`)}</b><span>${msg}</span></div></div>`;
+}
 function bodyPlanHTML() {
   const bp = bodyPlan(); if (!bp) return '';
   const log = S.bodyLog || [];
-  const shown = bp.weeks.slice(0, 12);
-  return `<div class="plan" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 class="h3">${t('每星期體重目標', 'Weekly weight targets')}</h3><span class="sub small">${t(`${bp.weeks.length} 星期`, `${bp.weeks.length} weeks`)}</span></div>
+  const startIdx = Math.max(0, bp.weekNo - 3), shown = bp.weeks.slice(startIdx, startIdx + 12);
+  return `<div class="plan" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 class="h3">${t('每星期體重目標', 'Weekly weight targets')}</h3><span class="sub small">${t(`由 ${fmtDate(bp.start.date)}（${bp.start.kg} kg）開始`, `From ${fmtDate(bp.start.date)} (${bp.start.kg} kg)`)}</span></div>
+    ${bodyReportHTML(bp)}
     ${bp.capped ? `<p class="warn">${I('alert')}<span>${t(`你揀嘅日期太急，已經按安全速度計，大約 ${fmtDate(bp.safeDate)} 達標。`, `Your date is too fast, so this uses a safe pace and reaches the goal around ${fmtDate(bp.safeDate)}.`)}</span></p>` : ''}
-    <ol class="weeks">${shown.map(w => { const got = log.filter(x => x.date <= w.date && x.date > (new Date(new Date(w.date).getTime() - 7 * 864e5)).toISOString().slice(0, 10)).pop(); const ok = got && (bp.per < 0 ? got.kg <= w.kg + 0.2 : got.kg >= w.kg - 0.2); const st = w.date <= isoToday() ? (got ? (ok ? 'hit' : 'miss') : 'skip') : 'next';
+    <ol class="weeks">${shown.map(w => { const from = new Date(new Date(w.date + 'T12:00:00').getTime() - 7 * 864e5).toISOString().slice(0, 10); const got = log.filter(x => x.date <= w.date && x.date > from).pop(); const ok = got && (bp.per < 0 ? got.kg <= w.kg + 0.2 : got.kg >= w.kg - 0.2); const st = w.date <= isoToday() ? (got ? (ok ? 'hit' : 'miss') : 'skip') : (w.n === bp.weekNo ? 'now' : 'next');
       return `<li class="wk ${WK[st][1]}"><span class="wn">${t('第', 'W')}${w.n}${t('週', '')}</span><span class="wd">${fmtDate(w.date)}</span><b class="num">${w.kg} kg</b><span class="ws">${WK[st][0]}</span></li>`; }).join('')}</ol>
-    ${bp.weeks.length > 12 ? `<p class="sub small" style="margin-top:6px">${t(`之後再 ${bp.weeks.length - 12} 星期去到 ${bp.goal} kg`, `${bp.weeks.length - 12} more weeks to ${bp.goal} kg`)}</p>` : ''}</div>`;
+    ${bp.weeks.length > startIdx + 12 ? `<p class="sub small" style="margin-top:6px">${t(`之後再 ${bp.weeks.length - startIdx - 12} 星期，${fmtDate(bp.endDate)} 去到 ${bp.goal} kg`, `${bp.weeks.length - startIdx - 12} more weeks to ${bp.goal} kg by ${fmtDate(bp.endDate)}`)}</p>` : ''}
+    <button class="btn btn-g btn-w" data-a="bodyRestart" style="margin-top:10px">${I('reset')}${t('由今日重新開始計劃', 'Restart the plan from today')}</button></div>`;
 }
 function targetsCard() {
   const ids = Object.keys(S.targets || {}).filter(id => EX[id]);
@@ -470,10 +494,10 @@ function targetsCard() {
     const st = targetStatus(id), adv = targetAdvice(id, st);
     h += `<button class="tgrow" data-a="openEx" data-id="${id}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(exName(EX[id]))}</b>${stateChip(st.state)}</div>
       <div class="row sub small" style="justify-content:space-between;margin:4px 0 6px"><span class="num">${st.tg.kg} kg × ${st.tg.reps}${st.tg.by ? ' · ' + fmtDate(st.tg.by) : ''}</span><span class="num">${st.pct}%</span></div>
-      <div class="bar"><i style="width:${st.pct}%"></i></div>${(() => { const pl = targetPlan(id); return pl && pl.cur ? `<span class="small" style="display:block;margin-top:6px;color:var(--acc);font-weight:600">${t(`今個星期目標：${pl.cur.kg} kg × ${pl.cur.reps}（第 ${pl.cur.n}/${pl.weeks.length} 週）`, `This week: ${pl.cur.kg} kg × ${pl.cur.reps} (week ${pl.cur.n}/${pl.weeks.length})`)}</span>` : ''; })()}<span class="sub small" style="display:block;margin-top:4px">${esc(t(adv.zh, adv.en))}</span></button>`;
+      <div class="bar"><i style="width:${st.pct}%"></i></div><div style="margin-top:8px">${targetReportHTML(id)}</div><span class="sub small" style="display:block;margin-top:4px">${esc(t(adv.zh, adv.en))}</span></button>`;
   });
   const ba = bodyAdvice();
-  h += `<button class="tgrow" data-a="tab" data-v="me"><div class="row" style="justify-content:space-between"><b>${t('體重', 'Body weight')} → ${S.profile.goalWeight} kg</b>${stateChip(ba.state)}</div><span class="sub small" style="display:block;margin-top:6px">${esc(t(ba.zh, ba.en))}</span></button>`;
+  h += `<button class="tgrow" data-a="tab" data-v="me"><div class="row" style="justify-content:space-between"><b>${t('體重', 'Body weight')} → ${S.profile.goalWeight} kg</b>${stateChip(ba.state)}</div><div style="margin-top:8px">${bodyReportHTML(bodyPlan())}</div></button>`;
   return h + '</section>';
 }
 
@@ -767,6 +791,7 @@ const A = {
     (S.logs[d][id] || []).forEach(s => { if (!s.done) { s.weight = kg; s.reps = r; } }); save('logs'); toast(t(`已套用 ${kg} kg`, `Set to ${kg} kg`)); render();
   },
   tgPick() { ui.tgPick = !ui.tgPick; render(); },
+  bodyRestart() { ensureBodyStart(true); toast(t('體重計劃由今日重新計', 'Weight plan restarted from today')); render(); },
   tgEdit(el) { ui.tgEdit = el.dataset.id; const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },
   tgCancel(el) { ui.tgEdit = null; const b = document.getElementById('exTarget'); if (b && ui.sheet) b.innerHTML = targetBlock(EX[el.dataset.id]); else render(); },
   tgSave(el) {
@@ -859,9 +884,9 @@ const C = {
   r(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.reps = Math.max(0, Math.round(num(el.value))); save('logs'); if (s.done) upsertSession(d); },
   progEx(el) { ui.progEx = el.value; render(); },
   tgPick(el) { if (!el.value) return; ui.tgPick = false; ui.tgEdit = el.value; openSheet(el.value, 'sum'); },
-  goalDate(el) { S.profile.goalDate = el.value || null; save('profile'); render(); },
+  goalDate(el) { S.profile.goalDate = el.value || null; ensureBodyStart(true); save('profile'); toast(t('體重計劃由今日重新計', 'Weight plan restarted from today')); render(); },
   exRange(el) { ui.exv.range = el.value; ui.exv.sel = null; redrawStats(); },
-  prof(el) { const f = el.dataset.f, v = num(el.value); if (v > 0) { S.profile[f] = v; save('profile'); render(); } },
+  prof(el) { const f = el.dataset.f, v = num(el.value); if (v > 0) { const was = S.profile[f]; S.profile[f] = v; if (f === 'goalWeight' && was !== v) ensureBodyStart(true); save('profile'); render(); } },
   obNum(el) { ui.ob.ans[el.dataset.q] = +el.value; const o = document.getElementById('obNumV'); if (o) o.textContent = el.value; }
 };
 

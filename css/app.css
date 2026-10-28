@@ -234,6 +234,13 @@ svg.i { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentCo
 .wk.now { outline: 1.5px solid var(--acc); } .wk.now .ws { color: var(--acc); }
 .wk.next { color: var(--tx2); }
 .warn { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: var(--warn); background: rgba(242,193,78,.08); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+/* weekly report */
+.report { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--s2); border-left: 3px solid var(--line2); margin-bottom: 8px; text-align: left; }
+.report .rk { flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--tx2); background: var(--s3); border-radius: 7px; padding: 3px 7px; margin-top: 1px; }
+.report b { display: block; font-size: 15px; }
+.report span:not(.rk) { display: block; font-size: 12px; color: var(--tx2); line-height: 1.4; margin-top: 2px; }
+.report.good { border-left-color: var(--acc); } .report.bad { border-left-color: var(--bad); }
+.report > svg { color: var(--warn); }
 /* workout log */
 .logd { border-top: 1px solid var(--s2); }
 .logd:first-of-type { border-top: none; }
