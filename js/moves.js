@@ -870,10 +870,10 @@ export const MOVES = {
     period: 3.2, cam: { view: 'side', target: [0, 0.75, 0.1], dist: 3.2 },
     props: [{ type: 'cable', anchor: [0, 2.3, 0.35], handle: 'rope' }],
     keys: loop([
-      { t: 0, pel: [0.52, 0], trunk: 12, lumbar: 0, f: [0.12, 0.08, -0.42], fp: 80, kp: [0, -1, 0.3], ht: [0.09, 0.56, 0.12], ep: [0.4, -1, 0.3] },
+      { t: 0, pel: [0.52, -0.22], trunk: 10, lumbar: 0, head: 8, f: [0.12, 0.08, -0.64], fp: 80, kp: [0, -1, 0.3], ht: [0.1, 0.62, 0.1], ep: [0.4, -1, 0.3] },
       { t: 0.1, lumbar: 0 },
-      { t: 0.45, trunk: 28, lumbar: 55 },
-      { t: 0.55, trunk: 28, lumbar: 55 }
+      { t: 0.45, trunk: 20, lumbar: 48, head: 18 },
+      { t: 0.55, trunk: 20, lumbar: 48, head: 18 }
     ]),
     phases: [
       P([0, 0.1], '跪低', 'Kneel', '繩放喺頭兩側', 'Rope beside your head'),
@@ -887,7 +887,7 @@ export const MOVES = {
     period: 3, cam: { view: 'front', target: [0, 0.4, 0.1], dist: 2.9, phi: 0.3 },
     props: [{ type: 'mat' }, { type: 'plate' }],
     keys: loop([
-      { t: 0, pel: [0.13, 0], trunk: -40, yaw: -35, f: [0.13, 0.26, 0.48], kp: [0, 1, 0.3], ht: [0.04, 0.30, 0.32], ep: [0.6, -0.6, 0.2] },
+      { t: 0, pel: [0.13, 0], trunk: -40, yaw: -35, f: [0.13, 0.2, 0.6], kp: [0, 1, 0.3], ht: [0.0, 0.36, 0.25], ep: [0.6, -0.6, 0.2] },
       { t: 0.5, yaw: 35 }
     ]),
     phases: [
@@ -947,8 +947,8 @@ export const MOVES = {
     period: 3.2, cam: { view: 'front', target: [0, 1.05, 0], dist: 3.6 },
     props: [{ type: 'cable', anchor: [-1.1, 2.1, 0.2], handle: 'd', towerDz: 0, towerDx: -0.1 }],
     keys: loop([
-      { t: 0, pel: [0.92, 0], trunk: 4, yaw: -42, f: [0.22, 0.08, 0], kp: [0.4, 0, 1], hL: [-0.48, 1.74, 0.30], hR: [-0.56, 1.72, 0.26], ep: [0.5, -0.5, 0] },
-      { t: 0.1, yaw: -42 },
+      { t: 0, pel: [0.92, 0], trunk: 4, yaw: -55, head: 6, f: [0.22, 0.08, 0], kp: [0.4, 0, 1], hL: [-0.6, 1.56, 0.2], hR: [-0.68, 1.53, 0.12], ep: [0.5, -0.5, 0] },
+      { t: 0.1, yaw: -55 },
       { t: 0.45, pel: [0.88, 0], trunk: 14, yaw: 38, hL: [0.48, 0.76, 0.32], hR: [0.40, 0.78, 0.36] },
       { t: 0.55, pel: [0.88, 0], trunk: 14, yaw: 38, hL: [0.48, 0.76, 0.32], hR: [0.40, 0.78, 0.36] }
     ]),
@@ -999,12 +999,12 @@ export const MOVES = {
     props: [{ type: 'treadmill', z: -0.05 }],
     fn(t) {
       const a = t * Math.PI * 2, s = Math.sin(a), c = Math.cos(a);
-      const leg = (ph) => { const ss = Math.sin(ph), cc = Math.cos(ph); return [0.40 * ss, 0.19 + Math.max(0, cc) * 0.30 * (0.5 - 0.5 * ss) + Math.max(0, cc) * 0.06]; };
+      const leg = (ph) => { const ss = Math.sin(ph), cc = Math.cos(ph); return [0.32 * ss, 0.19 + Math.max(0, cc) * 0.30 * (0.5 - 0.5 * ss) + Math.max(0, cc) * 0.06]; };
       const L = leg(a), R = leg(a + Math.PI);
       return {
         pel: [1.02 + 0.035 * Math.abs(Math.cos(a)), 0], trunk: 9,
         fL: [0.10, L[1], L[0]], fR: [-0.10, R[1], R[0]], fpL: -10 + 25 * Math.max(0, c), fpR: -10 + 25 * Math.max(0, -c),
-        hsL: [0.03, -0.30, 0.10 - 0.2 * s], hsR: [-0.03, -0.30, 0.10 + 0.2 * s], ep: [0.15, -0.6, -1], kp: [0.1, 0, 1]
+        hsL: [0.05, -0.43 - 0.06 * s, 0.11 - 0.13 * s], hsR: [-0.05, -0.43 + 0.06 * s, 0.11 + 0.13 * s], ep: [0.1, -0.5, -1], kp: [0.1, 0, 1]
       };
     },
     phases: [P([0, 1], '跑', 'Run', '細步快頻，腳掌中段著地，手肘 90 度', 'Short quick steps, land mid-foot, elbows at 90°')],
@@ -1012,12 +1012,12 @@ export const MOVES = {
   },
   bike: {
     period: 1.1, cam: { view: 'side', target: [0, 0.8, 0.2], dist: 3.4 },
-    props: [{ type: 'bike', cy: 0.42, cz: 0.42, seatY: 0.86 }],
+    props: [{ type: 'bike', cy: 0.34, cz: 0.12, seatY: 0.86 }],
     fn(t) {
       const a = -t * Math.PI * 2;
       return {
         pel: [0.93, -0.14], trunk: 30, h: [0.22, 1.07, 0.56], ep: [0.4, -1, -0.2],
-        fL: [0.12, 0.42 + 0.17 * Math.sin(a), 0.42 + 0.17 * Math.cos(a)], fR: [-0.12, 0.42 - 0.17 * Math.sin(a), 0.42 - 0.17 * Math.cos(a)],
+        fL: [0.12, 0.34 + 0.17 * Math.sin(a), 0.12 + 0.17 * Math.cos(a)], fR: [-0.12, 0.34 - 0.17 * Math.sin(a), 0.12 - 0.17 * Math.cos(a)],
         fp: 10, kp: [0.12, 0.2, 1]
       };
     },
@@ -1123,8 +1123,8 @@ Object.assign(MOVES, {
     period: 3.6, cam: { view: 'q', target: [0, 1.0, 0.1], dist: 3.4, phi: 0.2 },
     props: [{ type: 'seat', y: 0.45, z: -0.02, back: 0.75, backTilt: 15 }, { type: 'machine' }],
     keys: loop([
-      { t: 0, pel: [0.55, -0.02], trunk: -15, f: [0.2, 0.08, 0.45], kp: [0.3, 0.4, 1], h: [0.30, 1.05, 0.06], ep: [1, -0.6, 0], pn: [0, -0.3, 1] },
-      { t: 0.1, h: [0.30, 1.05, 0.06] }, { t: 0.45, h: [0.19, 1.33, 0.52] }, { t: 0.55, h: [0.19, 1.33, 0.52] }
+      { t: 0, pel: [0.55, -0.02], trunk: -15, f: [0.2, 0.08, 0.45], kp: [0.3, 0.4, 1], h: [0.31, 1.0, 0.14], ep: [1, -0.6, -0.1], pn: [0, -0.3, 1] },
+      { t: 0.1, h: [0.31, 1.0, 0.14] }, { t: 0.45, h: [0.21, 1.1, 0.6] }, { t: 0.55, h: [0.21, 1.1, 0.6] }
     ]),
     phases: PH4(['準備', 'Set up', '把手對住上胸，背貼實靠墊', 'Handles level with your upper chest, back on the pad'], ['推', 'Press', '向上向前推出', 'Press up and forward'],
       ['頂部', 'Top', '手臂接近伸直，夾緊上胸', 'Arms nearly straight, squeeze the upper chest'], ['放', 'Return', '慢慢返到胸前', 'Return slowly to the chest']),
@@ -1190,8 +1190,8 @@ Object.assign(MOVES, {
     period: 3.4, cam: { view: 'side', target: [0, 0.75, 0.15], dist: 3.3 },
     props: [{ type: 'pad', at: [0, 0.86, 0.2], len: 0.32, rx: 0.79, w: 0.42 }, { type: 'pad', at: [0, 0.2, -0.62], len: 0.3, rx: 0.79, w: 0.4, legs: false }],
     keys: loop([
-      { t: 0, pel: [0.92, 0.05], trunk: 45, f: [0.1, 0.3, -0.55], fp: 45, kp: [0, 0, 1], ht: [-0.1, 0.36, 0.15], ep: [1, -0.5, 0] },
-      { t: 0.1, trunk: 45 }, { t: 0.45, trunk: 112 }, { t: 0.55, trunk: 112 }
+      { t: 0, pel: [0.92, 0.05], trunk: 50, f: [0.1, 0.3, -0.55], fp: 45, kp: [0, 0, 1], ht: [-0.1, 0.36, 0.15], ep: [1, -0.5, 0] },
+      { t: 0.1, trunk: 50 }, { t: 0.45, trunk: 112 }, { t: 0.55, trunk: 112 }
     ]),
     phases: PH4(['準備', 'Set up', '墊喺盆骨，身體一直線', 'Pad at your hips, body in a straight line'], ['落', 'Lower', '由髖部向前屈', 'Hinge forward from the hips'],
       ['最低點', 'Bottom', '感到大腿後側拉伸', 'Feel the hamstrings stretch'], ['起', 'Rise', '夾臀返到一直線，唔好過度後仰', 'Squeeze glutes back to straight, no over-arching']),
@@ -1547,7 +1547,7 @@ const PATCH = {
   plank: [{ 0: sag(L0(0.36, 0.3), -0.12), 1: sag(L0(0.375, 0.3), -0.12) }, { 0: sag(L0(0.36, 0.3), 0.18), 1: sag(L0(0.375, 0.3), 0.18) }, null],
   crunch: [{ 2: { lumbar: 30, head: 38 }, 3: { lumbar: 30, head: 38 } }, { 2: { lumbar: 40, trunk: -38 }, 3: { lumbar: 40, trunk: -38 } }],
   leg_raise: [{ '*': { lumbar: -14 } }, { 1: { f: [0.1, 0.6, 0.66] }, 2: { f: [0.1, 0.96, 0.02] } }],
-  cable_crunch: [{ 2: { pel: [0.32, -0.25], trunk: 42, lumbar: 18 }, 3: { pel: [0.32, -0.25], trunk: 42, lumbar: 18 } }, null],
+  cable_crunch: [{ 2: { pel: [0.32, -0.47], trunk: 42, lumbar: 18 }, 3: { pel: [0.32, -0.47], trunk: 42, lumbar: 18 } }, null],
   russian_twist: [{ '*': { yaw: 0 }, 0: { htL: [0.34, 0.26, 0.26], htR: [0.26, 0.3, 0.3] }, 1: { htL: [-0.26, 0.3, 0.3], htR: [-0.34, 0.26, 0.26] } }, { '*': { lumbar: 26 } }],
   dead_bug: [{ '*': { lumbar: -16 } }, null],
   hollow: [{ '*': { trunk: -60, lumbar: -14 } }, null],
