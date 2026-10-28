@@ -4,7 +4,7 @@ import { MOVES } from './moves.js';
 import {
   S, save, t, todayKey, todayIdx, isoToday, weekStart, ensLogs, syncSets, chkWeek, addPts, grade, levelXP,
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
-  trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload
+  trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
 
 const ui = {
@@ -138,14 +138,15 @@ function renderToday() {
     const doneN = plan.filter(e => exDone(day, e)).length;
     const mins = Math.round(plan.reduce((a, e) => a + (EX[e.id].isCardio ? (parseInt(e.reps) || 30) : (e.sets || 3) * 2), 0));
     h += `<div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="sub">${t('完成', 'Done')} <b class="num" style="color:var(--tx);font-size:16px">${doneN} / ${plan.length}</b> ${t('個動作', 'exercises')}</span><span class="sub">${t(`約 ${mins} 分鐘`, `~${mins} min`)}</span></div>
-      <div class="bar" style="margin-bottom:14px"><i style="width:${plan.length ? doneN / plan.length * 100 : 0}%"></i></div>`;
+      <div class="bar" style="margin-bottom:8px"><i style="width:${plan.length ? doneN / plan.length * 100 : 0}%"></i></div>
+      <p class="note" style="margin-bottom:12px">${I('check')}${t('打剔即自動記錄。聽日會自動清返打剔，重量會保留。', 'Ticks are recorded automatically. They clear tomorrow; your weights stay.')}</p>`;
     const firstOpen = (plan.find(e => !EX[e.id].isCardio && !exDone(day, e)) || {}).id;
     plan.forEach((e, idx) => { h += EX[e.id].isCardio ? cardioCard(day, e, idx) : strengthCard(day, e, idx, firstOpen); });
     const { done } = dSets(day);
     const anyCardio = plan.some(e => EX[e.id].isCardio && exDone(day, e));
     if (done > 0 || anyCardio) {
       const saved = !!S.savedWorkouts['saved_' + isoToday() + '_' + day];
-      h += `<button class="btn ${saved ? 'btn-g' : 'btn-p'} btn-w" data-a="saveWorkout" ${saved ? 'disabled' : ''} style="margin:4px 0 14px">${saved ? I('check') + t('今日已儲存', 'Saved today') : I('check') + t(`完成訓練並儲存 (+${SCORE_CFG.workout_saved})`, `Finish & save (+${SCORE_CFG.workout_saved})`)}</button>`;
+      h += `<button class="btn ${saved ? 'btn-g' : 'btn-p'} btn-w" data-a="saveWorkout" ${saved ? 'disabled' : ''} style="margin:4px 0 14px">${saved ? I('check') + t('今日已完成', 'Finished today') : I('check') + t(`完成訓練 (+${SCORE_CFG.workout_saved})`, `Finish workout (+${SCORE_CFG.workout_saved})`)}</button>`;
     }
   }
   if (isToday) h += habitsCard();
@@ -260,6 +261,22 @@ function renderProgress() {
   h += bl.length >= 2 ? lineChart(bl.slice(-30).map(x => ({ v: x.kg })), { label: t('體重走勢', 'Body weight trend') }) + `<div class="axis"><span>${bl.slice(-30)[0].date.slice(5).replace('-', '/')}</span><span class="num">${bl[bl.length - 1].kg} kg</span><span>${bl[bl.length - 1].date.slice(5).replace('-', '/')}</span></div>`
     : `<div class="empty" style="padding:14px">${t('喺「我」記錄兩次體重之後會見到走勢。', 'Log your weight twice in Me to see a trend.')}<button class="btn btn-g" data-a="tab" data-v="me">${t('去記錄', 'Log weight')}</button></div>`;
   h += '</section>';
+  // training log: every session, newest first
+  const sess = [...S.history].sort((a, b) => b.date.localeCompare(a.date) || a.day.localeCompare(b.day));
+  const shown = sess.slice(0, ui.logN || 8);
+  h += `<section class="card"><div class="card-h"><h2 class="h2">${t('訓練記錄', 'Workout log')}</h2><span class="sub">${t(`共 ${sess.length} 次`, `${sess.length} sessions`)}</span></div>`;
+  if (!sess.length) h += `<div class="empty" style="padding:14px">${t('喺「今日」打剔第一組，就會出現喺度。', 'Tick your first set in Today and it shows up here.')}</div>`;
+  shown.forEach(s => {
+    const ids = Object.keys(s.sets || {}).filter(id => EX[id]);
+    let n = 0, vol = 0; ids.forEach(id => s.sets[id].forEach(x => { if (x.done !== false) { n++; vol += num(x.weight) * num(x.reps); } }));
+    const prs = ids.filter(id => { const ser = prSeries(id); return ser.some((p, k) => k > 0 && p.isPR && p.date === s.date); });
+    const cardio = (s.cardio || []).filter(id => EX[id]);
+    h += `<details class="logd"><summary><div style="flex:1;min-width:0"><b>${fmtDate(s.date, true)}</b><span>${esc(dayTitle(s.day))} · ${ids.length + cardio.length} ${t('個動作', 'exercises')} · ${n} ${t('組', 'sets')}${vol ? ` · ${Math.round(vol).toLocaleString()} kg` : ''}</span></div>${prs.length ? `<span class="tag gold">${I('trophy')}&nbsp;${prs.length}</span>` : ''}${I('down', 'muted')}</summary>
+      <div class="logb">${ids.map(id => { const done = s.sets[id].filter(x => x.done !== false); return `<button class="logx" data-a="openEx" data-id="${id}" data-tab="hist"><b>${esc(exName(EX[id]))}${prs.includes(id) ? ' 🏆' : ''}</b><span class="num">${done.map(x => `${num(x.weight)}×${esc(x.reps)}`).join('  ')}</span></button>`; }).join('')}
+      ${cardio.map(id => `<div class="logx"><b>${esc(exName(EX[id]))}</b><span>${t('有氧完成', 'Cardio done')}</span></div>`).join('')}</div></details>`;
+  });
+  if (sess.length > shown.length) h += `<button class="btn btn-g btn-w" data-a="logMore" style="margin-top:8px">${t('睇多啲', 'Show more')}</button>`;
+  h += '</section>';
   // past weeks
   const past = (S.scores.history || []).slice(0, 6);
   if (past.length) {
@@ -350,7 +367,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.2</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.3</p>`;
   return h;
 }
 
@@ -592,11 +609,11 @@ const A = {
       }
       startTimer(S.restSec || 90);
     }
-    save('logs'); render();
+    save('logs'); upsertSession(d); render();
   },
   setCount(el) {
     const { d, id } = el.dataset, e = (S.customPlan[d] || []).find(x => x.id === id); if (!e) return;
-    e.sets = Math.max(1, Math.min(12, (e.sets || 3) + +el.dataset.v)); syncSets(d, id); save('customPlan', 'logs'); render();
+    e.sets = Math.max(1, Math.min(12, (e.sets || 3) + +el.dataset.v)); syncSets(d, id); save('customPlan', 'logs'); upsertSession(d); render();
   },
   cardioMin(el) {
     const { d, id } = el.dataset, e = (S.customPlan[d] || []).find(x => x.id === id); if (!e) return;
@@ -607,14 +624,12 @@ const A = {
     const k = '__cardio__' + id, aw = '__cardioAw__' + id;
     S.logs[d][k] = !S.logs[d][k];
     if (S.logs[d][k] && !S.logs[d][aw]) { S.logs[d][aw] = true; toast(`+${award('set_done', 'cardio')} ${t('分', 'pts')}`); }
-    save('logs'); render();
+    save('logs'); upsertSession(d); render();
   },
   saveWorkout() {
     const day = ui.day, today = isoToday(), key = 'saved_' + today + '_' + day;
     if (S.savedWorkouts[key]) { toast(t('今日已經儲存咗', 'Already saved today')); return; }
-    const sess = { date: today, day, sets: {} };
-    Object.entries(S.logs[day] || {}).forEach(([n, sets]) => { if (Array.isArray(sets) && sets.some(s => s.done)) sess.sets[n] = sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })); });
-    S.history = S.history.filter(h => !(h.date === today && h.day === day)); S.history.push(sess);
+    upsertSession(day);
     S.savedWorkouts[key] = true;
     let pts = award('workout_saved', null);
     const ti = todayIdx();
@@ -622,7 +637,7 @@ const A = {
       const tk = ti + '-' + k; if (!S.completedTasks[tk] && (task.type === 'strength' || task.type === 'cardio')) { S.completedTasks[tk] = true; pts += award('task_done', null); }
     });
     save('history', 'savedWorkouts', 'completedTasks'); stopTimer();
-    toast(t(`訓練已儲存！+${pts} 分`, `Workout saved! +${pts} pts`)); confetti(); render();
+    toast(t(`完成訓練！+${pts} 分`, `Workout finished! +${pts} pts`)); confetti(); render();
   },
   habit(el) {
     const k = el.dataset.v, was = !!S.completedTasks[k]; S.completedTasks[k] = !was;
@@ -633,6 +648,7 @@ const A = {
   timerStop() { stopTimer(); },
   closeLvl(el) { el.closest('.lvlup').remove(); },
   progRange(el) { ui.progRange = el.dataset.v; render(); },
+  logMore() { ui.logN = (ui.logN || 8) + 10; render(); },
   planDay(el) { ui.planDay = el.dataset.v; render(); },
   planNum(el) {
     const d = ui.planDay, i = +el.dataset.i, f = el.dataset.f, e = S.customPlan[d][i], ex = EX[e.id];
@@ -742,8 +758,8 @@ const A = {
 };
 
 const C = {
-  w(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.weight = num(el.value); save('logs'); },
-  r(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.reps = Math.max(0, Math.round(num(el.value))); save('logs'); },
+  w(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.weight = num(el.value); save('logs'); if (s.done) upsertSession(d); },
+  r(el) { const { d, id } = el.dataset; const s = S.logs[d][id][+el.dataset.i]; s.reps = Math.max(0, Math.round(num(el.value))); save('logs'); if (s.done) upsertSession(d); },
   progEx(el) { ui.progEx = el.value; render(); },
   exRange(el) { ui.exv.range = el.value; ui.exv.sel = null; redrawStats(); },
   prof(el) { const f = el.dataset.f, v = num(el.value); if (v > 0) { S.profile[f] = v; save('profile'); render(); } },
@@ -792,6 +808,7 @@ export function bindEvents() {
     if (e.key === 'Escape' && ui.sheet) A.closeEx();
     if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('fin')) e.target.blur();
   });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { chkWeek(); if (!ui.sheet) render(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { const nd = rolloverDay(); chkWeek(); if (nd) ui.day = todayKey(); if (!ui.sheet) render(); } });
+  setInterval(() => { if (!document.hidden && rolloverDay()) { ui.day = todayKey(); if (!ui.sheet) render(); } }, 60000);
 }
 export { ui };
