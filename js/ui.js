@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate, liftGoals, liftGoal, cutting } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -228,6 +228,7 @@ function renderProgress() {
     <div class="tile"><span class="k">${t('本週', 'This week')}</span><span class="v">${weekly}</span><span class="s">${t('分 · 評級 ', 'pts · grade ')}${g}</span></div>
     <div class="tile"><span class="k">${t('新紀錄', 'New PRs')}</span><span class="v">${prsThisMonth()}</span><span class="s">${t('今個月', 'this month')}</span></div></div>`;
   h += targetsCard();
+  h += liftGoalsCard();
   h += liftProgressCard();
   h += reviewLogCard();
   // exercise chart
@@ -379,7 +380,7 @@ function renderMe() {
     <p class="sub" style="margin-bottom:12px">${t('資料只存喺呢部機。換手機或者清瀏覽器資料之前，記得先匯出。', 'Your data lives only on this device. Export before you switch phones or clear browser data.')}</p>
     <div class="grid2"><button class="btn btn-p" data-a="export">${I('download')}${t('匯出', 'Export')}</button><button class="btn btn-g" data-a="import">${I('upload')}${t('匯入', 'Import')}</button></div></section>`;
   h += `<button class="btn btn-g btn-w btn-danger" data-a="resetWeek" style="margin-top:4px">${I('reset')}${t('重置本週積分', 'Reset this week\'s points')}</button>
-    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 2.9</p>`;
+    <p class="sub" style="text-align:center;margin-top:18px">FitTrack 3.0</p>`;
   return h;
 }
 
@@ -541,6 +542,21 @@ function reviewLogCard() {
   h += list.length ? `<ol class="weeks">${list.map(r => `<li class="wk ${r.score >= 70 ? 'hit' : r.score >= 45 ? 'now' : 'miss'}"><span class="wd num" style="width:52px">${r.date.slice(5).replace('-', '/')}</span><span class="num" style="flex:1;font-size:13px">${r.lifts ? t(`練 ${r.done}/${r.planned} 日 · 動作 ${r.ok}/${r.lifts}`, `${r.done}/${r.planned} days · lifts ${r.ok}/${r.lifts}`) : t(`練 ${r.done}/${r.planned} 日`, `${r.done}/${r.planned} days`)}${r.kg ? ` · ${r.kg} kg` : ''}</span><b class="num">${grade(r.score)}</b><span class="ws"></span></li>`).join('')}</ol>`
     : `<p class="sub small">${t(`每逢${dayLong(S.reviewDay || 'Sun')}，「今日」頁會出檢討。完成之後會記低喺度。`, `Every ${dayLong(S.reviewDay || 'Sun')} a review appears on Today. Finished reviews are listed here.`)}</p>`;
   return h + '</section>';
+}
+function liftGoalsCard() {
+  const gs = liftGoals(); if (!gs.length) return '';
+  const bw = S.profile.goalWeight;
+  return `<section class="card"><div class="card-h"><h2 class="h2">${t('按目標體重定重量', 'Lift goals for your goal weight')}</h2><span class="sub small num">${bw} kg</span></div>
+    <p class="sub small" style="margin-bottom:8px">${t(`用力量標準（體重嘅倍數，估算 1RM）計：去到 ${bw} kg 嗰陣，每個動作下一級應該做幾重。${cutting() ? '減緊重，所以速度按正常嘅 2/3 計。' : ''}`, `From strength standards (multiples of body weight, est. 1RM): what the next level is at ${bw} kg.${cutting() ? ' You are cutting, so the pace is two thirds of normal.' : ''}`)}</p>
+    <ul class="rvlist">${gs.map(g => {
+      const has = !!S.targets[g.id];
+      const main = g.reached ? t(`已經係${g.level[0]}（${g.nowRatio.toFixed(2)}× 體重）`, `Already ${g.level[1]} (${g.nowRatio.toFixed(2)}× BW)`)
+        : t(`${g.level[0]}：${g.kg} kg × ${g.reps}`, `${g.level[1]}: ${g.kg} kg × ${g.reps}`);
+      const sub = g.reached ? t('保持就得，或者自己設更高目標。', 'Maintain, or set a higher target yourself.')
+        : t(`而家 1RM 約 ${Math.round(g.best)} kg（${g.nowRatio.toFixed(2)}×）→ 要 ${Math.round(g.goalE1)} kg（${g.ratio}×）· 約 ${g.weeks} 星期`, `Est. 1RM ${Math.round(g.best)} kg (${g.nowRatio.toFixed(2)}×) → ${Math.round(g.goalE1)} kg (${g.ratio}×) · about ${g.weeks} weeks`);
+      return `<li style="flex-wrap:wrap"><div style="flex:1;min-width:0"><span class="n" style="display:block">${esc(exName(EX[g.id]))}</span><b class="num" style="display:block;font-size:15px;margin-top:2px">${main}</b><span class="sub small" style="display:block;margin-top:2px">${sub}</span></div>
+        ${g.reached ? '' : has ? `<span class="tag">${t('已設目標', 'Target set')}</span>` : `<button class="btn btn-g" data-a="tgFromGoal" data-id="${g.id}" style="min-height:36px;padding:0 12px">${t('設為目標', 'Set')}</button>`}</li>`;
+    }).join('')}</ul></section>`;
 }
 function liftProgressCard() {
   const list = trainedIds().filter(id => !S.targets[id]).map(id => strengthReport(id)).filter(r => r && r.daysOff <= 42)
@@ -861,6 +877,10 @@ const A = {
     (S.logs[d][id] || []).forEach(s => { if (!s.done) { s.weight = kg; s.reps = r; } }); save('logs'); toast(t(`已套用 ${kg} kg`, `Set to ${kg} kg`)); render();
   },
   tgPick() { ui.tgPick = !ui.tgPick; render(); },
+  tgFromGoal(el) {
+    const g = liftGoal(el.dataset.id); if (!g) return;
+    setTarget(g.id, g.kg, g.reps, g.by); toast(t(`已設目標：${g.kg} kg × ${g.reps}`, `Target set: ${g.kg} kg × ${g.reps}`)); render();
+  },
   reviewDone() { saveReview(weeklyReview()); ui.reviewOpen = false; toast(t('檢討完成，下星期見！', 'Review saved. See you next week!')); render(); },
   reviewOpen() { ui.reviewOpen = !ui.reviewOpen; render(); },
   reviewDay(el) { S.reviewDay = el.dataset.v; save('reviewDay'); render(); },

@@ -2,7 +2,7 @@
 // - next load: double progression (hit every rep -> add weight; miss twice -> drop 10%)
 // - target pace: weekly e1RM trend vs the pace the deadline needs
 // - body weight: weekly trend vs the pace the goal date needs, as a daily calorie change
-import { EX, WD } from './data.js';
+import { EX, WD, STD } from './data.js';
 import { S, save, isoToday, tdee } from './state.js';
 
 const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
@@ -52,18 +52,44 @@ export function sessions(id, skipToday) {
 }
 
 // what to lift next time
+// Double progression with three guards:
+// 1. after a break: 3+ weeks off -> repeat the old weight; 6+ weeks -> drop 10%
+// 2. if one jump would be more than 10% (light weights), add reps first (up to +3), then add weight
+// 3. don't run far ahead of the weekly strength plan: if the jump would put you >5% past it, add reps instead
+const REP_ROOM = 3;
 export function nextLoad(id, prefer) {
   const e = EX[id]; if (!e || e.isCardio) return null;
   const ses = sessions(id, true), reps = planReps(id, prefer), inc = increment(id);
   if (!ses.length) return null;
   const last = ses[ses.length - 1], prev = ses[ses.length - 2];
+  const off = days(last.date, isoToday()), wks = Math.floor(off / 7);
   const hit = s => s.atTop.every(x => num(x.reps) >= reps);
+  const minR = s => Math.min(...s.atTop.map(x => num(x.reps)));
   if (inc === 0) { // bodyweight: progress reps
     const best = Math.max(...last.sets.map(x => num(x.reps)));
+    if (off >= 21) return { kg: 0, reps, kind: 'same', zh: `隔咗 ${wks} 星期冇練，先做返每組 ${reps} 次`, en: `${wks} weeks off; start back at ${reps} reps a set` };
     return hit(last) ? { kg: 0, reps: best + 1, kind: 'up', zh: '上次全部做足，下次每組加 1 次', en: 'You hit every rep last time; add one rep per set' }
       : { kg: 0, reps, kind: 'same', zh: `上次未做足，下次再挑戰每組 ${reps} 次`, en: `Missed some reps; aim for ${reps} per set again` };
   }
-  if (hit(last)) return { kg: roundTo(last.top + inc, inc), reps, kind: 'up', zh: `上次 ${last.top} kg 全部組數做足 ${reps} 次，可以加 ${inc} kg`, en: `You hit ${reps} reps on every set at ${last.top} kg, so add ${inc} kg` };
+  // 1. coming back from a break
+  if (off >= 42) {
+    const kg = Math.max(inc, roundTo(last.top * 0.9, inc));
+    if (kg >= last.top) return { kg: last.top, reps, kind: 'same', zh: `隔咗 ${wks} 星期冇練。重量太輕減唔到一級，維持 ${last.top} kg，做得順先再加`, en: `${wks} weeks off. Too light to drop a step, so repeat ${last.top} kg until it feels smooth` };
+    return { kg, reps, kind: 'down', zh: `隔咗 ${wks} 星期冇練，由 ${kg} kg（約上次嘅 9 成）重新起步，做得順再加`, en: `${wks} weeks off; restart at ${kg} kg (about 90%) and build back up` };
+  }
+  if (off >= 21) return { kg: last.top, reps, kind: 'same', zh: `隔咗 ${wks} 星期冇練，先維持上次嘅 ${last.top} kg，唔好即刻加`, en: `${wks} weeks off; repeat ${last.top} kg before adding weight` };
+  if (hit(last)) {
+    const r0 = minR(last), up = roundTo(last.top + inc, inc), jump = (up - last.top) / last.top;
+    // 3. how far ahead of the weekly plan the jump would put you
+    const sr = strengthReport(id, prefer);
+    const planNext = sr && sr.state !== 'idle' ? sr.base * growth(Math.max(0, days(sr.start, isoToday()) / 7) + 1) : null;
+    const tooFarAhead = planNext && e1rm(up, reps) > planNext * 1.05;
+    if ((jump > 0.10 || tooFarAhead) && r0 < reps + REP_ROOM) {
+      const why = jump > 0.10 ? { zh: `加到 ${up} kg 會跳 ${Math.round(jump * 100)}%，太多`, en: `going to ${up} kg is a ${Math.round(jump * 100)}% jump` } : { zh: `一次加到 ${up} kg 會快過每週計劃`, en: `jumping to ${up} kg would run ahead of the weekly plan` };
+      return { kg: last.top, reps: r0 + 1, kind: 'up', zh: `${why.zh}。先喺 ${last.top} kg 每組做 ${r0 + 1} 次，做到 ${reps + REP_ROOM} 次就加重`, en: `${why.en}. Do ${r0 + 1} reps a set at ${last.top} kg first; at ${reps + REP_ROOM} reps, add weight` };
+    }
+    return { kg: up, reps, kind: 'up', zh: `上次 ${last.top} kg 全部組數做足 ${r0 > reps ? r0 : reps} 次，可以加到 ${up} kg，次數返去 ${reps}`, en: `You hit ${r0 > reps ? r0 : reps} reps on every set at ${last.top} kg, so go to ${up} kg for ${reps}` };
+  }
   if (prev && prev.top === last.top && !hit(prev)) {
     const kg = Math.max(inc, roundTo(last.top * 0.9, inc));
     return { kg, reps, kind: 'down', zh: `連續兩次喺 ${last.top} kg 做唔足，減到 ${kg} kg 重新起步`, en: `Missed reps at ${last.top} kg twice; drop to ${kg} kg and build back up` };
@@ -162,7 +188,7 @@ export function targetPlan(id, prefer) {
   if (!base) return { tg, empty: true };
   const start = tg.set;
   // a steady, sustainable pace is about 1.5% of est. 1RM a week; faster than 2.5% is aggressive
-  const steadyWeeks = Math.max(1, Math.ceil((goal - base) / (base * 0.015)));
+  const steadyWeeks = Math.max(1, Math.ceil((goal - base) / (base * (cutting() ? 0.01 : 0.015))));
   const weeks = tg.by ? Math.max(1, Math.ceil(days(start, tg.by) / 7)) : Math.min(52, steadyWeeks);
   const perWeek = (goal - base) / weeks, pct = perWeek / base * 100;
   const aggressive = tg.by && pct > 2.5;
@@ -230,11 +256,13 @@ export function targetReport(id) {
 // The clock starts at your first session, or at your comeback after a break of more than 4 weeks.
 // Expected est. 1RM grows about 1.5% a week for the first 12 weeks, 1% to week 26, then 0.5%.
 const GAP_DAYS = 28;
+// while losing weight, strength comes slower: two thirds of the normal rate
+export function cutting() { const p = S.profile, last = (S.bodyLog || []).slice(-1)[0], cur = last ? last.kg : p.weight; return p.goalWeight && p.goalWeight < cur - 0.3; }
 function growth(weeks) {
+  const k = cutting() ? 2 / 3 : 1, rate = i => k * (i <= 12 ? 0.015 : i <= 26 ? 0.01 : 0.005);
   let f = 1;
-  for (let i = 1; i <= Math.floor(weeks); i++) f *= 1 + (i <= 12 ? 0.015 : i <= 26 ? 0.01 : 0.005);
-  const frac = weeks - Math.floor(weeks), nx = Math.floor(weeks) + 1;
-  return f * (1 + frac * (nx <= 12 ? 0.015 : nx <= 26 ? 0.01 : 0.005));
+  for (let i = 1; i <= Math.floor(weeks); i++) f *= 1 + rate(i);
+  return f * (1 + (weeks - Math.floor(weeks)) * rate(Math.floor(weeks) + 1));
 }
 // turn an est. 1RM into a set to do: weight on your plate steps, extra reps before the next jump
 function setFor(e, reps, inc) {
@@ -306,3 +334,21 @@ export function saveReview(rv) {
   S.reviews.push({ date: rv.to, done: rv.done, planned: rv.planned, ok: rv.judged.filter(l => l.ok).length, lifts: rv.judged.length, prs: rv.prs.length, kg: lastKg ? lastKg.kg : null, score: rv.score });
   S.reviews.sort((a, b) => a.date.localeCompare(b.date)); save('reviews');
 }
+
+// ── lift goals from your goal body weight ──
+// Strength standards as multiples of body weight (est. 1RM). Dumbbell numbers are per hand.
+const LEVELS = [['初級', 'Novice'], ['中級', 'Intermediate'], ['高級', 'Advanced']];
+export function liftGoal(id, prefer) {
+  const s = STD[id], p = S.profile; if (!s || !p.goalWeight) return null;
+  const ses = sessions(id, false).filter(x => x.top > 0), bw = p.goalWeight;
+  const best = ses.length ? Math.max(...ses.slice(-6).map(x => x.e1)) : 0;
+  const lvlNow = s.findIndex(r => best < r * bw);       // -1 = above advanced
+  const li = lvlNow === -1 ? 2 : lvlNow;
+  const goalE1 = s[li] * bw, reps = planReps(id, prefer), inc = increment(id) || 1;
+  let kg = Math.round(goalE1 / (1 + (reps <= 1 ? 0 : reps / 30)) / inc) * inc;
+  const weekly = best ? best * (cutting() ? 0.01 : 0.015) : 0;
+  const weeks = best && goalE1 > best ? Math.ceil((goalE1 - best) / weekly) : 0;
+  return { id, bw, ratio: s[li], level: LEVELS[li], above: lvlNow === -1, reached: best >= goalE1, best, goalE1, kg, reps, weeks,
+    by: weeks ? addDays(isoToday(), Math.min(weeks, 52) * 7) : null, nowRatio: best ? best / bw : 0 };
+}
+export function liftGoals() { return Object.keys(STD).filter(id => EX[id]).map(id => liftGoal(id)).filter(g => g && g.best); }

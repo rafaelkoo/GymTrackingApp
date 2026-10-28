@@ -27,7 +27,7 @@ export const DEFAULT_PLAN = {
 };
 
 // strength standards (x bodyweight) for novice / intermediate / advanced
-export const STD = { squat: [.75, 1.25, 1.75], bb_curl: [.25, .45, .65], db_press: [.15, .25, .40], inc_db: [.20, .35, .50], lat_pd: [.50, .80, 1.10], sit_row: [.50, .80, 1.10], leg_press: [1.00, 1.80, 2.50], leg_curl: [.35, .55, .80], calf: [1.00, 1.50, 2.20] };
+export const STD = { squat: [.75, 1.25, 1.75], bench_press: [.60, 1.00, 1.40], deadlift: [1.00, 1.50, 2.00], ohp: [.40, .60, .85], rdl: [.75, 1.15, 1.60], db_row: [.25, .40, .60], hammer: [.15, .25, .40], vbar_pd: [.50, .80, 1.10], bb_curl: [.25, .45, .65], db_press: [.15, .25, .40], inc_db: [.20, .35, .50], lat_pd: [.50, .80, 1.10], sit_row: [.50, .80, 1.10], leg_press: [1.00, 1.80, 2.50], leg_curl: [.35, .55, .80], calf: [1.00, 1.50, 2.20] };
 
 export const GOALS = [
   { id: 'lose_weight', zh: '減重瘦身', en: 'Lose weight' },
