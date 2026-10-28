@@ -1,9 +1,10 @@
-// FitTrack 3D movement viewer (v2.1).
+// FitTrack 3D movement viewer (v3.2): a realistic skinned body (js/body3d.js) driven by the mannequin below.
 // A sculpted mannequin driven by keyframes. Each keyframe says where the pelvis
 // is, how far the torso leans, where the hands and feet go and which way the
 // palms face; two-bone IK works out elbows and knees so bar paths stay real.
 // A second, translucent red figure can replay a move with a common mistake.
 import { MOVES } from './moves.js';
+import { loadBody, buildBody } from './body3d.js';
 
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 let T = null;
@@ -302,6 +303,12 @@ export async function createViewer(container, opts = {}) {
   // ----- figures -----
   const F = buildFigure(); scene.add(F.root);
   const G = buildFigure({ ghost: true }); G.root.visible = false; scene.add(G.root);
+  // realistic skinned body, driven by F; F stays as the (hidden) pose solver. Falls back to F if loading fails.
+  let body = null;
+  if (opts.body !== false) {
+    try { body = buildBody(T, await loadBody(T)); scene.add(body.group); F.root.visible = false; }
+    catch (e) { console.warn('3D body failed to load, using the mannequin', e); body = null; }
+  }
 
   // ----- equipment -----
   const equip = new T.Group(); scene.add(equip);
@@ -602,6 +609,7 @@ export async function createViewer(container, opts = {}) {
       S.shin.getWorldQuaternion(qP); S.foot.quaternion.copy(qP.invert().multiply(q));
     }
     Fig.root.updateMatrixWorld(true);
+    out.sh = P.sh || 0;
   }
   function phaseAt(t) {
     const ph = move && move.phases; if (!ph) return -1;
@@ -610,6 +618,7 @@ export async function createViewer(container, opts = {}) {
   function apply(t) {
     if (!move) return;
     pose(F, move._keys || null, t, cur);
+    if (body) body.drive(F, cur.sh);
     for (const f of dyn) f(cur);
     if (G.root.visible && ghostKeys) pose(G, ghostKeys, t, scratch);
     const pi = phaseAt(t);
@@ -623,8 +632,9 @@ export async function createViewer(container, opts = {}) {
   // ----- highlight (glow follows effort) -----
   let hi = new Set();
   const base = new T.Color(COL.skin);
-  function setHighlight(names) { hi = new Set(); (names || []).forEach(n => (MUSCLE_GROUPS[n] || [n]).forEach(f => hi.add(f))); glow(true); }
+  function setHighlight(names) { hi = new Set(); (names || []).forEach(n => (MUSCLE_GROUPS[n] || [n]).forEach(f => hi.add(f))); if (body) body.setHighlight(hi); glow(true); }
   function glow() {
+    if (body) { body.setEffort(effort, accent); return; }
     for (const [n, list] of Object.entries(F.parts)) {
       if (n === 'foot' || n === 'hand' || n === 'head') continue;
       const on = hi.has(n);
