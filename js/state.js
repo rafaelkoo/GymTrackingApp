@@ -38,7 +38,7 @@ export const S = {
 export function save(...keys) { for (const k of keys) DB.set(k, S[k]); }
 export const t = (zh, en) => (S.lang === 'zh' ? zh : en);
 // running app version; sw.js VERSION is 'fittrack-v' + this (keep the two in step)
-export const APP_VERSION = '3.9.0';
+export const APP_VERSION = '3.9.1';
 
 // ---------- dates ----------
 export function todayKey() { return WD[(new Date().getDay() + 6) % 7]; }

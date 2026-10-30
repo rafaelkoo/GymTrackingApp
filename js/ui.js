@@ -6,7 +6,7 @@ import {
   calcBMI, bmiLabel, tdee, logWeight, strLvl, dSets, prSeries, bestWeight, lastSession, streak, prsThisMonth,
   trainedIds, dayFocus, dayTitle, genTasks, habitTasks, exportPayload, importPayload, upsertSession, rolloverDay
 } from './state.js';
-import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate, liftGoals, liftGoal, cutting, scheme, schemeChanges, applyScheme, isCompound } from './coach.js';
+import { nextLoad, targetStatus, targetAdvice, bodyAdvice, setTarget, clearTarget, e1rm, planReps, targetPlan, bodyPlan, ensureBodyStart, targetReport, strengthReport, reviewDue, weeklyReview, saveReview, lastReviewDate, liftGoals, liftGoal, cutting, scheme, schemeChanges, applyScheme, isCompound, sessions as coachSessions } from './coach.js';
 
 const ui = {
   tab: 'today', day: todayKey(), planDay: todayKey(), libQ: '', libCat: 'all', addTo: null,
@@ -166,7 +166,10 @@ function strengthCard(day, e, idx, firstOpen) {
       <span class="ex-t"><b>${esc(exName(ex))}</b><span>${e.sets} ${t('組', 'sets')} × ${esc(e.reps)} ${t('次', 'reps')} · ${catName(ex.cat)}</span></span>
       <span class="ex-r num">${esc(right)}</span>${I(open ? 'down' : 'right', 'muted')}</button>`;
   if (open) {
-    const sl = strLvl(e.id, Math.max(maxNow, best), S.profile.weight);
+    // standards are multiples of body weight for a one-rep max, so compare est. 1RM, not the working weight
+    const e1Now = Math.max(0, ...sets.filter(x => num(x.reps) > 0).map(x => e1rm(num(x.weight), num(x.reps))));
+    const e1Best = Math.max(0, ...coachSessions(e.id, false).map(x => x.e1));
+    const sl = strLvl(e.id, Math.max(e1Now, e1Best), S.profile.weight);
     h += `<div class="ex-body"><div class="ex-meta">
       ${best ? `<span class="tag gold">${I('trophy')}&nbsp;PR ${best} kg</span>` : ''}
       ${maxNow > best && best > 0 ? `<span class="tag acc">${t('新紀錄！', 'New PR!')}</span>` : ''}
