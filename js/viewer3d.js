@@ -606,8 +606,15 @@ export async function createViewer(container, opts = {}) {
       setBasis(S.thigh, V().subVectors(leg.E, hipW), leg.pp);
       setBasis(S.shin, V().subVectors(leg.End, leg.E), leg.pp);
       out.foot[side].copy(leg.End);
-      const q = new T.Quaternion().setFromEuler(new T.Euler(P['fp' + side] * DEG, P['fy' + side] * DEG * s, 0, 'YXZ'));
-      S.shin.getWorldQuaternion(qP); S.foot.quaternion.copy(qP.invert().multiply(q));
+      // foot angle: on the ground it is set against the floor (fp/fy are world pitch/yaw); once the leg is up
+      // (shin no longer pointing down, foot off the floor) it follows the shin instead, with fp as ankle bend
+      const qFoot = new T.Quaternion().setFromEuler(new T.Euler(P['fp' + side] * DEG, P['fy' + side] * DEG * s, 0, 'YXZ'));
+      S.shin.getWorldQuaternion(qP);
+      const shinDownY = new T.Vector3(0, -1, 0).applyQuaternion(qP).y, ankleY = leg.End.y;
+      const sm = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+      const wRel = sm(-0.8, -0.3, shinDownY) * sm(0.08, 0.2, ankleY);
+      const q = wRel > 0 ? qFoot.clone().slerp(qP.clone().multiply(qFoot), wRel) : qFoot;
+      S.foot.quaternion.copy(qP.clone().invert().multiply(q));
     }
     Fig.root.updateMatrixWorld(true);
     out.sh = P.sh || 0;
