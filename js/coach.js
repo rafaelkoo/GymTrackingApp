@@ -93,10 +93,13 @@ export function nextLoad(id, prefer) {
     const up = roundTo(last.top + inc, inc), jump = (up - last.top) / last.top;
     const sr = strengthReport(id, prefer);
     const planNext = sr && sr.state !== 'idle' ? sr.base * growth(Math.max(0, days(sr.start, isoToday()) / 7) + 1) : null;
-    const tooFarAhead = planNext && e1rm(up, lo) > planNext * 1.05;
-    if ((jump > 0.10 || tooFarAhead) && r0 < hi + REP_ROOM) {
+    // compound lifts: add weight once the top of the range is reached (extra reps there tire grip and lungs first);
+    // only a >10% jump earns them 2 extra reps. Isolation lifts may add up to 3 reps, also to stay near the weekly plan.
+    const comp = isCompound(id), room = comp ? 2 : REP_ROOM;
+    const tooFarAhead = !comp && planNext && e1rm(up, lo) > planNext * 1.05;
+    if ((jump > 0.10 || tooFarAhead) && r0 < hi + room) {
       const why = jump > 0.10 ? { zh: `加到 ${up} kg 會跳 ${Math.round(jump * 100)}%，太多`, en: `going to ${up} kg is a ${Math.round(jump * 100)}% jump` } : { zh: `一次加到 ${up} kg 會快過每週計劃`, en: `jumping to ${up} kg would run ahead of the weekly plan` };
-      return { kg: last.top, reps: r0 + 1, kind: 'up', zh: `${why.zh}。先喺 ${last.top} kg 每組做 ${r0 + 1} 次，做到 ${hi + REP_ROOM} 次就加重`, en: `${why.en}. Do ${r0 + 1} reps a set at ${last.top} kg first; at ${hi + REP_ROOM} reps, add weight` };
+      return { kg: last.top, reps: r0 + 1, kind: 'up', zh: `${why.zh}。先喺 ${last.top} kg 每組做 ${r0 + 1} 次，做到 ${hi + room} 次就加重`, en: `${why.en}. Do ${r0 + 1} reps a set at ${last.top} kg first; at ${hi + room} reps, add weight` };
     }
     return { kg: up, reps: lo, kind: 'up', zh: `上次 ${last.top} kg 每組都做到 ${r0} 次（範圍頂 ${hi}），加到 ${up} kg，由 ${lo} 次重新開始`, en: `You hit ${r0} reps on every set at ${last.top} kg (top of ${rng}), so go to ${up} kg and start again at ${lo}` };
   }
