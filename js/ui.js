@@ -145,12 +145,7 @@ function renderToday() {
       <p class="note" style="margin-bottom:12px">${I('check')}${t('打剔即自動記錄。聽日會自動清返打剔，重量會保留。', 'Ticks are recorded automatically. They clear tomorrow; your weights stay.')}</p>`;
     const firstOpen = (plan.find(e => !EX[e.id].isCardio && !exDone(day, e)) || {}).id;
     plan.forEach((e, idx) => { h += EX[e.id].isCardio ? cardioCard(day, e, idx) : strengthCard(day, e, idx, firstOpen); });
-    const { done } = dSets(day);
-    const anyCardio = plan.some(e => EX[e.id].isCardio && exDone(day, e));
-    if (done > 0 || anyCardio) {
-      const saved = !!S.savedWorkouts['saved_' + isoToday() + '_' + day];
-      h += `<button class="btn ${saved ? 'btn-g' : 'btn-p'} btn-w" data-a="saveWorkout" ${saved ? 'disabled' : ''} style="margin:4px 0 14px">${saved ? I('check') + t('今日已完成', 'Finished today') : I('check') + t(`完成訓練 (+${SCORE_CFG.workout_saved})`, `Finish workout (+${SCORE_CFG.workout_saved})`)}</button>`;
-    }
+    if (S.savedWorkouts['saved_' + isoToday() + '_' + day]) h += `<p class="note" style="margin:4px 0 14px;color:var(--acc);font-weight:600">${I('check')}${t('今日訓練全部完成 ✓', 'All done for today ✓')}</p>`;
   }
   if (isToday) h += habitsCard();
   return h;
@@ -295,7 +290,7 @@ function renderProgress() {
     h += `<section class="card"><div class="card-h"><h2 class="h2">${t('過往週數', 'Past weeks')}</h2></div>${past.map(w => `<div class="row" style="padding:6px 0"><span class="grade">${grade(Math.min(100, Math.round(w.score / 3)))}</span><span style="flex:1">${t('週', 'Week of')} ${esc(w.week)}</span><b class="num" style="font-size:20px">${w.score}</b><span class="sub">${t('分', 'pts')}</span></div>`).join('')}</section>`;
   }
   h += `<details class="card"><summary class="h3" style="cursor:pointer;min-height:28px">${t('點樣賺分？', 'How do I earn points?')}</summary><div class="grid2" style="margin-top:10px">
-    ${[['完成一組', 'Complete a set', 'set_done'], ['完成習慣', 'Complete a habit', 'task_done'], ['破個人紀錄', 'Beat a PR', 'pr_broken'], ['儲存訓練', 'Save a workout', 'workout_saved']].map(([zh, en, k]) => `<div class="tile"><span class="s">${t(zh, en)}</span><span class="v" style="font-size:24px;color:var(--acc)">+${SCORE_CFG[k]}</span></div>`).join('')}</div>
+    ${[['完成一組', 'Complete a set', 'set_done'], ['完成習慣', 'Complete a habit', 'task_done'], ['破個人紀錄', 'Beat a PR', 'pr_broken'], ['完成全日訓練', 'Finish the whole day', 'workout_saved']].map(([zh, en, k]) => `<div class="tile"><span class="s">${t(zh, en)}</span><span class="v" style="font-size:24px;color:var(--acc)">+${SCORE_CFG[k]}</span></div>`).join('')}</div>
     <p class="sub" style="margin-top:10px">${t(`每 ${LEVEL_XP} 分升一級。每星期一重新計本週分數。`, `Every ${LEVEL_XP} points is a level. Weekly points reset on Monday.`)}</p></details>`;
   return h;
 }
@@ -831,6 +826,21 @@ function drawUpdate() {
   el.innerHTML = `<span>${I('download')}${t(`有新版本 ${latest}`, `New version ${latest}`)}</span><button data-a="applyUpdate">${t('更新', 'Update')}</button>`;
 }
 
+// every exercise of today's plan ticked: count the workout as finished (once a day)
+function finishDay(day) {
+  const today = isoToday(), key = 'saved_' + today + '_' + day;
+  if (day !== todayKey() || S.savedWorkouts[key]) return;
+  upsertSession(day);
+
+  S.savedWorkouts[key] = true;
+  let pts = award('workout_saved', null);
+  const ti = todayIdx();
+  if (S.weekTasks && S.weekTasks[ti]) S.weekTasks[ti].forEach((task, k) => {
+    const tk = ti + '-' + k; if (!S.completedTasks[tk] && (task.type === 'strength' || task.type === 'cardio')) { S.completedTasks[tk] = true; pts += award('task_done', null); }
+  });
+  save('history', 'savedWorkouts', 'completedTasks'); stopTimer();
+  toast(t(`今日訓練完成！+${pts} 分`, `Workout complete! +${pts} pts`)); confetti();
+}
 export function render() {
   if (!S.goalId && !ui.ob) ui.ob = { step: 0, goal: null, ans: {}, qi: 0 };
   nav();
@@ -869,7 +879,9 @@ const A = {
     // the last set of an exercise ticked: fold it (and let the next one open)
     const pe = (S.customPlan[d] || []).find(x => x.id === id);
     if (s.done && pe && exDone(d, pe)) { delete S.collapsedEx[d + '__' + id]; save('collapsedEx'); }
-    save('logs'); upsertSession(d); render();
+    save('logs'); upsertSession(d);
+    if (s.done && (S.customPlan[d] || []).filter(e => EX[e.id]).every(e => exDone(d, e))) finishDay(d);
+    render();
   },
   setCount(el) {
     const { d, id } = el.dataset, e = (S.customPlan[d] || []).find(x => x.id === id); if (!e) return;
@@ -884,21 +896,12 @@ const A = {
     const k = '__cardio__' + id, aw = '__cardioAw__' + id;
     S.logs[d][k] = !S.logs[d][k];
     if (S.logs[d][k] && !S.logs[d][aw]) { S.logs[d][aw] = true; toast(`+${award('set_done', 'cardio')} ${t('分', 'pts')}`); }
-    save('logs'); upsertSession(d); render();
+    save('logs'); upsertSession(d);
+    if (S.logs[d][k] && (S.customPlan[d] || []).filter(e => EX[e.id]).every(e => exDone(d, e))) finishDay(d);
+    render();
   },
-  saveWorkout() {
-    const day = ui.day, today = isoToday(), key = 'saved_' + today + '_' + day;
-    if (S.savedWorkouts[key]) { toast(t('今日已經儲存咗', 'Already saved today')); return; }
-    upsertSession(day);
-    S.savedWorkouts[key] = true;
-    let pts = award('workout_saved', null);
-    const ti = todayIdx();
-    if (S.weekTasks && S.weekTasks[ti]) S.weekTasks[ti].forEach((task, k) => {
-      const tk = ti + '-' + k; if (!S.completedTasks[tk] && (task.type === 'strength' || task.type === 'cardio')) { S.completedTasks[tk] = true; pts += award('task_done', null); }
-    });
-    save('history', 'savedWorkouts', 'completedTasks'); stopTimer();
-    toast(t(`完成訓練！+${pts} 分`, `Workout finished! +${pts} pts`)); confetti(); render();
-  },
+  saveWorkout() { finishDay(ui.day); },
+
   habit(el) {
     const k = el.dataset.v, was = !!S.completedTasks[k]; S.completedTasks[k] = !was;
     if (!was && !S.completedTasks[k + '_aw']) { S.completedTasks[k + '_aw'] = true; toast(`+${award('task_done', null)} ${t('分', 'pts')}`); }
