@@ -173,3 +173,14 @@ export function bodyParts(ex) {
   return [...s];
 }
 export const muscleZh = m => (MUSCLES[m] ? MUSCLES[m][0] : m);
+
+// everyday Hong Kong names, so the library search finds them (e.g. 亞諾推肩 -> Arnold press)
+export const ALIAS = {
+  arnold_press: '亞諾推肩 阿諾推肩 亞諾 阿諾 arnold 推肩', db_press: '啞鈴推肩 推肩', ohp: '槓鈴推肩 推肩 站姿推舉 軍事推舉',
+  lat_raise: '側平舉 側舉 飛膊', rev_fly: '反向飛鳥 後三角', squat: '深蹲 孖腳蹲', deadlift: '硬拉 拉地',
+  rdl: '羅馬尼亞硬拉 直腳硬拉', bench_press: '臥推 平板推胸 推胸', inc_db: '上斜推胸 斜板推胸', pec_deck: '夾胸機 蝴蝶機 飛鳥機',
+  lat_pd: '滑輪下拉 拉背 下拉', sit_row: '坐姿划船 拉背', db_row: '單手划船 啞鈴划船', pullup: '引體上升 拉單槓', dip: '雙槓 撐體',
+  bb_curl: '二頭彎舉 槓鈴彎舉 二頭', hammer: '錘式彎舉 錘子彎舉 二頭', cable_pd: '三頭下壓 下壓 三頭', skull: '碎顱 碎頭 三頭',
+  leg_press: '腿推 推腿機', leg_curl: '腿彎舉 勾腿', calf: '提踵 小腿', adductor: '夾腿機 內收', hip_thrust: '臀推 頂臀',
+  leg_raise: '舉腿 抬腿 舉腳', crunch: '捲腹 仰臥起坐', plank: '平板支撐 平板撐', treadmill: '跑步機 跑步', lunge: '弓箭步'
+};

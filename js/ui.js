@@ -1,5 +1,5 @@
 // FitTrack UI: screens, events and the exercise sheet.
-import { EX, EX_LIST, CATS, WD, WD_ZH, WD_LONG, GOALS, GQS, LEVEL_XP, SCORE_CFG, DEFAULT_PLAN, bodyParts, muscleZh, equipZh, levelZh } from './data.js';
+import { EX, EX_LIST, ALIAS, CATS, WD, WD_ZH, WD_LONG, GOALS, GQS, LEVEL_XP, SCORE_CFG, DEFAULT_PLAN, bodyParts, muscleZh, equipZh, levelZh } from './data.js';
 import { MOVES } from './moves.js';
 import {
   S, save, t, APP_VERSION, todayKey, todayIdx, isoToday, weekStart, ensLogs, syncSets, chkWeek, addPts, grade, levelXP,
@@ -355,7 +355,10 @@ function renderPlan() {
 // ---------- LIBRARY ----------
 function renderLibrary() {
   const q = ui.libQ.trim().toLowerCase();
-  const list = EX_LIST.filter(e => (ui.libCat === 'all' || e.cat === ui.libCat) && (!q || e.zh.includes(q) || e.en.toLowerCase().includes(q) || e.muscles.some(m => m.toLowerCase().includes(q) || muscleZh(m).includes(q))));
+  // search names, everyday aliases and muscles; 亞 and 阿 count as the same
+  const norm = x => x.toLowerCase().replace(/亞/g, '阿');
+  const nq = norm(q), hit = txt => norm(txt).includes(nq);
+  const list = EX_LIST.filter(e => (ui.libCat === 'all' || e.cat === ui.libCat) && (!q || hit(e.zh) || hit(e.en) || hit(ALIAS[e.id] || '') || e.muscles.some(m => hit(m) || hit(muscleZh(m)))));
   let h = `<header class="ph"><div><div class="eyebrow">${t(`${EX_LIST.length} 個動作 · 3D 示範`, `${EX_LIST.length} exercises · 3D demos`)}</div><h1 class="h1">${t('動作庫', 'Library')}</h1></div></header>`;
   if (ui.addTo) h += `<div class="card hot row" style="justify-content:space-between"><div><div class="eyebrow">${t('加入緊', 'Adding to')}</div><div class="h2">${dayLong(ui.addTo)}</div></div><button class="btn btn-p" data-a="addDone">${t('完成', 'Done')}</button></div>`;
   h += `<label class="search">${I('search')}<span class="sr">${t('搜尋動作', 'Search exercises')}</span><input type="search" data-c="libQ" value="${esc(ui.libQ)}" placeholder="${t('搜尋動作或者肌肉', 'Search exercise or muscle')}"></label>`;
