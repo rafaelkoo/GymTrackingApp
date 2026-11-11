@@ -12,7 +12,8 @@ export const DB = {
 const clone = o => JSON.parse(JSON.stringify(o));
 
 export const S = {
-  lang: DB.get('lang', 'zh'),
+  // new installs start in English; existing users who never picked a language keep Chinese (the old default)
+  lang: DB.get('lang', (() => { try { return localStorage.getItem(PFX + 'profile') || localStorage.getItem(PFX + 'history') ? 'zh' : 'en'; } catch { return 'en'; } })()),
   profile: DB.get('profile', { weight: 75, height: 170, age: 28, goalWeight: 70 }),
   goalId: DB.get('goalId', null),
   goalAnswers: DB.get('goalAnswers', {}),
@@ -38,7 +39,7 @@ export const S = {
 export function save(...keys) { for (const k of keys) DB.set(k, S[k]); }
 export const t = (zh, en) => (S.lang === 'zh' ? zh : en);
 // running app version; sw.js VERSION is 'fittrack-v' + this (keep the two in step)
-export const APP_VERSION = '3.10.1';
+export const APP_VERSION = '3.10.2';
 
 // ---------- dates ----------
 export function todayKey() { return WD[(new Date().getDay() + 6) % 7]; }
