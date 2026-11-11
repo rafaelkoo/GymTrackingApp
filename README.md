@@ -1,6 +1,18 @@
 # FitTrack
 
-Personal workout tracker (PWA) with 3D form demos. Live at https://rafaelkoo.github.io/GymTrackingApp/
+**Live:** https://rafaelkoo.github.io/GymTrackingApp/ · install it to your phone's home screen; it works offline.
+
+I wanted to track my own gym progress on a five-day split and see clearly whether I was getting stronger. FitTrack is the app I built for that: it logs every set against last session, charts each lift over time, and shows every exercise on an animated 3D model.
+
+<p>
+<img src="docs/today.png" width="260" alt="Today screen: Arms day with sets, last session's weights and a suggested target">
+<img src="docs/exercise-3d.png" width="260" alt="Barbell squat on a 3D model with working muscles highlighted, above a chart of heaviest weight over eight weeks">
+<img src="docs/progress.png" width="260" alt="Progress screen with streak, weekly points, new PRs and body-weight target">
+</p>
+
+*Screenshots use invented sample data.*
+
+**Built with:** plain JavaScript (ES modules, no framework, no build step), Three.js for the 3D model (two-bone IK, keyframed movements), a service worker for offline use, and `localStorage` for data. Built with AI assistance (Claude); I decided what it should do and use it for my own training.
 
 ## What it does
 - **Today**: log sets (kg, reps) against last session, rest timer, daily habits, save the workout
